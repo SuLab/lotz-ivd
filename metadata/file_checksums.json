@@ -1,0 +1,36 @@
+{
+  "GSE160756": {
+    "GSE160756_RAW.tar": "54aa105250ba6770c147932ce44be3a8"
+  },
+  "GSE165722": {
+    "GSE165722_RAW.tar": "c5c6b7b5f00e47e3e1b8165fd129756b"
+  },
+  "GSE189916": {
+    "GSE189916_RAW.tar": "945a0c96de4f70650da276b8e991edb8"
+  },
+  "GSE199866": {
+    "GSE199866_RAW.tar": "8b64d6152d7409867f30f223bed4cc38"
+  },
+  "GSE205535": {
+    "GSE205535_RAW.tar": "ad92b07aec19c0b454bcc523c3b3f62f"
+  },
+  "GSE233666": {
+    "GSE233666_RAW.tar": "3f598eb1f360e913959754c4a4dce9b8"
+  },
+  "GSE244889": {
+    "GSE244889_FPKM.txt.gz": "9412a4651b4b9f77cfae5e4d9e551db8",
+    "GSE244889_RAW.tar": "b8e532986390a8f046744bd5a83ff359"
+  },
+  "GSE251686": {
+    "GSE251686_RAW.tar": "8f000dd3852fdd137b1c970540c5e0b2"
+  },
+  "GSE255768": {
+    "GSE255768_RAW.tar": "d0928d887a9b6c9e3a47dff49cc3e10d"
+  },
+  "GSE230809": {
+    "GSE230809_RAW.tar": "4729bd3dbd3444b15c47ad500e785030"
+  },
+  "GSE242443": {
+    "GSE242443_RAW.tar": "5fc2aed180c417a465f4836f20053945"
+  }
+}
