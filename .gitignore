@@ -1,0 +1,32 @@
+# Data files (tracked via manifest, not committed)
+data/
+*.h5ad
+*.h5
+*.loom
+*.mtx
+*.mtx.gz
+
+# Results and outputs
+results/
+notebooks/.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
