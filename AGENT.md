@@ -34,6 +34,31 @@ This is a human-gated agentic bioinformatics pipeline. The agent executes one ta
 - Do NOT commit large data files (h5ad, count matrices). Add them to .gitignore.
 - DO commit: scripts, specs, metadata files, analysis_plan.md, AGENT.md
 
+## Final Dataset List (established Module 01, approved at checkpoint 2026-02-26)
+
+12 datasets, ~423K reported cells, ~81 samples:
+
+| Accession | Author | Compartment | Samples | Platform | Format |
+|-----------|--------|-------------|---------|----------|--------|
+| GSE160756 | Gan 2021 | NP, AF, CEP | 7 | 10x | .loom.gz |
+| GSE165722 | Tu 2022 | NP | 8 | BD Rhapsody | counts.tsv.gz + cellname.txt.gz |
+| GSE189916 | Jiang 2022 | Whole IVD | 6 | 10x | MTX triplet |
+| GSE199866 | Cherif 2022 | NP, iAF | 4 | 10x | .h5 |
+| GSE205535 | Li 2022 | NP | 2 | BD Rhapsody | MTX triplet |
+| CNP0002664 | Han 2022 | NP | 6 | Singleron | matrix.tsv.gz |
+| GSE233666 | Guo 2023 | NP | 4 | 10x | MTX triplet |
+| GSE244889 | Chen 2024 | NP | 7 | 10x | MTX triplet |
+| GSE251686 | Jia 2024 | NP | 6 | 10x | nested tar.gz |
+| GSE255768 | Shi 2024 | CEP | 2 | 10x | MTX triplet |
+| GSE230809 | Swahn 2024 | NP, AF | 24 | 10x | MTX triplet |
+| GSE242443 | Kuchynsky 2024 | CEP | 2 | 10x | MTX triplet |
+
+Notes:
+- GSE242443 CEP cells are culture-expanded (included by human decision for coverage)
+- Zhou 2023 (embryonic IVD) deferred to Module 08 trajectory analysis
+- PRJCA014236, PRJCA007656 excluded at checkpoint (NP well-covered, NGDC access not obtained)
+- Use `python3` not `python` to invoke scripts
+
 ## When Things Break
 
 - If a script fails: read the error, fix the script, rerun. Do not change the spec.
