@@ -101,11 +101,16 @@
 
 **Total GEO download size:** ~3.3 GB
 
-### Pending Download (3 Chinese repository datasets)
+### Downloaded from CNGB (1 dataset)
+
+| Accession | Files | Total Size | Notes |
+|-----------|-------|-----------|-------|
+| CNP0002664 (Han S 2022) | 6 count matrices (ctrl, NP2, NP4, NP8, NP9, NP10) | 55 MB | All MD5 checksums verified |
+
+### Pending Download (2 Chinese repository datasets)
 
 | Accession | Repository | Status |
 |-----------|-----------|--------|
-| CNP0002664 (Han S 2022) | China National GeneBank (CNGB) | Requires CNGB account/access |
 | PRJCA014236 (Wang D 2023) | Genome Sequence Archive (GSA-Human) | Requires NGDC account/access |
 | PRJCA007656 (Ling Z 2022) | NGDC BioProject | Requires NGDC account/access |
 
@@ -118,13 +123,14 @@
 | Loom (.loom.gz) | GSE160756 |
 | HDF5 (.h5) | GSE199866 |
 | Count matrices (counts.tsv.gz + cellname.txt.gz) | GSE165722 |
+| Count matrices (genes x cells TSV) | CNP0002664 |
 
 ## Automated Validation Checklist
 
 - [x] All search queries executed and results logged in `metadata/search_log.md`
 - [x] `metadata/dataset_registry.tsv` exists with all candidates, inclusion/exclusion status and reason
 - [x] All included GEO datasets have raw data downloaded to `data/raw/`
-- [ ] **PARTIAL:** 3 datasets in Chinese repositories not yet downloaded (CNP0002664, PRJCA014236, PRJCA007656)
+- [ ] **PARTIAL:** 2 datasets in Chinese repositories not yet downloaded (PRJCA014236, PRJCA007656). CNP0002664 downloaded and verified.
 - [x] File checksums recorded in `metadata/file_checksums.json`
 - [x] No included dataset is a duplicate of another (Zhang Y 2021 excluded as duplicate of Han 2022)
 - [x] Each known dataset from the original table is either included or has explicit exclusion reason

@@ -32,5 +32,13 @@
   },
   "GSE242443": {
     "GSE242443_RAW.tar": "5fc2aed180c417a465f4836f20053945"
+  },
+  "CNP0002664": {
+    "ctrl_matrix.tsv.gz": "46a53ff00c5a6194cbaf5ab4149d6e0c",
+    "NP2_matrix.tsv.gz": "8804fa18178c2a497c0f2959a36ef880",
+    "NP4_matrix.tsv.gz": "0f60124fef3664ce5843e494aadca032",
+    "NP8_matrix.tsv.gz": "489c9eb034a05dffc4a7beb6a9ebc786",
+    "NP9_matrix.tsv.gz": "a68f8831bae1c1c12f040ffef7d0db57",
+    "NP10_matrix.tsv.gz": "ff771d0e13f48a92bc4258f47270e9cf"
   }
 }

@@ -46,7 +46,7 @@ Module 01 complete. Awaiting human review of dataset list before proceeding to M
 
 ## Known Issues
 
-- **Chinese repository datasets not yet downloaded:** CNP0002664 (CNGB), PRJCA014236 (GSA-Human), PRJCA007656 (NGDC) require separate access/registration. These are 3 of the 13 included datasets.
+- **Chinese repository datasets not yet downloaded:** PRJCA014236 (GSA-Human), PRJCA007656 (NGDC) require separate access/registration. CNP0002664 downloaded and verified 2026-02-26.
 - **GSE205535 (Li Z 2022)** has published corrections/corrigenda — needs careful review during preprocessing.
 - **Platform heterogeneity:** 3 datasets use non-10x platforms (BD Rhapsody, Singleron Matrix) which may require platform-aware batch correction during integration.
 - **CEP coverage is limited:** Only 2 endplate datasets (GSE160756 has 2 CEP samples; GSE255768 has 2 CEP samples). Compartment-specific endplate analysis may be underpowered.
