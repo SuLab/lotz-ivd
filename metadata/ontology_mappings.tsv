@@ -1,0 +1,50 @@
+category	original_term	harmonized_term	notes
+condition	healthy	healthy	No degeneration, Pfirrmann I or Thompson I-II
+condition	healthy young and adult	healthy	GSE160756: young donors, Pfirrmann I
+condition	non-degenerating	healthy	GSE199866: Thompson I-II disc
+condition	normal	healthy	GSE205535: described as normal, but flagged
+condition	normal control	healthy	CNP0002664: Pfirrmann I
+condition	neonatal IVD	neonatal	GSE189916: 6h postnatal tissue
+condition	adult IVD >65 no pain	aged_ungraded	GSE189916: aged, no degeneration grading
+condition	Pfirrmann II	degenerated_mild	Pfirrmann II-III = mild per spec
+condition	Pfirrmann III	degenerated_mild	Pfirrmann II-III = mild per spec
+condition	Pfirrmann IV	degenerated_severe	Pfirrmann IV-V = severe per spec
+condition	Pfirrmann V	degenerated_severe	Pfirrmann IV-V = severe per spec
+condition	Thompson I-II	healthy	Thompson I-II = healthy per spec
+condition	Thompson II	healthy	Thompson I-II = healthy per spec
+condition	Thompson II-III	degenerated_mild	Thompson II-III = mild per spec
+condition	Thompson III	degenerated_mild	Thompson III alone = mild (boundary)
+condition	Thompson III-IV	degenerated_severe	Thompson III-IV or higher = severe per spec
+condition	Thompson III-V	degenerated_severe	Thompson III-V = severe per spec
+condition	Thompson >= 4	degenerated_severe	Thompson IV+ = severe per spec
+condition	Thompson <= 2	healthy	Thompson I-II = healthy per spec
+condition	mild IVDD	degenerated_mild	CNP0002664: Pfirrmann II-III
+condition	severe IVDD	degenerated_severe	CNP0002664: Pfirrmann IV-V
+condition	MDD (mild disc degeneration)	varies	GSE244889: Pfirrmann 1=healthy, 2=mild
+condition	SDD (severe disc degeneration)	varies	GSE244889: Pfirrmann 3=mild, 4=severe
+condition	degenerative	degenerated_ungraded	No grade specified
+condition	degenerating	degenerated_severe	GSE199866: Thompson III-V
+condition	IDD herniated NP	herniated	GSE233666: herniation is primary diagnosis
+condition	mildly degeneration + herniation	herniated	GSE251686: herniation present
+condition	severely degeneration + herniation	herniated	GSE251686: herniation present
+condition	Modic changes	degenerated_ungraded	GSE255768: Modic type unspecified
+compartment	nucleus pulposus	NP	Standard
+compartment	annulus fibrosus	AF	Standard
+compartment	inner annulus fibrosus	AF	GSE199866: inner AF specifically
+compartment	cartilage endplate	CEP	Standard
+compartment	endplate	CEP	GSE255768
+compartment	whole IVD	IVD_mixed	GSE189916: not compartment-separated
+compartment	IVD	IVD_mixed	When not compartment-separated
+platform	10x Chromium 3' v2	10x_3prime_v2	
+platform	10x Chromium 3' v3	10x_3prime_v3	
+platform	10x Chromium 3' v3.1	10x_3prime_v3	v3.1 grouped with v3
+platform	BD Rhapsody	other	GSE165722, GSE205535
+platform	Singleron Matrix	other	CNP0002664
+platform	Singleron GEXSCOPE	other	GSE251686
+severity	Pfirrmann I	none	Normal disc
+severity	Pfirrmann II-III	mild	Early degeneration
+severity	Pfirrmann IV-V	severe	Advanced degeneration
+severity	Thompson I-II	none	Normal disc
+severity	Thompson II-III	mild	Early degeneration
+severity	Thompson III-IV	severe	Moderate-severe degeneration
+severity	Modic changes	ungraded	Different grading system
