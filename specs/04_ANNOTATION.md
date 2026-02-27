@@ -25,6 +25,18 @@ Aggregate:
 - `results/annotations/annotation_comparison.tsv` — cross-dataset comparison of cell type proportions
 - `results/annotations/annotation_summary.html`
 
+### Notebook: `notebooks/04_annotation.ipynb`
+
+Produced after all datasets are annotated. This is likely the most important notebook — it defines the cell atlas. Contains:
+- Combined UMAP of all cells (per-dataset, not integrated) colored by cell type, tiled by study
+- Dot plot of canonical markers × cell types (aggregated across studies)
+- Stacked bar plot: cell type proportions per dataset
+- Heatmap: agreement between annotation strategies (marker-based vs. reference vs. CellTypist)
+- For the continuum populations: density plots of continuous scores (notochordal, degenerative, fibrotic) per dataset and condition
+- Sankey or alluvial diagram: mapping original study annotations to harmonized labels
+
+**Manuscript mapping:** Figure 1: IVD cell atlas overview (UMAP, dot plot, proportions). Supplementary Figure S2: per-dataset annotation details, strategy comparison.
+
 ## Annotation Strategies
 
 Apply all three strategies. Final labels are assigned by consensus or human judgment at the checkpoint.

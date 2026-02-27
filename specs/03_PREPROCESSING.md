@@ -23,6 +23,17 @@ Aggregate:
 - `results/qc_reports/qc_summary.tsv` — one row per dataset with key QC metrics
 - `results/qc_reports/qc_overview.html` — cross-dataset comparison of QC metrics
 
+### Notebook: `notebooks/03_qc.ipynb`
+
+Produced after all datasets are preprocessed. Contains:
+- Cross-dataset QC comparison: violin plots of n_genes, total_counts, pct_mt across studies
+- Cells retained vs. removed per dataset (bar chart)
+- Per-dataset UMAP panels colored by sample, cluster, preliminary cell type
+- Sequencing depth comparison across studies
+- Summary table: cells per dataset before/after QC, median genes/cell, median counts/cell
+
+**Manuscript mapping:** Supplementary Figure S1: QC metrics across datasets. Methods section on preprocessing.
+
 ## Pipeline Steps
 
 Apply the following to each dataset independently. All parameters are defaults that may be adjusted at the human checkpoint.

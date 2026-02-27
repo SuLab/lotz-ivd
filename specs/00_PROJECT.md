@@ -124,8 +124,43 @@ ivd-analysis/
 │   ├── trajectories/       # Trajectory analysis outputs
 │   ├── communication/      # Cell-cell communication results
 │   └── figures/            # Publication-ready figures
-├── scripts/                # Analysis scripts, one per major step
-├── notebooks/              # Jupyter notebooks for exploration at human checkpoints
+├── scripts/                # Analysis scripts (heavy compute, run by agent or on HPC)
+├── notebooks/              # Jupyter notebooks (visualization, interpretation, manuscript figures)
+│   ├── 01_datasets.ipynb
+│   ├── 02_metadata.ipynb
+│   ├── 03_qc.ipynb
+│   ├── 04_annotation.ipynb
+│   ├── 05_integration.ipynb
+│   ├── 06_differential.ipynb
+│   ├── 07_interpretation.ipynb
+│   ├── 08_trajectory.ipynb
+│   └── 09_communication.ipynb
 ├── analysis_plan.md        # Living plan document
 └── AGENT.md                # Instructions for the agent on how to run the pipeline
 ```
+
+## Scripts vs. Notebooks
+
+The pipeline uses a deliberate split between scripts and notebooks:
+
+**Scripts** (`scripts/`) handle compute: downloading data, running QC, training models, executing DE, running SCENIC. These are what the agent executes in the loop. They write output files to `data/` and `results/`. They can run headlessly on HPC. They should be fast to rerun and self-contained.
+
+**Notebooks** (`notebooks/`) handle visualization and interpretation: they load outputs from scripts and produce figures, summary tables, and narrative text. These are the review artifacts at each human checkpoint. They are also the draft manuscript figures — each notebook maps to a section of the paper.
+
+The agent should produce both: a script that does the compute, and a notebook that visualizes the results. The notebook should be executable independently of the script (it loads saved output files, not in-memory objects from the script).
+
+## Manuscript Figure Mapping
+
+Each notebook corresponds to one or more manuscript figures and tables. This mapping is preliminary and will be refined as the analysis progresses.
+
+| Notebook | Manuscript Section | Likely Figures/Tables |
+|----------|-------------------|----------------------|
+| 01_datasets.ipynb | Methods: Data sources | Table 1: Dataset characteristics |
+| 02_metadata.ipynb | Methods: Study design | Table 1 (continued): Sample metadata summary |
+| 03_qc.ipynb | Supplementary | Fig S1: QC metrics per dataset |
+| 04_annotation.ipynb | Results: IVD cell atlas | Fig 1: UMAP atlas, marker dot plots; Fig S2: per-dataset annotations |
+| 05_integration.ipynb | Methods: Integration; Supplementary | Fig S3: Integration benchmark; Methods text |
+| 06_differential.ipynb | Results: Disease-associated changes | Fig 2: Composition changes; Fig 3: DE volcano/heatmaps; Table 2: Top DE genes |
+| 07_interpretation.ipynb | Results: Pathways & regulation; Discussion: Pain | Fig 4: Pathway enrichment; Fig 5: Pain-associated genes; Fig S4: GRN regulons |
+| 08_trajectory.ipynb | Results: Cell state transitions | Fig 6: Pseudotime trajectory, gene dynamics |
+| 09_communication.ipynb | Results: Intercellular signaling | Fig 7: Cell-cell communication changes |

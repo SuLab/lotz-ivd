@@ -15,6 +15,20 @@ Infer ligand-receptor interactions between IVD cell populations and determine ho
 - `results/communication/interaction_plots/`
 - `results/communication/communication_report.html`
 
+### Notebook: `notebooks/09_communication.ipynb`
+
+Produced after cell-cell communication analysis. Contains:
+- Chord diagram: number/strength of interactions between cell type pairs, per condition
+- Dot plot: top significant ligand-receptor pairs, source → target, per condition
+- Differential interaction heatmap: gained/lost interactions in degeneration
+- Focused panels:
+  - Immune → NP signaling (inflammatory axis)
+  - NP autocrine/paracrine signaling changes
+  - Pain-relevant interactions: neurotrophin, semaphorin, VEGF pathways highlighted
+- Network visualization: cell types as nodes, interaction strength as edges, comparing healthy vs. degenerated
+
+**Manuscript mapping:** Figure 7: Cell-cell communication in healthy vs. degenerated IVD. Supplementary: full interaction tables.
+
 ## Method
 
 ### Primary tool: LIANA+

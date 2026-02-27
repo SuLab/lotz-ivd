@@ -28,6 +28,16 @@ This is a human-gated agentic bioinformatics pipeline. The agent executes one ta
 - Scripts should be self-contained and re-runnable
 - Use `data/raw/` for input, `data/processed/` for intermediate output, `results/` for final output
 
+## Notebooks
+
+- All visualization/interpretation notebooks go in `notebooks/`
+- Name notebooks by module: `01_datasets.ipynb`, `03_qc.ipynb`, etc.
+- **Each module produces both a script (compute) and a notebook (visualization).**
+- Notebooks load saved output files from `results/` and `data/` — they must NOT depend on in-memory objects from scripts.
+- Notebooks should be executable independently: a reviewer should be able to run the notebook without re-running the compute scripts.
+- Notebooks serve as the review artifact at human checkpoints.
+- Notebooks are the draft manuscript figures. Each maps to specific figures/tables (see spec files for mapping).
+
 ## Git Usage
 
 - Commit after completing each task with a descriptive message

@@ -81,9 +81,27 @@ ivd-analysis/
 │   └── integrated/         # Cross-study integrated objects
 ├── metadata/               # Dataset registry, sample metadata
 ├── results/                # All analysis outputs
-├── scripts/                # Analysis scripts
-└── notebooks/              # Jupyter notebooks for checkpoint review
+├── scripts/                # Compute scripts (run by agent or on HPC)
+└── notebooks/              # Jupyter notebooks (visualization, figures, checkpoint review)
+    ├── 01_datasets.ipynb       → Table 1
+    ├── 02_metadata.ipynb       → Table 1 (cont.)
+    ├── 03_qc.ipynb             → Fig S1
+    ├── 04_annotation.ipynb     → Fig 1, Fig S2
+    ├── 05_integration.ipynb    → Fig S3
+    ├── 06_differential.ipynb   → Fig 2-3, Table 2
+    ├── 07_interpretation.ipynb → Fig 4-5, Fig S4
+    ├── 08_trajectory.ipynb     → Fig 6
+    └── 09_communication.ipynb  → Fig 7
 ```
+
+## Scripts vs. Notebooks
+
+Each pipeline module produces two outputs:
+
+- A **script** in `scripts/` that does the heavy computation (can run headlessly on HPC)
+- A **notebook** in `notebooks/` that loads saved results and produces figures and interpretation
+
+Notebooks are independent of scripts — they read from `data/` and `results/`, not from in-memory objects. This means a reviewer can run a notebook without re-executing the full compute pipeline. Notebooks also serve as draft manuscript figures: each maps to specific figures and tables in the planned publication (see arrows in directory listing above).
 
 ## Citation
 

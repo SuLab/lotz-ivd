@@ -20,6 +20,16 @@ The known dataset list (8 studies, ~53 samples) was compiled manually and may be
 - Raw data files downloaded to `data/raw/{study_accession}/`
 - A summary report for human review
 
+### Notebook: `notebooks/01_datasets.ipynb`
+
+Produced after the compute steps. Contains:
+- Table of all candidate datasets with inclusion/exclusion status
+- Summary statistics: datasets by year, compartment, condition, sequencing platform
+- Bar chart of cell counts per study and per condition
+- Map of dataset coverage across the condition × compartment space (highlights gaps)
+
+**Manuscript mapping:** Table 1 (dataset characteristics). Methods section on data sources.
+
 ## Inclusion Criteria
 
 A dataset is included if ALL of the following are true:

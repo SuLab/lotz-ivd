@@ -20,6 +20,16 @@ The existing studies use inconsistent terminology for conditions (e.g., "non-deg
 - `metadata/harmonization_notes.md` — documenting all mapping decisions and ambiguities
 - `metadata/ontology_mappings.tsv` — mapping original terms to standardized terms
 
+### Notebook: `notebooks/02_metadata.ipynb`
+
+Produced after harmonization. Contains:
+- Heatmap/tile plot: samples × metadata attributes (condition, compartment, age group, tissue type)
+- Sample count summary tables by condition, compartment, study
+- Visualization of the age-degeneration relationship across samples (scatter or mosaic plot)
+- Identification of confounded comparisons (e.g., all aged samples are also degenerated)
+
+**Manuscript mapping:** Table 1 (continued): sample-level metadata summary. Methods section on study harmonization.
+
 ## Standardized Schema
 
 Each sample in `sample_metadata.tsv` must have the following fields:

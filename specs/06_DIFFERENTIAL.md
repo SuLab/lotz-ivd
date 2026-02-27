@@ -22,6 +22,25 @@ Two complementary questions: (1) Do the proportions of cell types/states change 
 - `results/differential/volcano_plots/` — volcano plots per comparison
 - `results/differential/heatmaps/` — top DE gene heatmaps
 
+### Notebook: `notebooks/06_differential.ipynb`
+
+Produced after all DE and composition analyses. Contains:
+
+*Composition section:*
+- Stacked bar plots: cell type proportions per sample, grouped by condition
+- Box plots: proportion of each cell type by condition, with significance annotations
+- Table of significant composition changes
+
+*DE section:*
+- Volcano plots for key comparisons (healthy vs. degenerated in NP chondrocytes is the lead figure)
+- Heatmap of top 50 DE genes across samples with condition annotation bars
+- UpSet plot: overlap of DE genes across cell types for the same comparison
+- UpSet plot: overlap of DE genes across comparisons for the same cell type
+- Summary table: number of significant DE genes (up/down) per cell type per comparison
+- Highlight panel: known IVD-relevant genes (MMPs, collagens, inflammatory cytokines) with their DE status across all comparisons
+
+**Manuscript mapping:** Figure 2: Cell composition changes with degeneration. Figure 3: Differential expression (volcano, heatmap). Table 2: Top DE genes. Supplementary Tables: full DE results.
+
 ## Part 1: Cell Composition Analysis
 
 ### Comparisons

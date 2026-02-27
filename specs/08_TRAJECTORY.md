@@ -20,6 +20,30 @@ The chondrocyte-fibroblast continuum in IVD is a key feature of the biology. Rat
 - `results/trajectories/trajectory_genes_{compartment}.tsv` — genes that vary along trajectories
 - `results/trajectories/trajectory_report.html`
 
+### Notebook: `notebooks/08_trajectory.ipynb`
+
+Produced after trajectory and velocity analyses. Contains:
+
+*Trajectory section:*
+- PAGA graph colored by cell type, overlaid on UMAP
+- UMAP colored by pseudotime, with condition overlay (side-by-side or contour plot)
+- Pseudotime distribution by condition (density plot or violin) — does degeneration shift cells along the trajectory?
+- Pseudotime vs. age scatter (if age data is available per cell/sample)
+- Heatmap: top trajectory-associated genes ordered by pseudotime, grouped by gene module
+- Gene expression curves along pseudotime for key IVD genes (ACAN, COL2A1, MMP13, etc.)
+
+*Velocity section (if available):*
+- UMAP with velocity stream arrows
+- Latent time distribution by condition
+- Velocity confidence map
+- Key velocity genes
+
+*Gene program section:*
+- Pathway enrichment for each temporal gene module (early, middle, late)
+- Cross-reference with DE results: Venn diagram of trajectory genes vs. DE genes
+
+**Manuscript mapping:** Figure 6: Cell state trajectory in NP (PAGA, pseudotime UMAP, gene dynamics). Supplementary: velocity results, AF trajectory if applicable.
+
 ## Part 1: Trajectory Inference (Pseudotime)
 
 ### Scope

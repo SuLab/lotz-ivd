@@ -22,6 +22,18 @@ This is the crux of the project's technical challenge. Previous attempts using s
 - `results/integration_report.html` — visualization of integration results
 - Updated `analysis_plan.md` with the chosen strategy
 
+### Notebook: `notebooks/05_integration.ipynb`
+
+Produced after all integration approaches have been run. This is the key decision-support notebook. Contains:
+- Side-by-side UMAP panels for each integration approach (A-F), colored by: study, cell type, condition, compartment
+- Integration metrics table (kBET, LISI, ASW) for all approaches, with visual comparison (radar plot or grouped bar chart)
+- Continuum preservation check: distribution of continuous cell state scores before vs. after integration, per approach
+- Cluster count comparison: number of clusters at resolution 0.5 per approach
+- Condition classifier accuracy: can we still distinguish healthy from degenerated after integration?
+- Recommendation summary (to be confirmed at human checkpoint)
+
+**Manuscript mapping:** Supplementary Figure S3: Integration benchmarking. Methods section on integration strategy and rationale for chosen approach.
+
 ## Strategy: Tiered Integration
 
 ### Tier 1: Non-resident cell populations

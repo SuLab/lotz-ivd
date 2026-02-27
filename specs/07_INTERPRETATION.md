@@ -18,6 +18,27 @@ Translate differential expression results into biological insight: what pathways
 - `results/interpretation/regulatory_networks/` — GRN results
 - `results/interpretation/interpretation_report.html`
 
+### Notebook: `notebooks/07_interpretation.ipynb`
+
+Produced after pathway, GRN, and pain gene analyses. Contains:
+
+*Pathway section:*
+- Dot plots: top enriched GO/KEGG/Reactome terms per cell type per comparison (up and down separately)
+- REVIGO-style semantic clustering of enriched terms to reduce redundancy
+- Comparison of enriched pathways across cell types (shared vs. cell-type-specific responses to degeneration)
+
+*GRN section:*
+- Heatmap: regulon activity (AUCell scores) across cell types and conditions
+- Top regulons with differential activity between healthy and degenerated
+- Network visualization of key TF → target gene relationships for top regulons
+
+*Pain section:*
+- Table: all pain-associated DE genes with cell type, direction, fold change, pain pathway
+- Dot plot: expression of pain gene panel across cell types and conditions
+- Schematic: proposed model of how degenerated IVD cells promote nerve ingrowth and pain signaling (this will need human input to draft but the notebook provides the data support)
+
+**Manuscript mapping:** Figure 4: Pathway enrichment overview. Figure 5: Pain-associated gene expression and signaling model. Supplementary Figure S4: Full regulon analysis. Discussion section on pain mechanisms.
+
 ## Part 1: Pathway and Gene Set Enrichment
 
 ### Method
