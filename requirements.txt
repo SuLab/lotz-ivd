@@ -1,0 +1,45 @@
+# IVD scRNA-seq Atlas — Python dependencies
+# Install: pip install -r requirements.txt
+# Note: python3-dev system package required for annoy (used by scib-metrics)
+
+# Core single-cell stack
+scanpy==1.12
+anndata==0.12.10
+mudata==0.3.3
+leidenalg==0.11.0
+umap-learn==0.5.11
+scrublet==0.2.3
+pynndescent==0.6.0
+
+# Integration methods (Module 05)
+scvi-tools==1.4.2
+harmonypy==0.2.0
+bbknn==1.6.0
+scib-metrics==0.5.9
+
+# Annotation (Module 04)
+celltypist==1.7.1
+
+# Scientific computing
+numpy==2.4.2
+scipy==1.17.1
+pandas==2.3.3
+scikit-learn==1.8.0
+statsmodels==0.14.6
+
+# Visualization
+matplotlib==3.10.8
+seaborn==0.13.2
+
+# I/O and utilities
+h5py==3.15.1
+openpyxl==3.1.5
+Jinja2==3.1.6
+tqdm==4.67.3
+joblib==1.5.3
+natsort==8.4.0
+session-info2==0.4
+
+# Notebook execution
+nbconvert==7.17.0
+ipykernel==7.2.0
