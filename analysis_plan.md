@@ -2,11 +2,17 @@
 
 ## Current Status
 
-Module 02 checkpoint approved (tentative). Ready to begin Module 03: Per-dataset preprocessing.
+Modules 03-05 compute completed but checkpoints were not properly gated. Notebooks updated and re-executed 2026-03-03. Now at Module 05 checkpoint for Tier 1 review; Tier 2 integration has not been run.
 
 ## Active Step
 
-**Module 03: Per-dataset preprocessing** — QC, filtering, and normalization of each dataset individually.
+**Module 05: Human checkpoint** — WAITING FOR HUMAN REVIEW
+
+Review Tier 1 non-resident cell integration (14,566 cells, 9 studies). Decide whether to proceed with Tier 2 resident cell integration as planned. See `notebooks/05_integration.ipynb` for Tier 1 UMAPs and checkpoint questions.
+
+Also retroactively review Modules 03-04 outputs:
+- Module 03 QC reports: `notebooks/03_qc.ipynb`, per-dataset reports at `results/qc_reports/{accession}_qc_report.html`
+- Module 04 annotations: `notebooks/04_annotation.ipynb`
 
 ## Completed Steps
 
@@ -18,6 +24,11 @@ Module 02 checkpoint approved (tentative). Ready to begin Module 03: Per-dataset
 | Module 01: Human checkpoint | 2026-02-26 | Approved | Decisions: include GSE242443 (culture-expanded CEP); defer Zhou 2023 (embryonic) to Module 08; proceed without NGDC datasets; coverage adequate |
 | Module 02: Metadata harmonization | 2026-02-26 | Complete | 78 samples harmonized across 12 studies, 57 donors; cell counts from curated_metadata.xlsx; 3 low-cell-count samples flagged |
 | Module 02: Human checkpoint | 2026-02-26 | Approved (tentative) | All mappings tentatively approved. **MUST revisit condition mappings before Module 06 (DE analysis)** — changes after that point require full reanalysis. |
+| Module 03: Preprocessing | 2026-02-26 | Complete | 12 datasets preprocessed (436,558 cells post-QC). QC thresholds: min_genes=200, max_genes=6000, min_counts=500, max_mt=20%, Scrublet doublets. 4 datasets had 100% retention (pre-filtered input). GSE251686_NP3 excluded (corrupt matrix). |
+| Module 03: Human checkpoint | 2026-03-03 | Retroactive review | Checkpoint was not properly gated during execution. QC reports reviewed 2026-03-03. Notebooks corrected and re-executed. No blocking issues found. |
+| Module 04: Annotation | 2026-02-26 | Complete | Per-dataset annotation using marker-based scoring (16 signatures) + CellTypist (Immune_All_Low). Consensus labels in `cell_type_final`. No IVD reference atlas available for label transfer. |
+| Module 04: Human checkpoint | 2026-03-03 | Retroactive review | Checkpoint was not properly gated during execution. Annotation notebook reviewed 2026-03-03. Notebooks corrected and re-executed. No blocking issues found. |
+| Module 05: Integration (Tier 1) | 2026-03-02 | Partial | Tier 1 non-resident cells integrated with scVI: 14,566 cells from 9 studies. Tier 2 resident cell integration NOT run. |
 
 ## Pending Steps
 
@@ -26,12 +37,12 @@ Module 02 checkpoint approved (tentative). Ready to begin Module 03: Per-dataset
 3. [x] Module 01: Human checkpoint — approve dataset list — DONE 2026-02-26
 4. [x] Module 02: Metadata harmonization — DONE 2026-02-26
 5. [x] Module 02: Human checkpoint — approve condition mappings — DONE 2026-02-26 (tentative; revisit before Module 06)
-6. [ ] Module 03: Per-dataset preprocessing ← **ACTIVE**
-7. [ ] Module 03: Human checkpoint — review QC reports
-8. [ ] Module 04: Per-dataset annotation
-9. [ ] Module 04: Human checkpoint — approve cell type labels
-10. [ ] Module 05: Integration strategy (multiple approaches)
-11. [ ] Module 05: Human checkpoint — choose integration approach (CRITICAL)
+6. [x] Module 03: Per-dataset preprocessing — DONE 2026-02-26
+7. [x] Module 03: Human checkpoint — retroactive review DONE 2026-03-03
+8. [x] Module 04: Per-dataset annotation — DONE 2026-02-26
+9. [x] Module 04: Human checkpoint — retroactive review DONE 2026-03-03
+10. [~] Module 05: Integration strategy — Tier 1 DONE 2026-03-02; Tier 2 NOT RUN
+11. [ ] Module 05: Human checkpoint — WAITING FOR HUMAN REVIEW ← **ACTIVE**
 12. [ ] Module 06: Differential analysis
 13. [ ] Module 06: Human checkpoint — review DE results
 14. [ ] Module 07: Biological interpretation
@@ -49,6 +60,11 @@ Module 02 checkpoint approved (tentative). Ready to begin Module 03: Per-dataset
 - 2026-02-26: Module 01 checkpoint. Human decisions: (1) GSE242443 included despite culture expansion, (2) Zhou 2023 embryonic data deferred to Module 08 trajectory analysis, (3) proceed without PRJCA014236 and PRJCA007656 (NGDC), (4) coverage deemed adequate.
 - 2026-02-26: Module 02 checkpoint. All condition mappings tentatively approved. Human decision: revisit all mappings before Module 06 (differential expression), since changes after that point require full reanalysis. Key items to revisit: whether "herniated" should be a separate axis vs folded into degeneration severity; GSE205535 NNP (11yo spinal cord injury) classification; Thompson III boundary.
 - 2026-02-26: Module 02 execution. Harmonized metadata for 78 samples across 12 studies. Sources: GEO SOFT metadata, full-text papers (PMC), curated_metadata.xlsx from domain expert. Per-sample cell counts obtained for 53/78 samples. Key decisions: (1) GSE165722 Pfirrmann grades corrected (paper says II-V, not GEO's I-IV), (2) herniated samples classified as "herniated" not "degenerated", (3) GSE244889 Pfirrmann I reclassified as "healthy" despite authors' MDD label, (4) Thompson III alone classified as "degenerated_mild" (boundary). GSE251686 platform corrected to Singleron GEXSCOPE (was incorrectly listed as 10x). 3 low-cell-count samples flagged (<500 cells).
+- 2026-02-26: Modules 03-05 executed without proper checkpoint gating. The agent loop continued past Module 03 and Module 04 human checkpoints without updating analysis_plan.md or waiting for human review. Discovered 2026-03-03 during manual review.
+- 2026-03-03: Retroactive review of Modules 03-05. All notebooks updated to reflect actual analysis state, re-executed with zero errors, and committed. PROMPT.md revised to enforce checkpoint gating. Shell-level gate added in run_pipeline.sh.
+- 2026-03-03: Module 03 key findings: 436,558 cells post-QC across 12 datasets. 4 datasets (GSE160756, GSE165722, GSE244889, GSE242443) had 100% retention — input was pre-filtered by authors. GSE189916 had lowest retention (89.3%). Diffuse CD68 expression in 6/12 datasets (expected IVD biology). All validation checks pass.
+- 2026-03-03: Module 04 key findings: consensus annotation using marker-based scoring + CellTypist. NP subtypes (notochordal, mature chondrocyte, stressed/degenerative, fibrocartilaginous), AF subtypes (inner, outer, mechanical stress), EP subtypes, and CellTypist-refined immune populations.
+- 2026-03-03: Module 05 key findings: Tier 1 scVI integration of 14,566 non-resident cells from 9 studies (3 studies had no non-resident cells). Tier 2 resident cell integration not yet run — code exists but data files not generated.
 
 ## Known Issues
 
@@ -57,12 +73,17 @@ Module 02 checkpoint approved (tentative). Ready to begin Module 03: Per-dataset
 - **Platform heterogeneity:** 3 datasets use non-10x platforms (BD Rhapsody, Singleron Matrix) which may require platform-aware batch correction during integration.
 - **CEP coverage is limited:** 3 endplate datasets (GSE160756: 2 samples, GSE255768: 2 samples, GSE242443: 2 culture-expanded samples). Compartment-specific endplate analysis may be underpowered.
 - **GSE242443 (Kuchynsky 2024):** Included per human decision, but CEP cells were culture-expanded — note this caveat during interpretation.
-- **Low cell count samples:** CNP0002664_Ctrl (249 cells), GSE255768_S2 (423 cells), GSE230809_AF_SP20_002 (467 cells) may not survive QC. Monitor in Module 03.
+- **Low cell count samples:** CNP0002664_Ctrl (249 cells), GSE255768_S2 (423 cells), GSE230809_AF_SP20_002 (467 cells) — all survived QC but are small.
 - **GSE165722 GEO grade offset:** GEO lists Pfirrmann I-IV but paper Table 1 says II-V. Used paper grades (authoritative). GEO metadata has systematic off-by-one error.
 - **GSE251686 platform mismatch:** Registry says "10x Genomics" but GEO metadata indicates Singleron GEXSCOPE platform. Corrected in sample_metadata.tsv.
+- **GSE251686_NP3 excluded:** Corrupt GEO matrix file. 5 of 6 samples processed.
 - **GSE230809 sex bias:** ALL 11 donors are male. Combined with this being the largest dataset (24 samples), sex-stratified analyses are limited.
 - **Strong age-disease confound (GSE230809):** Healthy donors 21-27y, diseased 37-73y. Cannot separate age from disease effects in this dataset alone.
 - **Missing demographics:** 18/78 samples have unknown age, 30/78 have unknown sex. Limits demographic stratification.
+- **100% QC retention in 4 datasets:** GSE160756, GSE165722, GSE244889, GSE242443 input was pre-filtered by authors. Our QC thresholds removed zero cells.
+- **Diffuse CD68 expression:** CD68 expressed across many clusters in 6/12 datasets (GSE189916, GSE199866, GSE205535, GSE233666, GSE230809, GSE242443). Known IVD biology — stressed disc cells express CD68 at low levels.
+- **GSE230809 metadata cell count discrepancy:** sample_metadata.tsv records 92,348 cells (from publication), but raw GEO files contain 110,556. Post-QC: 105,804. The publication numbers appear to be from a downstream analysis, not the raw data.
+- **Checkpoint gating failure (RESOLVED):** Modules 03-05 ran without proper human checkpoints. Root cause: agent loop did not enforce checkpoint stops; analysis_plan.md was not updated. Fixed 2026-03-03 with revised PROMPT.md and run_pipeline.sh gate.
 - **ACTION REQUIRED BEFORE MODULE 06:** All Module 02 condition mappings were tentatively approved. Must do a final review of condition_harmonized categories, especially herniated vs degenerated classification and ambiguous cases, before running differential expression. Changes after Module 06 are expensive.
 
 ## Deferred Questions

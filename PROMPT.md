@@ -2,24 +2,46 @@
 
 ## Instructions
 
-You are executing one step of a bioinformatics analysis pipeline for human intervertebral disc (IVD) single-cell RNA-seq data.
+You are executing one step of a bioinformatics analysis pipeline for human
+intervertebral disc (IVD) single-cell RNA-seq data.
 
 **Before doing anything:**
 
 1. Read `analysis_plan.md` to determine the current active step.
-2. Read the relevant spec file in `specs/` for that step.
-3. Read `AGENT.md` for execution rules.
+2. If the Active Step says "WAITING FOR HUMAN REVIEW", report the current
+   status and STOP. Do not do any work.
+3. Read the relevant spec file in `specs/` for that step.
+4. Read `AGENT.md` for execution rules.
 
-**Then:**
+**Then execute the active step (one task only):**
 
-4. Execute the active step. One task only — do not skip ahead to future modules.
-5. After completing the task, run all automated validation checks listed in the spec.
-6. If all checks pass, update `analysis_plan.md`:
-   - Move the completed step to the Completed Steps table with today's date and outcome.
-   - Advance the Active Step to the next item in the Pending Steps list.
-   - Log any issues or observations under Known Issues or Deferred Questions.
-7. If a check fails, attempt to fix it. If you cannot fix it, document the failure in `analysis_plan.md` under Known Issues and STOP.
-8. If the next step is a **human checkpoint**, prepare the review materials specified in the spec, summarize what you did and what needs review, then STOP. Do not proceed past a human checkpoint.
+5. Run the compute script for the active module.
+6. Run all automated validation checks listed in the spec. If any check
+   fails, attempt to fix it. If you cannot fix it, document the failure in
+   `analysis_plan.md` under Known Issues and STOP.
+
+**After compute succeeds, complete ALL deliverables before advancing:**
+
+7. Generate or update the corresponding notebook in `notebooks/`. The
+   notebook MUST:
+   - Load results from `data/` and `results/` (not from in-memory objects)
+   - Execute cleanly with `jupyter nbconvert --execute` (zero errors)
+   - Contain no stale or placeholder text — all markdown must describe
+     what was actually computed
+   - Cover every visualization listed in the spec's notebook section
+8. Verify the notebook by running:
+   `jupyter nbconvert --to notebook --execute --inplace notebooks/XX_name.ipynb`
+   If it fails, fix it before proceeding.
+9. Update `analysis_plan.md`:
+   - Move the completed step to the Completed Steps table with today's
+     date, outcome, and key parameters/decisions.
+   - Set the Active Step to the module's **human checkpoint** (not the
+     next module). Use this exact format:
+     `**Module XX: Human checkpoint** — WAITING FOR HUMAN REVIEW`
+   - Log any issues under Known Issues.
+10. Commit all scripts, notebooks, and metadata to git.
+11. STOP. Do not proceed to the next module. The human must review and
+    approve before the next module begins.
 
 **Rules:**
 
@@ -27,7 +49,10 @@ You are executing one step of a bioinformatics analysis pipeline for human inter
 - Do not skip validation checks.
 - Do not advance past human checkpoints.
 - Do not run multiple modules in one session.
-- Commit scripts and metadata to git after each completed task. Do not commit large data files.
+- Do not commit notebooks that have not been re-executed successfully.
+- Commit scripts and metadata to git after each completed task. Do not
+  commit large data files.
 - Record all parameter choices and command outputs in `analysis_plan.md`.
-- If you discover something unexpected (a dataset issue, a biological anomaly, a tool limitation), document it in `analysis_plan.md` even if it doesn't block the current task.
-- If the active step says "WAITING FOR HUMAN REVIEW", do nothing. Report the current status and stop.
+- If you discover something unexpected, document it in `analysis_plan.md`.
+- If the active step says "WAITING FOR HUMAN REVIEW", do nothing. Report
+  the current status and stop.
