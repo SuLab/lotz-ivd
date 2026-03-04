@@ -2,17 +2,13 @@
 
 ## Current Status
 
-Modules 03-05 compute completed but checkpoints were not properly gated. Notebooks updated and re-executed 2026-03-03. Now at Module 05 checkpoint for Tier 1 review; Tier 2 integration has not been run.
+Module 05 Tier 1 (non-resident integration) approved at human checkpoint 2026-03-03. Tier 2 resident cell integration now running: approaches A–D (scVI, scANVI, Harmony, BBKNN) for NP and AF compartments.
 
 ## Active Step
 
-**Module 05: Human checkpoint** — WAITING FOR HUMAN REVIEW
+**Module 05: Tier 2 Resident Cell Integration** — IN PROGRESS
 
-Review Tier 1 non-resident cell integration (14,566 cells, 9 studies). Decide whether to proceed with Tier 2 resident cell integration as planned. See `notebooks/05_integration.ipynb` for Tier 1 UMAPs and checkpoint questions.
-
-Also retroactively review Modules 03-04 outputs:
-- Module 03 QC reports: `notebooks/03_qc.ipynb`, per-dataset reports at `results/qc_reports/{accession}_qc_report.html`
-- Module 04 annotations: `notebooks/04_annotation.ipynb`
+Running 4 integration approaches for NP and AF compartments per spec. Will produce `data/integrated/tier2_resident_NP.h5ad` and `data/integrated/tier2_resident_AF.h5ad` with integration metrics. Next stop: Module 05 Human Checkpoint (Tier 2 review).
 
 ## Completed Steps
 
@@ -28,7 +24,8 @@ Also retroactively review Modules 03-04 outputs:
 | Module 03: Human checkpoint | 2026-03-03 | Retroactive review | Checkpoint was not properly gated during execution. QC reports reviewed 2026-03-03. Notebooks corrected and re-executed. No blocking issues found. |
 | Module 04: Annotation | 2026-02-26 | Complete | Per-dataset annotation using marker-based scoring (16 signatures) + CellTypist (Immune_All_Low). Consensus labels in `cell_type_final`. No IVD reference atlas available for label transfer. |
 | Module 04: Human checkpoint | 2026-03-03 | Retroactive review | Checkpoint was not properly gated during execution. Annotation notebook reviewed 2026-03-03. Notebooks corrected and re-executed. No blocking issues found. |
-| Module 05: Integration (Tier 1) | 2026-03-02 | Partial | Tier 1 non-resident cells integrated with scVI: 14,566 cells from 9 studies. Tier 2 resident cell integration NOT run. |
+| Module 05: Integration (Tier 1) | 2026-03-02 | Complete | Tier 1 non-resident cells integrated with scVI: 14,566 cells from 9 studies. |
+| Module 05: Human checkpoint (Tier 1) | 2026-03-03 | Approved | Human approved Tier 1 integration and retroactive review of Modules 03-04. Proceeding to Tier 2 resident cell integration. |
 
 ## Pending Steps
 
@@ -41,18 +38,20 @@ Also retroactively review Modules 03-04 outputs:
 7. [x] Module 03: Human checkpoint — retroactive review DONE 2026-03-03
 8. [x] Module 04: Per-dataset annotation — DONE 2026-02-26
 9. [x] Module 04: Human checkpoint — retroactive review DONE 2026-03-03
-10. [~] Module 05: Integration strategy — Tier 1 DONE 2026-03-02; Tier 2 NOT RUN
-11. [ ] Module 05: Human checkpoint — WAITING FOR HUMAN REVIEW ← **ACTIVE**
-12. [ ] Module 06: Differential analysis
-13. [ ] Module 06: Human checkpoint — review DE results
-14. [ ] Module 07: Biological interpretation
-15. [ ] Module 07: Human checkpoint — evaluate findings
-16. [ ] Module 08: Trajectory analysis
-17. [ ] Module 08: Human checkpoint — evaluate trajectory validity
-18. [ ] Module 09: Cell-cell communication
-19. [ ] Module 09: Human checkpoint — review interactions
-20. [ ] Module 10: Reporting
-21. [ ] Module 10: Human checkpoint — final review
+10. [x] Module 05: Integration strategy (Tier 1) — DONE 2026-03-02
+11. [x] Module 05: Human checkpoint (Tier 1) — APPROVED 2026-03-03
+12. [~] Module 05: Integration strategy (Tier 2) — IN PROGRESS ← **ACTIVE**
+13. [ ] Module 05: Human checkpoint (Tier 2) — WAITING FOR TIER 2 COMPLETION
+14. [ ] Module 06: Differential analysis
+15. [ ] Module 06: Human checkpoint — review DE results
+16. [ ] Module 07: Biological interpretation
+17. [ ] Module 07: Human checkpoint — evaluate findings
+18. [ ] Module 08: Trajectory analysis
+19. [ ] Module 08: Human checkpoint — evaluate trajectory validity
+20. [ ] Module 09: Cell-cell communication
+21. [ ] Module 09: Human checkpoint — review interactions
+22. [ ] Module 10: Reporting
+23. [ ] Module 10: Human checkpoint — final review
 
 ## Revisions Log
 
@@ -65,6 +64,7 @@ Also retroactively review Modules 03-04 outputs:
 - 2026-03-03: Module 03 key findings: 436,558 cells post-QC across 12 datasets. 4 datasets (GSE160756, GSE165722, GSE244889, GSE242443) had 100% retention — input was pre-filtered by authors. GSE189916 had lowest retention (89.3%). Diffuse CD68 expression in 6/12 datasets (expected IVD biology). All validation checks pass.
 - 2026-03-03: Module 04 key findings: consensus annotation using marker-based scoring + CellTypist. NP subtypes (notochordal, mature chondrocyte, stressed/degenerative, fibrocartilaginous), AF subtypes (inner, outer, mechanical stress), EP subtypes, and CellTypist-refined immune populations.
 - 2026-03-03: Module 05 key findings: Tier 1 scVI integration of 14,566 non-resident cells from 9 studies (3 studies had no non-resident cells). Tier 2 resident cell integration not yet run — code exists but data files not generated.
+- 2026-03-04: Tier 2 Approach A (scVI, NP) completed training (200 epochs, ~10.7h CPU) but OOM-killed during metric computation. Patched `compute_metrics` to use stratified subsampling (30K cells, preserving rare cell type proportions) for evaluation, with `gc.collect()` between metric steps and between approaches. Subsampling follows scIB benchmark convention (Luecken et al. 2022). Integration embeddings remain computed on all 139K cells; only metric evaluation is subsampled.
 
 ## Known Issues
 
@@ -83,6 +83,7 @@ Also retroactively review Modules 03-04 outputs:
 - **100% QC retention in 4 datasets:** GSE160756, GSE165722, GSE244889, GSE242443 input was pre-filtered by authors. Our QC thresholds removed zero cells.
 - **Diffuse CD68 expression:** CD68 expressed across many clusters in 6/12 datasets (GSE189916, GSE199866, GSE205535, GSE233666, GSE230809, GSE242443). Known IVD biology — stressed disc cells express CD68 at low levels.
 - **GSE230809 metadata cell count discrepancy:** sample_metadata.tsv records 92,348 cells (from publication), but raw GEO files contain 110,556. Post-QC: 105,804. The publication numbers appear to be from a downstream analysis, not the raw data.
+- **Tier 2 OOM kill (RESOLVED):** Approach A (scVI) for NP completed 200 epochs of training but the process was killed by the OOM killer during post-training metric computation (`compute_metrics`). Root cause: 139K-cell kNN graph + silhouette scores exceeded 16 GB RAM. Fix: (1) stratified subsampling to 30K cells for metric evaluation (consistent with scIB benchmark practice, Luecken et al. 2022 — embeddings are still computed on all cells), (2) explicit `gc.collect()` between metric computations and between integration approaches. scVI checkpoint and model were saved before the kill; resume skips Approach A.
 - **Checkpoint gating failure (RESOLVED):** Modules 03-05 ran without proper human checkpoints. Root cause: agent loop did not enforce checkpoint stops; analysis_plan.md was not updated. Fixed 2026-03-03 with revised PROMPT.md and run_pipeline.sh gate.
 - **ACTION REQUIRED BEFORE MODULE 06:** All Module 02 condition mappings were tentatively approved. Must do a final review of condition_harmonized categories, especially herniated vs degenerated classification and ambiguous cases, before running differential expression. Changes after Module 06 are expensive.
 

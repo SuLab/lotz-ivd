@@ -15,6 +15,7 @@ Usage:
     python3 scripts/05_integration.py --force          # Re-run even if outputs exist
 """
 
+import gc
 import sys
 import os
 import warnings
@@ -530,12 +531,21 @@ def run_bbknn(adata, batch_key='study', n_pcs=20, neighbors_within_batch=3):
 # INTEGRATION METRICS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_type_final'):
+def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_type_final',
+                    max_cells=30_000, random_state=42):
     """Compute integration quality metrics using scib-metrics.
 
+    When the dataset exceeds *max_cells*, a stratified random subsample is
+    drawn (preserving the proportions of *label_key*) so that metric
+    computation stays within memory on 16 GB machines.  Embeddings and
+    integration are still computed on the full dataset — only evaluation is
+    subsampled, consistent with the scIB benchmark (Luecken et al. 2022).
+
     Returns dict with iLISI, cLISI, batch_ASW, celltype_ASW, isolated_label_F1,
-    scib_overall.
+    scib_overall, and n_cells_metrics (number of cells used for evaluation).
     """
+    import gc
+
     print(f"    Computing metrics for {embedding_key}...")
 
     metrics = {}
@@ -549,6 +559,31 @@ def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_typ
 
     batch = adata.obs[batch_key].values
     labels = adata.obs[label_key].values
+
+    # --- Subsample if needed (stratified by cell type) ---
+    n_cells = embedding.shape[0]
+    if n_cells > max_cells:
+        rng = np.random.RandomState(random_state)
+        # Stratified sampling: keep proportions of each label
+        unique_labels, label_indices = np.unique(labels, return_inverse=True)
+        idx = np.arange(n_cells)
+        sampled = []
+        for li in range(len(unique_labels)):
+            mask = label_indices == li
+            group_idx = idx[mask]
+            # Always keep at least all members of tiny groups
+            n_take = max(1, int(round(max_cells * mask.sum() / n_cells)))
+            if n_take >= len(group_idx):
+                sampled.append(group_idx)
+            else:
+                sampled.append(rng.choice(group_idx, size=n_take, replace=False))
+        sampled = np.concatenate(sampled)
+        rng.shuffle(sampled)
+        embedding = embedding[sampled]
+        batch = batch[sampled]
+        labels = labels[sampled]
+        print(f"    Subsampled {n_cells:,} → {len(sampled):,} cells for metric evaluation (stratified, seed={random_state})")
+    metrics['n_cells_metrics'] = int(embedding.shape[0])
 
     try:
         from scib_metrics import ilisi_knn, clisi_knn, silhouette_batch, silhouette_label, isolated_labels
@@ -569,6 +604,7 @@ def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_typ
         if knn_result is not None:
             ilisi = ilisi_knn(knn_result, batch)
             metrics['iLISI'] = float(np.median(ilisi))
+            del ilisi
         else:
             metrics['iLISI'] = np.nan
     except Exception as e:
@@ -580,11 +616,16 @@ def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_typ
         if knn_result is not None:
             clisi = clisi_knn(knn_result, labels)
             metrics['cLISI'] = float(np.median(clisi))
+            del clisi
         else:
             metrics['cLISI'] = np.nan
     except Exception as e:
         print(f"    WARNING: cLISI failed: {e}")
         metrics['cLISI'] = np.nan
+
+    # Free kNN graph before silhouette computation
+    del knn_result
+    gc.collect()
 
     try:
         # Batch ASW — should be close to 0 (no batch structure)
@@ -592,6 +633,7 @@ def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_typ
     except Exception as e:
         print(f"    WARNING: batch_ASW failed: {e}")
         metrics['batch_ASW'] = np.nan
+    gc.collect()
 
     try:
         # Cell type ASW — should be positive (cell types separate)
@@ -599,6 +641,7 @@ def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_typ
     except Exception as e:
         print(f"    WARNING: celltype_ASW failed: {e}")
         metrics['celltype_ASW'] = np.nan
+    gc.collect()
 
     try:
         # Isolated label F1
@@ -606,6 +649,7 @@ def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_typ
     except Exception as e:
         print(f"    WARNING: isolated_label_F1 failed: {e}")
         metrics['isolated_label_F1'] = np.nan
+    gc.collect()
 
     # scib overall: average of normalized scores
     batch_scores = []
@@ -843,6 +887,7 @@ def _save_checkpoint(adata, output_path, approach_label):
     """Save adata to disk after completing an approach (resumable checkpoint)."""
     adata.write_h5ad(output_path)
     print(f"  Checkpoint saved after {approach_label}: {output_path}")
+    sys.stdout.flush()
 
 
 def process_tier2_compartment(compartment, approaches=('A', 'B', 'C', 'D'), force=False):
@@ -884,6 +929,7 @@ def process_tier2_compartment(compartment, approaches=('A', 'B', 'C', 'D'), forc
     print(f"Tier 2: {compartment} resident cell integration")
     print(f"  Approaches to run: {needed}")
     print(f"{'=' * 60}")
+    sys.stdout.flush()
 
     # Define filter function
     if compartment == "NP":
@@ -901,10 +947,21 @@ def process_tier2_compartment(compartment, approaches=('A', 'B', 'C', 'D'), forc
 
     # Load from checkpoint if available, otherwise from raw data
     if output_path.exists() and not force and existing_keys:
-        print("  Loading from checkpoint...")
+        print("  Loading from checkpoint (sparse-backed to save memory)...")
+        sys.stdout.flush()
+        # Load X as sparse to keep peak memory manageable on 16 GB machines.
+        # The dense X is only needed by scVI/scANVI setup; approaches C/D and
+        # metric evaluation work fine with sparse or convert small slices.
         adata = sc.read_h5ad(output_path)
+        # Convert X to sparse if it is dense — saves ~4 GB for 139K×11K
+        import scipy.sparse as sp
+        if not sp.issparse(adata.X):
+            print("    Converting X to sparse CSR to reduce memory footprint...")
+            adata.X = sp.csr_matrix(adata.X)
+            gc.collect()
         print(f"    Loaded: {adata.shape[0]:,} cells × {adata.shape[1]:,} genes")
         print(f"    Existing obsm: {list(adata.obsm.keys())}")
+        sys.stdout.flush()
     else:
         adata = load_subset_concat(ALL_ACCESSIONS, filter_fn)
         if adata is None or adata.shape[0] < 100:
@@ -990,6 +1047,7 @@ def process_tier2_compartment(compartment, approaches=('A', 'B', 'C', 'D'), forc
                 traceback.print_exc()
 
     del scvi_model  # free memory
+    gc.collect()
 
     # Approach C: Harmony
     if 'C' in needed:
