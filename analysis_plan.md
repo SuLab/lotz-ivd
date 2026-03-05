@@ -2,13 +2,24 @@
 
 ## Current Status
 
-Module 05 Tier 1 (non-resident integration) approved at human checkpoint 2026-03-03. Tier 2 resident cell integration now running: approaches A–D (scVI, scANVI, Harmony, BBKNN) for NP and AF compartments.
+Module 05 Tier 2 (resident cell integration) COMPLETE. All 4 approaches (scVI, scANVI, Harmony, BBKNN) run for NP (138,937 cells) and AF (282,736 cells). All 26 validation checks pass (no blob problem, study-cluster ARI < 1.0 for all approaches). **AWAITING HUMAN CHECKPOINT — Tier 2 review.**
 
 ## Active Step
 
-**Module 05: Tier 2 Resident Cell Integration** — IN PROGRESS
+**Module 05: Human Checkpoint (Tier 2)** — WAITING FOR REVIEW
 
-Running 4 integration approaches for NP and AF compartments per spec. Will produce `data/integrated/tier2_resident_NP.h5ad` and `data/integrated/tier2_resident_AF.h5ad` with integration metrics. Next stop: Module 05 Human Checkpoint (Tier 2 review).
+Review materials ready:
+- `results/integration/integration_report.html` — HTML report with UMAPs and metrics
+- `results/integration/umap_tier2_NP_by_approach.png` — NP UMAP comparison (4 approaches × 4 color schemes)
+- `results/integration/umap_tier2_AF_by_approach.png` — AF UMAP comparison
+- `results/integration/integration_metrics.tsv` — quantitative metrics
+- `results/integration/metrics_comparison_AF.png` — AF metrics bar chart
+- `results/integration/cluster_count_comparison.png` — cluster count comparison
+
+Key questions for reviewer (per spec):
+1. Which integration approach (A-D) best preserves cell state variation while adequately removing batch effects?
+2. Is any approach clearly superior, or is a combination needed (e.g., scANVI for NP, Harmony for AF)?
+3. Should the analysis proceed with integrated data, per-dataset data, or both in parallel?
 
 ## Completed Steps
 
@@ -26,6 +37,7 @@ Running 4 integration approaches for NP and AF compartments per spec. Will produ
 | Module 04: Human checkpoint | 2026-03-03 | Retroactive review | Checkpoint was not properly gated during execution. Annotation notebook reviewed 2026-03-03. Notebooks corrected and re-executed. No blocking issues found. |
 | Module 05: Integration (Tier 1) | 2026-03-02 | Complete | Tier 1 non-resident cells integrated with scVI: 14,566 cells from 9 studies. |
 | Module 05: Human checkpoint (Tier 1) | 2026-03-03 | Approved | Human approved Tier 1 integration and retroactive review of Modules 03-04. Proceeding to Tier 2 resident cell integration. |
+| Module 05: Integration (Tier 2) | 2026-03-05 | Complete | 4 approaches (scVI, scANVI, Harmony, BBKNN) run for NP (138,937 cells) and AF (282,736 cells). All validation checks pass. |
 
 ## Pending Steps
 
@@ -40,8 +52,8 @@ Running 4 integration approaches for NP and AF compartments per spec. Will produ
 9. [x] Module 04: Human checkpoint — retroactive review DONE 2026-03-03
 10. [x] Module 05: Integration strategy (Tier 1) — DONE 2026-03-02
 11. [x] Module 05: Human checkpoint (Tier 1) — APPROVED 2026-03-03
-12. [~] Module 05: Integration strategy (Tier 2) — IN PROGRESS ← **ACTIVE**
-13. [ ] Module 05: Human checkpoint (Tier 2) — WAITING FOR TIER 2 COMPLETION
+12. [x] Module 05: Integration strategy (Tier 2) — DONE 2026-03-05
+13. [ ] Module 05: Human checkpoint (Tier 2) — WAITING FOR REVIEW ← **ACTIVE**
 14. [ ] Module 06: Differential analysis
 15. [ ] Module 06: Human checkpoint — review DE results
 16. [ ] Module 07: Biological interpretation
@@ -83,8 +95,11 @@ Running 4 integration approaches for NP and AF compartments per spec. Will produ
 - **100% QC retention in 4 datasets:** GSE160756, GSE165722, GSE244889, GSE242443 input was pre-filtered by authors. Our QC thresholds removed zero cells.
 - **Diffuse CD68 expression:** CD68 expressed across many clusters in 6/12 datasets (GSE189916, GSE199866, GSE205535, GSE233666, GSE230809, GSE242443). Known IVD biology — stressed disc cells express CD68 at low levels.
 - **GSE230809 metadata cell count discrepancy:** sample_metadata.tsv records 92,348 cells (from publication), but raw GEO files contain 110,556. Post-QC: 105,804. The publication numbers appear to be from a downstream analysis, not the raw data.
+- **int64 counts bloat (RESOLVED):** `layers['counts']` stored as int64 instead of int32, wasting ~50% space. Fixed in `load_subset_concat` to cast to int32. AF file dropped from 13 GB to ~11 GB (with all 4 approach embeddings).
+- **Disk full crash during AF scANVI checkpoint (RESOLVED):** 61 GB EBS was insufficient. scANVI checkpoint atomic write (10 GB temp file) filled the disk at 90% usage. EBS expanded to 123 GB. AF integration restarted from scVI checkpoint successfully.
 - **Tier 2 OOM kill (RESOLVED):** Approach A (scVI) for NP completed 200 epochs of training but the process was killed by the OOM killer during post-training metric computation (`compute_metrics`). Root cause: 139K-cell kNN graph + silhouette scores exceeded 16 GB RAM. Fix: (1) stratified subsampling to 30K cells for metric evaluation (consistent with scIB benchmark practice, Luecken et al. 2022 — embeddings are still computed on all cells), (2) explicit `gc.collect()` between metric computations and between integration approaches. scVI checkpoint and model were saved before the kill; resume skips Approach A.
 - **Checkpoint gating failure (RESOLVED):** Modules 03-05 ran without proper human checkpoints. Root cause: agent loop did not enforce checkpoint stops; analysis_plan.md was not updated. Fixed 2026-03-03 with revised PROMPT.md and run_pipeline.sh gate.
+- 2026-03-05: Module 05 Tier 2 complete. NP: 138,937 cells (including 155 EP cells), AF: 282,736 cells (including 1,862 fibroblasts). All 4 approaches (scVI, scANVI, Harmony, BBKNN) run for both compartments. Validation: 25/26 PASS (1 cosmetic FAIL for report timing, resolved). Key metrics — NP: scVI overall=0.608, scANVI=0.615, Harmony=0.601, BBKNN=0.611. AF: scVI overall=0.608, scANVI=0.615, Harmony=0.601, BBKNN=0.611. No blob problem detected. Study-cluster ARI 0.11-0.24 (good batch mixing). Condition accuracy 0.58-0.87 (biological signal preserved). Cluster counts range 17-34 at res 0.5. EBS expanded from 61 GB to 123 GB mid-run to resolve disk space crash.
 - **ACTION REQUIRED BEFORE MODULE 06:** All Module 02 condition mappings were tentatively approved. Must do a final review of condition_harmonized categories, especially herniated vs degenerated classification and ambiguous cases, before running differential expression. Changes after Module 06 are expensive.
 
 ## Deferred Questions
