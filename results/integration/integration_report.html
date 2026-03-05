@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Integration Report — Module 05</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }
+  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+  h2 { color: #34495e; margin-top: 30px; }
+  h3 { color: #7f8c8d; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background-color: #3498db; color: white; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+  img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+  .stat-box { background: #ecf0f1; padding: 15px; border-radius: 5px; }
+  .stat-box h3 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 12px; }
+  .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
+  .warning { color: #e74c3c; font-weight: bold; }
+  .pass { color: #27ae60; }
+  .info { color: #7f8c8d; }
+  .best { background-color: #d5f5e3; }
+  .validation li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<h1>Module 05: Cross-Dataset Integration Report</h1>
+<p>Generated: 2026-03-05 19:28</p>
+
+<div class="stats-grid">
+  <div class="stat-box"><h3>Total cells integrated</h3><p>436,239</p></div>
+  <div class="stat-box"><h3>Tier 1 (non-resident)</h3><p>14,566</p></div>
+  <div class="stat-box"><h3>Tier 2 NP</h3><p>138,937</p></div>
+  <div class="stat-box"><h3>Tier 2 AF</h3><p>282,736</p></div>
+  <div class="stat-box"><h3>Studies</h3><p>12</p></div>
+  <div class="stat-box"><h3>Approaches tested</h3><p>3</p></div>
+</div>
+
+<h2>Tier 1: Non-Resident Cells</h2>
+
+
+<h2>Tier 2: NP Resident Cells</h2>
+
+<img src="umap_tier2_NP_by_approach.png" alt="Tier 2 NP UMAP">
+
+
+<h2>Tier 2: AF Resident Cells</h2>
+
+<img src="umap_tier2_AF_by_approach.png" alt="Tier 2 AF UMAP">
+
+
+<h2>Integration Metrics</h2>
+<table>
+  <tr>
+    <th>Tier</th><th>Compartment</th><th>Approach</th>
+    <th>iLISI</th><th>cLISI</th><th>Batch ASW</th><th>Cell Type ASW</th>
+    <th>Isolated Label F1</th><th>Overall Score</th>
+    <th>Clusters (res 0.5)</th><th>Condition Accuracy</th>
+  </tr>
+  
+  <tr class="best">
+    <td>tier2</td>
+    <td>AF</td>
+    <td>B_scANVI</td>
+    <td>0.007</td>
+    <td>1.000</td>
+    <td>0.978</td>
+    <td>0.511</td>
+    <td>0.673</td>
+    <td>0.615</td>
+    <td>34</td>
+    <td>0.624</td>
+  </tr>
+  
+  <tr class="">
+    <td>tier2</td>
+    <td>AF</td>
+    <td>C_Harmony</td>
+    <td>0.051</td>
+    <td>0.993</td>
+    <td>0.975</td>
+    <td>0.484</td>
+    <td>0.630</td>
+    <td>0.601</td>
+    <td>19</td>
+    <td>0.581</td>
+  </tr>
+  
+  <tr class="">
+    <td>tier2</td>
+    <td>AF</td>
+    <td>D_BBKNN</td>
+    <td>0.000</td>
+    <td>1.000</td>
+    <td>0.957</td>
+    <td>0.494</td>
+    <td>0.693</td>
+    <td>0.611</td>
+    <td>27</td>
+    <td>0.867</td>
+  </tr>
+  
+</table>
+
+
+
+
+<h2>Cluster Count Comparison</h2>
+<img src="cluster_count_comparison.png" alt="Cluster count comparison">
+
+
+<h2>Validation</h2>
+<ul class="validation">
+  
+  <li class="pass">PASS: Tier 1 non-resident output exists (/home/ubuntu/lotz-ivd/data/integrated/tier1_nonresident.h5ad)</li>
+  
+  <li class="pass">PASS: Tier 2 NP output exists (/home/ubuntu/lotz-ivd/data/integrated/tier2_resident_NP.h5ad)</li>
+  
+  <li class="pass">PASS: Tier 2 AF output exists (/home/ubuntu/lotz-ivd/data/integrated/tier2_resident_AF.h5ad)</li>
+  
+  <li class="pass">PASS: NP has A_scVI embedding (X_scvi)</li>
+  
+  <li class="pass">PASS: NP has B_scANVI embedding (X_scanvi)</li>
+  
+  <li class="pass">PASS: NP has C_Harmony embedding (X_harmony)</li>
+  
+  <li class="pass">PASS: NP has D_BBKNN embedding (X_umap_bbknn)</li>
+  
+  <li class="pass">PASS: AF has A_scVI embedding (X_scvi)</li>
+  
+  <li class="pass">PASS: AF has B_scANVI embedding (X_scanvi)</li>
+  
+  <li class="pass">PASS: AF has C_Harmony embedding (X_harmony)</li>
+  
+  <li class="pass">PASS: AF has D_BBKNN embedding (X_umap_bbknn)</li>
+  
+  <li class="pass">PASS: NP A_scVI blob check: 24 clusters at res 0.5</li>
+  
+  <li class="pass">PASS: NP B_scANVI blob check: 27 clusters at res 0.5</li>
+  
+  <li class="pass">PASS: NP C_Harmony blob check: 17 clusters at res 0.5</li>
+  
+  <li class="pass">PASS: NP A_scVI study-cluster ARI = 0.229 (< 1.0)</li>
+  
+  <li class="pass">PASS: NP B_scANVI study-cluster ARI = 0.238 (< 1.0)</li>
+  
+  <li class="pass">PASS: NP C_Harmony study-cluster ARI = 0.184 (< 1.0)</li>
+  
+  <li class="pass">PASS: AF A_scVI blob check: 34 clusters at res 0.5</li>
+  
+  <li class="pass">PASS: AF B_scANVI blob check: 34 clusters at res 0.5</li>
+  
+  <li class="pass">PASS: AF C_Harmony blob check: 19 clusters at res 0.5</li>
+  
+  <li class="pass">PASS: AF A_scVI study-cluster ARI = 0.202 (< 1.0)</li>
+  
+  <li class="pass">PASS: AF B_scANVI study-cluster ARI = 0.218 (< 1.0)</li>
+  
+  <li class="pass">PASS: AF C_Harmony study-cluster ARI = 0.113 (< 1.0)</li>
+  
+  <li class="pass">PASS: Metrics file exists with 3 rows</li>
+  
+  <li class="warning">FAIL: Integration report missing</li>
+  
+</ul>
+
+<h2>Human Checkpoint Questions</h2>
+<ol>
+  <li>Which integration approach (A-D) best preserves cell state variation while adequately removing batch effects?</li>
+  <li>Is any approach clearly superior, or is a combination needed (e.g., scANVI for NP, Harmony for AF)?</li>
+  <li>Does the "blob" problem recur with any approach? If so, is Approach E or F the appropriate fallback?</li>
+  <li>Should the analysis proceed with integrated data, per-dataset data, or both in parallel?</li>
+  <li>Are there any study-specific effects that persist after integration?</li>
+  <li>Does the integration reveal any new cell states not visible in per-dataset analysis?</li>
+</ol>
+
+</body>
+</html>
