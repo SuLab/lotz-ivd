@@ -185,12 +185,13 @@ def load_subset_concat(accessions, filter_fn, obs_cols=None):
         cols_available = [c for c in obs_cols if c in adata_sub.obs.columns]
         adata_sub.obs = adata_sub.obs[cols_available].copy()
 
-        # Ensure counts layer exists
+        # Ensure counts layer exists and uses int32 (not int64) to save ~50% space
         if 'counts' in adata_sub.layers:
-            pass  # already there
+            if adata_sub.layers['counts'].dtype != np.int32:
+                adata_sub.layers['counts'] = adata_sub.layers['counts'].astype(np.int32)
         else:
             print(f"    WARNING: {acc} missing 'counts' layer, using .X")
-            adata_sub.layers['counts'] = adata_sub.X.copy()
+            adata_sub.layers['counts'] = adata_sub.X.copy().astype(np.int32)
 
         adatas.append(adata_sub)
         print(f"    {acc}: {adata_sub.shape[0]:,} cells")
