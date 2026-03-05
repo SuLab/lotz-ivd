@@ -357,7 +357,7 @@ The five NP states together account for **81% of all cells**, consistent with th
 **Figure S1. Integration quality assessment.** Four-panel UMAP showing cells colored by Leiden cluster, dataset of origin, degeneration condition, and tissue compartment. Datasets are well-mixed within the NP clusters, indicating successful batch correction by Harmony.
 
 ![Figure S2. QC summary](figures/02_qc/qc_cell_counts.png)
-**Figure S2. Quality control summary.** *(A)* Cell counts before (gray) and after (color) QC per dataset. Overall retention was 78%. *(B)* Per-sample QC retention rates. All samples exceeded the 70% retention threshold (dashed red line).
+**Figure S2. Quality control summary.** *(A)* Cell counts before (gray) and after (color) QC per dataset. Overall retention was 78%. *(B)* Per-sample QC retention rates. Most samples exceeded the 70% retention threshold (dashed red line); one sample (M7831814, ~65% retention) fell slightly below this threshold but was retained to preserve donor representation.
 
 ### 6.2 Compositional Changes with Degeneration
 
