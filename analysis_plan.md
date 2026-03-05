@@ -2,24 +2,64 @@
 
 ## Current Status
 
-Module 05 Tier 2 (resident cell integration) COMPLETE. All 4 approaches (scVI, scANVI, Harmony, BBKNN) run for NP (138,937 cells) and AF (282,736 cells). All 26 validation checks pass (no blob problem, study-cluster ARI < 1.0 for all approaches). **AWAITING HUMAN CHECKPOINT — Tier 2 review.**
+Module 05 Tier 2 checkpoint APPROVED 2026-03-05. Proceeding to Module 06 (Differential Analysis).
 
 ## Active Step
 
-**Module 05: Human Checkpoint (Tier 2)** — WAITING FOR REVIEW
+**Module 06: Differential Analysis** — READY TO RUN
 
-Review materials ready:
-- `results/integration/integration_report.html` — HTML report with UMAPs and metrics
-- `results/integration/umap_tier2_NP_by_approach.png` — NP UMAP comparison (4 approaches × 4 color schemes)
-- `results/integration/umap_tier2_AF_by_approach.png` — AF UMAP comparison
-- `results/integration/integration_metrics.tsv` — quantitative metrics
-- `results/integration/metrics_comparison_AF.png` — AF metrics bar chart
-- `results/integration/cluster_count_comparison.png` — cluster count comparison
+### Condition Mapping Review (required before Module 06, per Module 02 checkpoint)
 
-Key questions for reviewer (per spec):
-1. Which integration approach (A-D) best preserves cell state variation while adequately removing batch effects?
-2. Is any approach clearly superior, or is a combination needed (e.g., scANVI for NP, Harmony for AF)?
-3. Should the analysis proceed with integrated data, per-dataset data, or both in parallel?
+Reviewed 2026-03-05. Decisions on flagged items:
+
+1. **Herniated samples (10 NP, from GSE233666 + GSE251686):** Keep as separate "herniated" category, do NOT fold into degenerated. Rationale: herniated tissue is mechanically disrupted and may have distinct inflammatory/repair signatures vs. in-situ degenerated tissue. The 10 samples provide enough power for herniated vs. healthy comparisons. Can also run herniated vs. degenerated as an exploratory comparison.
+
+2. **GSE205535 NNP (11yo spinal cord injury, classified "healthy"):** Reclassify to **exclude from DE comparisons** rather than treating as healthy. An acute spinal cord injury in an 11-year-old is not representative of "healthy" disc biology — trauma response genes may contaminate healthy baseline. Keep for annotation/integration but flag as excluded in DE. GSE205535_DNP (81yo degenerated) remains as degenerated_ungraded.
+
+3. **Thompson III boundary (GSE230809):** Currently Thompson II-III → degenerated_mild, Thompson III → degenerated_mild, Thompson III-IV → degenerated_severe. This is reasonable — the uncertainty is at the III boundary, and having it in "mild" is conservative. No change.
+
+4. **Neonatal samples (GSE189916, n=3):** Keep as separate category. Useful for developmental comparisons but should NOT be mixed into "healthy" (neonatal disc biology is fundamentally different from adult healthy).
+
+5. **Aged ungraded (GSE189916 adult, n=3):** These are >65yo adults with no back pain history and unknown degeneration grade. Keep as "aged_ungraded" — they could be healthy-aged or subclinically degenerated. Useful for aging analyses but should not be in the healthy vs. degenerated comparison.
+
+6. **Degenerated ungraded (GSE205535_DNP + GSE255768 CEP, n=3):** Include in "degenerated_all" comparisons but not in mild vs. severe since grade is unknown.
+
+**Final comparison plan for Module 06:**
+- Primary: healthy (20 samples) vs. degenerated_all (mild+severe+ungraded, 42 samples)
+- Secondary: healthy vs. degenerated_mild (18), healthy vs. degenerated_severe (21), mild vs. severe
+- Exploratory: healthy vs. herniated (10), herniated vs. degenerated, neonatal vs. adult-healthy
+- Exclude from all DE: GSE205535_NNP (trauma confound)
+- Per compartment where sample counts allow (NP has best power, AF second, CEP underpowered)
+
+## Integration Approach Decision (Module 05 Checkpoint, 2026-03-05)
+
+**Primary: scANVI (Approach B). Sensitivity check: scVI (Approach A) for trajectory analysis.**
+
+Rationale: No approach clearly dominated — overall scores tightly clustered (0.60-0.62). Decision based on downstream needs:
+
+| Metric | A: scVI | B: scANVI | C: Harmony | D: BBKNN |
+|--------|---------|-----------|------------|----------|
+| NP overall | 0.607 | **0.618** | 0.599 | 0.614 |
+| AF overall | 0.608 | **0.615** | 0.601 | 0.611 |
+| NP celltype ASW | 0.502 | **0.521** | 0.459 | 0.489 |
+| AF celltype ASW | 0.496 | **0.511** | 0.484 | 0.494 |
+| NP clusters (0.5) | 24 | 27 | 17 | 29 |
+| AF clusters (0.5) | 34 | 34 | 19 | 27 |
+| NP condition acc | 0.653 | 0.629 | 0.567 | **0.928** |
+| AF condition acc | 0.648 | 0.624 | 0.581 | **0.867** |
+| NP score var ratio | **1.0** | 0.655 | 0.683 | 0.527 |
+| AF score var ratio | **1.0** | 0.461 | 0.523 | 0.468 |
+| NP study-cluster ARI | 0.229 | 0.238 | 0.184 | — |
+| AF study-cluster ARI | 0.202 | 0.218 | 0.113 | — |
+
+Key reasoning:
+1. **scANVI (B) chosen as primary** — best overall score and cell type separation for both NP and AF. Semi-supervised approach leverages Module 04 annotations, producing the most refined cell type structure. Standard atlas choice.
+2. **scVI (A) retained for sensitivity** — perfectly preserves cell state continuum (score variance ratio = 1.0). Important for Module 08 trajectory analysis, where overcorrection could erase gradual cell state transitions.
+3. **Harmony (C) not chosen** — most aggressive correction. Fewest clusters (17 NP, 19 AF) suggests it merges real biological groups. Lowest condition accuracy means disease signal is partially erased.
+4. **BBKNN (D) not chosen as primary** — highest condition accuracy (preserves disease signal well), but no corrected embedding (only corrected neighbor graph), limiting downstream flexibility. All 4 embeddings remain available in the h5ad files.
+5. **No blob problem** with any approach — no overcorrection to single-cluster outputs.
+6. **For Module 06 (DE):** pseudobulk approach uses cell type labels + raw counts, not embeddings. scANVI labels are the most refined, supporting this choice.
+7. **For Module 08 (Trajectory):** will run on both scANVI and scVI embeddings to assess sensitivity of continuum results to integration method.
 
 ## Completed Steps
 
@@ -38,6 +78,7 @@ Key questions for reviewer (per spec):
 | Module 05: Integration (Tier 1) | 2026-03-02 | Complete | Tier 1 non-resident cells integrated with scVI: 14,566 cells from 9 studies. |
 | Module 05: Human checkpoint (Tier 1) | 2026-03-03 | Approved | Human approved Tier 1 integration and retroactive review of Modules 03-04. Proceeding to Tier 2 resident cell integration. |
 | Module 05: Integration (Tier 2) | 2026-03-05 | Complete | 4 approaches (scVI, scANVI, Harmony, BBKNN) run for NP (138,937 cells) and AF (282,736 cells). All validation checks pass. |
+| Module 05: Human checkpoint (Tier 2) | 2026-03-05 | Approved | Primary: scANVI (B). Sensitivity: scVI (A) for trajectory. Rationale: best overall score + cell type separation; scVI preserves continuum for Module 08. |
 
 ## Pending Steps
 
@@ -53,7 +94,7 @@ Key questions for reviewer (per spec):
 10. [x] Module 05: Integration strategy (Tier 1) — DONE 2026-03-02
 11. [x] Module 05: Human checkpoint (Tier 1) — APPROVED 2026-03-03
 12. [x] Module 05: Integration strategy (Tier 2) — DONE 2026-03-05
-13. [ ] Module 05: Human checkpoint (Tier 2) — WAITING FOR REVIEW ← **ACTIVE**
+13. [x] Module 05: Human checkpoint (Tier 2) — APPROVED 2026-03-05
 14. [ ] Module 06: Differential analysis
 15. [ ] Module 06: Human checkpoint — review DE results
 16. [ ] Module 07: Biological interpretation
