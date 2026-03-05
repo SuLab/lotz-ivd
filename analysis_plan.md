@@ -2,11 +2,11 @@
 
 ## Current Status
 
-Module 05 Tier 2 checkpoint APPROVED 2026-03-05. Proceeding to Module 06 (Differential Analysis).
+Module 06 complete 2026-03-05. Awaiting human checkpoint review.
 
 ## Active Step
 
-**Module 06: Differential Analysis** — READY TO RUN
+**Module 06: Human Checkpoint** — REVIEW DE RESULTS
 
 ### Condition Mapping Review (required before Module 06, per Module 02 checkpoint)
 
@@ -79,6 +79,7 @@ Key reasoning:
 | Module 05: Human checkpoint (Tier 1) | 2026-03-03 | Approved | Human approved Tier 1 integration and retroactive review of Modules 03-04. Proceeding to Tier 2 resident cell integration. |
 | Module 05: Integration (Tier 2) | 2026-03-05 | Complete | 4 approaches (scVI, scANVI, Harmony, BBKNN) run for NP (138,937 cells) and AF (282,736 cells). All validation checks pass. |
 | Module 05: Human checkpoint (Tier 2) | 2026-03-05 | Approved | Primary: scANVI (B). Sensitivity: scVI (A) for trajectory. Rationale: best overall score + cell type separation; scVI preserves continuum for Module 08. |
+| Module 06: Differential analysis | 2026-03-05 | Complete | Composition analysis (Mann-Whitney U): 0/58 significant cell type proportion changes. Pseudobulk DE (pyDESeq2): 17 powered comparisons run, 128 skipped (underpowered), 5,328 significant genes (|log2FC|>0.5, padj<0.05). Top results: NP_mature_chondrocyte healthy_vs_herniated (4,316 DE genes), AF_outer healthy_vs_degenerated_severe (203), AF_outer mild_vs_severe (133), Endothelial healthy_vs_herniated (414). Volcano plots + heatmaps generated. All validation checks PASS. |
 
 ## Pending Steps
 
@@ -95,8 +96,8 @@ Key reasoning:
 11. [x] Module 05: Human checkpoint (Tier 1) — APPROVED 2026-03-03
 12. [x] Module 05: Integration strategy (Tier 2) — DONE 2026-03-05
 13. [x] Module 05: Human checkpoint (Tier 2) — APPROVED 2026-03-05
-14. [ ] Module 06: Differential analysis
-15. [ ] Module 06: Human checkpoint — review DE results
+14. [x] Module 06: Differential analysis — DONE 2026-03-05
+15. [ ] Module 06: Human checkpoint — review DE results — AWAITING REVIEW
 16. [ ] Module 07: Biological interpretation
 17. [ ] Module 07: Human checkpoint — evaluate findings
 18. [ ] Module 08: Trajectory analysis
@@ -141,7 +142,8 @@ Key reasoning:
 - **Tier 2 OOM kill (RESOLVED):** Approach A (scVI) for NP completed 200 epochs of training but the process was killed by the OOM killer during post-training metric computation (`compute_metrics`). Root cause: 139K-cell kNN graph + silhouette scores exceeded 16 GB RAM. Fix: (1) stratified subsampling to 30K cells for metric evaluation (consistent with scIB benchmark practice, Luecken et al. 2022 — embeddings are still computed on all cells), (2) explicit `gc.collect()` between metric computations and between integration approaches. scVI checkpoint and model were saved before the kill; resume skips Approach A.
 - **Checkpoint gating failure (RESOLVED):** Modules 03-05 ran without proper human checkpoints. Root cause: agent loop did not enforce checkpoint stops; analysis_plan.md was not updated. Fixed 2026-03-03 with revised PROMPT.md and run_pipeline.sh gate.
 - 2026-03-05: Module 05 Tier 2 complete. NP: 138,937 cells (including 155 EP cells), AF: 282,736 cells (including 1,862 fibroblasts). All 4 approaches (scVI, scANVI, Harmony, BBKNN) run for both compartments. Validation: 25/26 PASS (1 cosmetic FAIL for report timing, resolved). Key metrics — NP: scVI overall=0.608, scANVI=0.615, Harmony=0.601, BBKNN=0.611. AF: scVI overall=0.608, scANVI=0.615, Harmony=0.601, BBKNN=0.611. No blob problem detected. Study-cluster ARI 0.11-0.24 (good batch mixing). Condition accuracy 0.58-0.87 (biological signal preserved). Cluster counts range 17-34 at res 0.5. EBS expanded from 61 GB to 123 GB mid-run to resolve disk space crash.
-- **ACTION REQUIRED BEFORE MODULE 06:** All Module 02 condition mappings were tentatively approved. Must do a final review of condition_harmonized categories, especially herniated vs degenerated classification and ambiguous cases, before running differential expression. Changes after Module 06 are expensive.
+- ~~**ACTION REQUIRED BEFORE MODULE 06:**~~ **RESOLVED 2026-03-05.** Condition mappings reviewed and finalized. See "Condition Mapping Review" section above. GSE205535_NNP excluded from DE, herniated kept separate, Thompson III boundary accepted.
+- 2026-03-05: Module 06 completed. Composition analysis found no significant cell type proportion changes (0/58 at padj<0.05). Pseudobulk DE: 17 comparisons powered, 128 skipped. 5,328 significant genes total. Dominant results from NP_mature_chondrocyte|healthy_vs_herniated (4,316 genes — very large, may reflect biological + technical differences in herniated tissue). Positive controls: ADAMTS5 found in NP degeneration results (log2FC=0.92) but padj=1 (underpowered). MMP13 not detected in NP results (may not pass gene filtering). Heatmaps generated for AF_outer and Endothelial cells (healthy_vs_degenerated_all comparison).
 
 ## Deferred Questions
 
