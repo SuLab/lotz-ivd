@@ -1,0 +1,110 @@
+<!DOCTYPE html><html><head>
+<title>Trajectory Report — Module 08</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }
+  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+  h2 { color: #34495e; margin-top: 30px; }
+  h3 { color: #7f8c8d; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background-color: #3498db; color: white; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+  img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; }
+  .section { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #3498db; }
+  .warning { border-left-color: #e74c3c; }
+</style></head><body>
+<h1>Module 08: Trajectory & Dynamics Report</h1>
+<p>Generated: 2026-03-05 21:25</p>
+<h2>NP Compartment</h2>
+<img src="umap_trajectory_NP.png" alt="NP trajectory UMAP">
+<img src="paga_NP.png" alt="NP PAGA">
+<img src="pseudotime_by_condition_NP.png" alt="NP pseudotime by condition">
+<img src="pseudotime_by_celltype_NP.png" alt="NP pseudotime by cell type">
+<img src="gene_dynamics_NP.png" alt="NP gene dynamics">
+<h3>Pseudotime Correlations</h3><table>
+<tr><th>Test</th><th>Statistic</th><th>P-value</th><th>N</th></tr>
+<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=-0.207</td><td>0.0e+00</td><td>50000</td></tr>
+<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=255019296</td><td>0.0e+00</td><td>40742</td></tr>
+<tr><td>pseudotime_vs_condition_NP_notochordal</td><td>rho=-0.034</td><td>4.5e-02</td><td>3389</td></tr>
+<tr><td>pseudotime_vs_condition_NP_mature_chondrocyte</td><td>rho=-0.041</td><td>3.6e-16</td><td>40094</td></tr>
+<tr><td>pseudotime_vs_condition_NP_stressed_degenerative</td><td>rho=0.336</td><td>5.0e-161</td><td>6118</td></tr>
+<tr><td>pseudotime_vs_condition_NP_fibrocartilaginous</td><td>rho=-0.170</td><td>6.5e-04</td><td>399</td></tr>
+</table>
+<h3>Trajectory Genes: 500 total</h3>
+<table><tr><th>Gene</th><th>rho</th><th>padj</th><th>Program</th></tr>
+<tr><td>LCP1</td><td>-0.583</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>BCL2A1</td><td>-0.532</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>LYZ</td><td>-0.531</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>BASP1</td><td>-0.522</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>RAC2</td><td>-0.506</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>FCER1G</td><td>-0.505</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>CXCL8</td><td>-0.503</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>CTSS</td><td>-0.502</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>C5AR1</td><td>-0.486</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>LAPTM5</td><td>-0.479</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>EVI2B</td><td>-0.476</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>NCF2</td><td>-0.458</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>GCA</td><td>-0.429</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>FGFBP2</td><td>0.428</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>SRGN</td><td>-0.425</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>SELENOM</td><td>0.419</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>S100P</td><td>-0.418</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>GMFG</td><td>-0.416</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>S100A1</td><td>0.412</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>TMSB4X</td><td>-0.410</td><td>0.0e+00</td><td>late_down</td></tr>
+</table>
+<h3>Sensitivity Check (scVI embedding)</h3>
+<img src="umap_trajectory_NP_scVI.png" alt="NP scVI trajectory">
+<h2>AF Compartment</h2>
+<img src="umap_trajectory_AF.png" alt="AF trajectory UMAP">
+<img src="paga_AF.png" alt="AF PAGA">
+<img src="pseudotime_by_condition_AF.png" alt="AF pseudotime by condition">
+<img src="pseudotime_by_celltype_AF.png" alt="AF pseudotime by cell type">
+<img src="gene_dynamics_AF.png" alt="AF gene dynamics">
+<h3>Pseudotime Correlations</h3><table>
+<tr><th>Test</th><th>Statistic</th><th>P-value</th><th>N</th></tr>
+<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=-0.177</td><td>0.0e+00</td><td>50000</td></tr>
+<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=257554112</td><td>0.0e+00</td><td>41960</td></tr>
+<tr><td>pseudotime_vs_condition_AF_outer</td><td>rho=-0.193</td><td>0.0e+00</td><td>40361</td></tr>
+<tr><td>pseudotime_vs_condition_AF_inner</td><td>rho=-0.043</td><td>3.4e-04</td><td>6925</td></tr>
+<tr><td>pseudotime_vs_condition_AF_mechanical_stress</td><td>rho=-0.272</td><td>2.7e-47</td><td>2714</td></tr>
+</table>
+<h3>Trajectory Genes: 500 total</h3>
+<table><tr><th>Gene</th><th>rho</th><th>padj</th><th>Program</th></tr>
+<tr><td>PRELP</td><td>-0.781</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>FTH1</td><td>0.730</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>FGFBP2</td><td>-0.701</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>FMOD</td><td>-0.699</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>COMP</td><td>-0.685</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>SERPINA1</td><td>-0.673</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>FOSB</td><td>-0.673</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>RNASEK</td><td>0.673</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>ACAN</td><td>-0.649</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>SCRG1</td><td>-0.640</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>KLF4</td><td>-0.639</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>GABARAP</td><td>0.619</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>OGN</td><td>-0.609</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>TMSB10</td><td>0.608</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RGCC</td><td>-0.606</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>TRAPPC5</td><td>0.606</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>S100A6</td><td>0.602</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RPL17</td><td>0.598</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>HSPA1A</td><td>-0.597</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>TMSB4X</td><td>0.596</td><td>0.0e+00</td><td>late_up</td></tr>
+</table>
+<h2>RNA Velocity</h2>
+<div class="section warning">
+<strong>RNA velocity could not be computed.</strong> 
+No spliced/unspliced count layers found in the integrated data. 
+This is expected for public scRNA-seq datasets that only provide final count matrices. 
+Computing velocity would require reprocessing from BAM/fastq files using velocyto or STARsolo. 
+Given that IVD is a slow-turnover tissue, velocity results may be uninformative even if computed.
+</div>
+<h2>Human Checkpoint Questions</h2><ol>
+<li>Does the inferred trajectory make biological sense?</li>
+<li>Does pseudotime align with healthy → degenerated?</li>
+<li>Are there branch points suggesting divergent cell fates?</li>
+<li>Do gene programs along the trajectory reveal staged degeneration?</li>
+<li>Should trajectory findings redefine cell states?</li>
+</ol>
+</body></html>

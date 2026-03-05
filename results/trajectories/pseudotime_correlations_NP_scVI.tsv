@@ -1,0 +1,7 @@
+compartment	embedding	test	rho	pvalue	n	statistic	n_healthy	n_degen	median_healthy	median_degen
+NP	scVI	pseudotime_vs_condition_ordinal	-0.1316240697182632	4.8872252092837986e-192	50000.0					
+NP	scVI	pseudotime_healthy_vs_degenerated		0.0		238036512.0	25991.0	14751.0	0.7247592210769653	0.7231929898262024
+NP	scVI	pseudotime_vs_condition_NP_notochordal	0.3035849912438313	3.460379807340741e-73	3389.0					
+NP	scVI	pseudotime_vs_condition_NP_mature_chondrocyte	-0.0005751589388165739	0.9083156955701583	40094.0					
+NP	scVI	pseudotime_vs_condition_NP_stressed_degenerative	0.21404254515625576	2.478937058331583e-64	6118.0					
+NP	scVI	pseudotime_vs_condition_NP_fibrocartilaginous	-0.03776390094204757	0.45190970260430896	399.0					

@@ -1,0 +1,6 @@
+compartment	embedding	test	rho	pvalue	n	statistic	n_healthy	n_degen	median_healthy	median_degen
+AF	scANVI	pseudotime_vs_condition_ordinal	-0.17749152673001586	0.0	50000.0					
+AF	scANVI	pseudotime_healthy_vs_degenerated		0.0		257554112.0	15430.0	26530.0	0.10667471587657928	0.09819253534078598
+AF	scANVI	pseudotime_vs_condition_AF_outer	-0.1926369218766703	0.0	40361.0					
+AF	scANVI	pseudotime_vs_condition_AF_inner	-0.04305078035687598	0.0003389512641694187	6925.0					
+AF	scANVI	pseudotime_vs_condition_AF_mechanical_stress	-0.2721498907202707	2.699415458754936e-47	2714.0					
