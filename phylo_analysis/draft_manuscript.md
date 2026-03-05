@@ -216,7 +216,7 @@ The imbalance between healthy (n=15 donors) and severe (n=3 donors) reflects the
 
 ## 5. Methods {#methods}
 
-This section describes the computational procedures used in the analysis. All code is available in the accompanying Jupyter notebook (`execution_trace.ipynb`). The methods are presented separately from the biological interpretation to allow readers to evaluate the analytical choices independently.
+**Note on automation:** The entire analysis pipeline — from data download through quality control, integration, clustering, annotation, differential expression, pathway enrichment, trajectory analysis, and cell-cell communication — was executed by an LLM-driven automated system (Phylo/Biomni framework). The LLM agent selected analysis parameters, wrote and executed code, interpreted intermediate outputs, and made analytical decisions (e.g., choosing Leiden resolution, selecting marker panels for annotation, filtering pathway gene sets). While the methods follow standard best practices in the scRNA-seq field, readers should be aware that no step involved direct human oversight during execution. All code is available in the accompanying Jupyter notebook (`execution_trace.ipynb`). The methods are presented separately from the biological interpretation to allow readers to evaluate the analytical choices independently.
 
 ### 5.1 Data Acquisition and Preprocessing
 
@@ -272,7 +272,7 @@ Clusters were annotated by examining the expression of established marker genes 
 
 3. **Wilcoxon rank-sum marker gene computation** comparing each cluster against all others, identifying the top differentially expressed genes per cluster.
 
-Automated annotation tools were tested but found too conservative (annotating only 3/12 clusters with confidence), so expert manual curation was used.
+Automated reference-based annotation tools (e.g., CellTypist) were tested but found too conservative, annotating only 3 of 12 clusters with confidence. For the remaining clusters, the **LLM agent** (operating within the Phylo automated analysis framework) assigned cell type labels by matching the top differentially expressed genes for each cluster against known marker panels from the IVD literature. The agent cross-referenced its assignments against the dot plot visualization (Figure 2) and documented its reasoning in inline code comments. While this approach leverages broad literature knowledge and produced biologically plausible annotations consistent with published IVD atlases (Gan et al., 2021; Cherif et al., 2022), it should be understood as **automated literature-informed annotation**, not human expert curation. These annotations are provisional and should be validated by domain experts, particularly for subtypes where marker overlap could lead to misclassification (e.g., distinguishing notochordal remnants from canonical NP chondrocytes, or identifying dissociation-induced artifacts).
 
 ### 5.6 Compositional Analysis
 
@@ -651,7 +651,7 @@ Based on the integrated findings, we prioritize therapeutic targets for IVD dege
 
 3. **Batch effects:** Despite Harmony correction, residual batch effects may persist, particularly for the neonatal samples in GSE189916 which represent a fundamentally different developmental stage.
 
-4. **Annotation resolution:** At Leiden resolution 0.5 (12 clusters), some biologically distinct subtypes (notochordal cells, CEP chondrocytes) may be merged. Higher resolution clustering (27 clusters at resolution 1.2) is available for follow-up.
+4. **Annotation resolution and provenance:** At Leiden resolution 0.5 (12 clusters), some biologically distinct subtypes (notochordal cells, CEP chondrocytes) may be merged. Higher resolution clustering (27 clusters at resolution 1.2) is available for follow-up. Importantly, cell type annotations were assigned by an LLM agent (not a human expert) based on marker gene matching against literature-derived panels. While the annotations are consistent with published IVD atlases, they should be treated as provisional until validated by domain specialists.
 
 5. **LIANA without permutation testing:** Cell-cell communication results are exploratory rankings rather than statistically confirmed interactions.
 
