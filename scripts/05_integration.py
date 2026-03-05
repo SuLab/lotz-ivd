@@ -266,6 +266,7 @@ def prepare_integrated_object(adata, n_top_genes=3000):
 
     # PCA on HVG subset
     adata_pca = adata[:, adata.var['highly_variable']].copy()
+    gc.collect()
     sc.pp.scale(adata_pca, max_value=10)
     n_comps = min(50, min(adata_pca.shape) - 1)
     sc.tl.pca(adata_pca, n_comps=n_comps, svd_solver='arpack')
@@ -371,15 +372,16 @@ def run_scanvi(adata, scvi_model, max_epochs=50, model_dir=None, label="scanvi")
 
     # Create label column: use high+medium confidence, mask low as Unknown
     labels_col = '_scanvi_labels'
-    adata.obs[labels_col] = adata.obs['cell_type_final'].copy()
+    labels = adata.obs['cell_type_final'].astype(str).copy()
     if 'cell_type_confidence' in adata.obs.columns:
         low_mask = adata.obs['cell_type_confidence'] == 'low'
-        adata.obs.loc[low_mask, labels_col] = 'Unknown'
+        labels[low_mask] = 'Unknown'
         n_seed = (~low_mask).sum()
         print(f"    Seed labels: {n_seed:,} / {adata.shape[0]:,} cells "
               f"({n_seed / adata.shape[0] * 100:.1f}%)")
     else:
         print("    No confidence column; using all labels as seeds")
+    adata.obs[labels_col] = labels
 
     scanvi_model = scvi_module.model.SCANVI.from_scvi_model(
         scvi_model,
@@ -445,7 +447,7 @@ def run_harmony(adata, batch_key='study', thetas=(0.5, 1.0, 2.0)):
             pca_input, adata.obs, batch_key,
             theta=theta, max_iter_harmony=30,
         )
-        embedding = harmony_out.Z_corr.T  # (n_cells, n_pcs)
+        embedding = harmony_out.Z_corr  # (n_cells, n_pcs) — harmonypy >= 0.0.9
 
         # Quick iLISI estimate on a subsample
         score = _quick_ilisi(embedding, batch_labels, n_sample=5000)
@@ -884,8 +886,16 @@ def _approach_key_map():
 
 
 def _save_checkpoint(adata, output_path, approach_label):
-    """Save adata to disk after completing an approach (resumable checkpoint)."""
-    adata.write_h5ad(output_path)
+    """Save adata to disk after completing an approach (resumable checkpoint).
+
+    Writes to a temp file first, then atomically renames, so a crash
+    mid-write cannot corrupt the existing checkpoint.
+    """
+    import anndata
+    anndata.settings.allow_write_nullable_strings = True
+    tmp_path = Path(str(output_path) + '.tmp')
+    adata.write_h5ad(tmp_path)
+    tmp_path.rename(output_path)
     print(f"  Checkpoint saved after {approach_label}: {output_path}")
     sys.stdout.flush()
 
@@ -1087,7 +1097,7 @@ def process_tier2_compartment(compartment, approaches=('A', 'B', 'C', 'D'), forc
     _plot_tier2_umaps(adata, compartment)
 
     # Final save (with plots info in uns)
-    adata.write_h5ad(output_path)
+    _save_checkpoint(adata, output_path, 'final')
     print(f"  Saved: {output_path}")
 
     return output_path, all_metrics
