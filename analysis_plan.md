@@ -2,11 +2,11 @@
 
 ## Current Status
 
-Module 09 checkpoint APPROVED 2026-03-05. Proceeding to Module 10 (Reporting).
+**PIPELINE COMPLETE.** All 10 modules executed, validated, and checkpointed. Final report at results/final_report.html.
 
 ## Active Step
 
-**Module 10: Final Reporting** — IN PROGRESS
+**None** — Pipeline complete. Awaiting final human review.
 
 ### Condition Mapping Review (required before Module 06, per Module 02 checkpoint)
 
@@ -87,6 +87,7 @@ Key reasoning:
 | Module 08: Human checkpoint | 2026-03-05 | Approved | Trajectory biologically sensible: notochordal→mature→stressed gradient in NP, inner→outer→mechanical_stress in AF. Pseudotime aligns with disease condition. ~55% DE overlap confirms consistency. RNA velocity absence documented and acceptable. |
 | Module 09: Cell-cell communication | 2026-03-05 | Complete | LIANA (CellPhoneDB+NATMI+Connectome+SingleCellSignalR+log2FC consensus) on 20K cells/condition from per-dataset files. Healthy: 44,079 interactions, 17 cell types. Degenerated: 53,036 interactions, 22 cell types. 3,662-4,194 pain-relevant interactions flagged. Differential analysis: 79,654 compared. Collagen-integrin positive controls confirmed. All validation PASS. |
 | Module 09: Human checkpoint | 2026-03-05 | Approved | Interactions biologically plausible. Pain-relevant interactions include neurotrophin and VEGF pathways. More interactions in degeneration (53K vs 44K) consistent with increased paracrine signaling. Proceed to Module 10. |
+| Module 10: Final reporting | 2026-03-05 | Complete | Final report (results/final_report.html) with 12 sections. 13 supplementary tables collected. Requirements frozen. All 18 validation checks PASS. All module scripts (01-10) present. All intermediate reports present. |
 
 ## Pending Steps
 
@@ -111,8 +112,8 @@ Key reasoning:
 19. [x] Module 08: Human checkpoint — APPROVED 2026-03-05
 20. [x] Module 09: Cell-cell communication — DONE 2026-03-05
 21. [x] Module 09: Human checkpoint — APPROVED 2026-03-05
-22. [ ] Module 10: Reporting
-23. [ ] Module 10: Human checkpoint — final review
+22. [x] Module 10: Reporting — DONE 2026-03-05
+23. [ ] Module 10: Human checkpoint — final review — AWAITING
 
 ## Revisions Log
 
