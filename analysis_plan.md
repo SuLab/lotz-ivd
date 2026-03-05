@@ -2,11 +2,11 @@
 
 ## Current Status
 
-Module 06 complete 2026-03-05. Awaiting human checkpoint review.
+Module 07 complete 2026-03-05. Awaiting human checkpoint review.
 
 ## Active Step
 
-**Module 06: Human Checkpoint** — REVIEW DE RESULTS
+**Module 07: Human Checkpoint** — REVIEW INTERPRETATION RESULTS
 
 ### Condition Mapping Review (required before Module 06, per Module 02 checkpoint)
 
@@ -80,6 +80,8 @@ Key reasoning:
 | Module 05: Integration (Tier 2) | 2026-03-05 | Complete | 4 approaches (scVI, scANVI, Harmony, BBKNN) run for NP (138,937 cells) and AF (282,736 cells). All validation checks pass. |
 | Module 05: Human checkpoint (Tier 2) | 2026-03-05 | Approved | Primary: scANVI (B). Sensitivity: scVI (A) for trajectory. Rationale: best overall score + cell type separation; scVI preserves continuum for Module 08. |
 | Module 06: Differential analysis | 2026-03-05 | Complete | Composition analysis (Mann-Whitney U): 0/58 significant cell type proportion changes. Pseudobulk DE (pyDESeq2): 17 powered comparisons run, 128 skipped (underpowered), 5,328 significant genes (|log2FC|>0.5, padj<0.05). Top results: NP_mature_chondrocyte healthy_vs_herniated (4,316 DE genes), AF_outer healthy_vs_degenerated_severe (203), AF_outer mild_vs_severe (133), Endothelial healthy_vs_herniated (414). Volcano plots + heatmaps generated. All validation checks PASS. |
+| Module 06: Human checkpoint | 2026-03-05 | Approved | Decisions: (1) Herniated comparison flagged as exploratory/likely study-confounded (RPL genes in top hits, only 2 studies); exclude from primary interpretation. (2) Endothelial annotation caveat noted (ACAN/IBSP/CYTL1 suggest misclassified NP/AF cells); no re-annotation needed. (3) No additional comparisons. (4) Composition trends biologically sensible despite FDR failure. (5) No systematic batch domination in degeneration comparisons. |
+| Module 07: Biological interpretation | 2026-03-05 | Complete | Part 1 ORA: 1,244 significant enrichments (GO/KEGG/Reactome/MSigDB/IVD-custom) across 8 cell type x comparison groups. ECM, inflammatory, collagen, immune pathways confirmed. Part 1b GSEA: 1,081 significant terms. IVD custom gene set heatmap shows Inflammatory_signaling, Cellular_senescence, Matrix_degradation enriched in degeneration. Part 2 TF activity: 113 significant TFs (CollecTRI regulon overlap). Key: ATF3/ATF7 in NP severe, HSF1/HSF2 across cell types (stress), NFKBIB in NP_stressed, E2F4/TFDP1 (cell cycle) in NP severe. Part 3 Pain: only 3 significant pain gene hits (TNF x2, CXCL8 x1) — pain mediators mostly below detection in disc cells (expected: disc cells produce pro-inflammatory mediators that sensitize nerves, not nociceptors themselves). All validation PASS. |
 
 ## Pending Steps
 
@@ -97,9 +99,9 @@ Key reasoning:
 12. [x] Module 05: Integration strategy (Tier 2) — DONE 2026-03-05
 13. [x] Module 05: Human checkpoint (Tier 2) — APPROVED 2026-03-05
 14. [x] Module 06: Differential analysis — DONE 2026-03-05
-15. [ ] Module 06: Human checkpoint — review DE results — AWAITING REVIEW
-16. [ ] Module 07: Biological interpretation
-17. [ ] Module 07: Human checkpoint — evaluate findings
+15. [x] Module 06: Human checkpoint — APPROVED 2026-03-05
+16. [x] Module 07: Biological interpretation — DONE 2026-03-05
+17. [ ] Module 07: Human checkpoint — AWAITING REVIEW
 18. [ ] Module 08: Trajectory analysis
 19. [ ] Module 08: Human checkpoint — evaluate trajectory validity
 20. [ ] Module 09: Cell-cell communication

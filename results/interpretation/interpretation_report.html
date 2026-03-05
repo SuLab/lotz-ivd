@@ -1,0 +1,214 @@
+<!DOCTYPE html><html><head>
+<title>Interpretation Report — Module 07</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }
+  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+  h2 { color: #34495e; margin-top: 30px; }
+  h3 { color: #7f8c8d; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background-color: #3498db; color: white; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+  img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+  .stat-box { background: #ecf0f1; padding: 15px; border-radius: 5px; }
+  .stat-box h3 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 12px; }
+  .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
+  .warning { color: #e74c3c; }
+  .pass { color: #27ae60; }
+  .section { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #3498db; }
+</style></head><body>
+<h1>Module 07: Biological Interpretation Report</h1>
+<p>Generated: 2026-03-05 21:08</p>
+<div class="stats-grid">
+<div class="stat-box"><h3>ORA enriched terms (FDR&lt;0.05)</h3><p>1,244</p></div>
+<div class="stat-box"><h3>GSEA significant terms</h3><p>1,081</p></div>
+<div class="stat-box"><h3>Significant TFs</h3><p>113</p></div>
+<div class="stat-box"><h3>Pain DE genes</h3><p>3</p></div>
+</div>
+<h2>1. Pathway Enrichment (ORA)</h2>
+<h3>AF_inner</h3>
+<img src="pathway_enrichment/enrichment_AF_inner_up.png" alt="AF_inner up">
+<table><tr><th>Term</th><th>Direction</th><th>Library</th><th>Overlap</th><th>Adj P</th><th>Comparison</th></tr>
+<tr><td>Lipid and atherosclerosis</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>1.8e-07</td><td>mild_vs_severe</td></tr>
+<tr><td>Attenuation Phase R-HSA-3371568</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>2.3e-07</td><td>mild_vs_severe</td></tr>
+<tr><td>HSF1 Activation R-HSA-3371511</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>2.3e-07</td><td>mild_vs_severe</td></tr>
+<tr><td>HSF1-dependent Transactivation R-HSA-3371571</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>3.5e-07</td><td>mild_vs_severe</td></tr>
+<tr><td>Cellular Heat Acclimation (GO:0070370)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>8.4e-07</td><td>mild_vs_severe</td></tr>
+<tr><td>Heat Acclimation (GO:0010286)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>8.4e-07</td><td>mild_vs_severe</td></tr>
+<tr><td>Legionellosis</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>1.6e-06</td><td>mild_vs_severe</td></tr>
+<tr><td>Regulation Of Inclusion Body Assembly (GO:0090083)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>3.1e-06</td><td>mild_vs_severe</td></tr>
+<tr><td>Regulation Of HSF1-mediated Heat Shock Response R-HSA-3371453</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>9.8e-06</td><td>mild_vs_severe</td></tr>
+<tr><td>Cellular Response To Heat Stress R-HSA-3371556</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>1.8e-05</td><td>mild_vs_severe</td></tr>
+<tr><td>Longevity regulating pathway</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>2.2e-05</td><td>mild_vs_severe</td></tr>
+<tr><td>HSP90 Chaperone Cycle For Steroid Hormone Receptors (SHR) In Presence Of Ligand </td><td>up</td><td>Reactome_2022</td><td>nan</td><td>5.8e-05</td><td>mild_vs_severe</td></tr>
+<tr><td>Chaperone Cofactor-Dependent Protein Refolding (GO:0051085)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>8.4e-05</td><td>mild_vs_severe</td></tr>
+<tr><td>'De Novo' Post-Translational Protein Folding (GO:0051084)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>1.1e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Cellular Response To Heat (GO:0034605)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>1.2e-04</td><td>mild_vs_severe</td></tr>
+</table>
+<h3>AF_outer</h3>
+<img src="pathway_enrichment/enrichment_AF_outer_up.png" alt="AF_outer up">
+<img src="pathway_enrichment/enrichment_AF_outer_down.png" alt="AF_outer down">
+<table><tr><th>Term</th><th>Direction</th><th>Library</th><th>Overlap</th><th>Adj P</th><th>Comparison</th></tr>
+<tr><td>G2-M Checkpoint</td><td>down</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>2.6e-10</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>E2F Targets</td><td>down</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>2.3e-09</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cell Cycle R-HSA-1640170</td><td>down</td><td>Reactome_2022</td><td>nan</td><td>1.8e-08</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cell Cycle, Mitotic R-HSA-69278</td><td>down</td><td>Reactome_2022</td><td>nan</td><td>2.2e-06</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Viral protein interaction with cytokine and cytokine receptor</td><td>down</td><td>KEGG_2021_Human</td><td>nan</td><td>6.3e-06</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>Inflammatory_signaling</td><td>down</td><td>IVD_custom</td><td>3/15</td><td>9.3e-06</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>Steroid biosynthesis</td><td>down</td><td>KEGG_2021_Human</td><td>nan</td><td>4.7e-05</td><td>mild_vs_severe</td></tr>
+<tr><td>Chemokine Receptors Bind Chemokines R-HSA-380108</td><td>down</td><td>Reactome_2022</td><td>nan</td><td>6.2e-05</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>M Phase R-HSA-68886</td><td>down</td><td>Reactome_2022</td><td>nan</td><td>6.7e-05</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cell Cycle Checkpoints R-HSA-69620</td><td>down</td><td>Reactome_2022</td><td>nan</td><td>6.7e-05</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Deposition Of New CENPA-containing Nucleosomes At Centromere R-HSA-606279</td><td>down</td><td>Reactome_2022</td><td>nan</td><td>1.3e-04</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Mitotic Prometaphase R-HSA-68877</td><td>down</td><td>Reactome_2022</td><td>nan</td><td>1.9e-04</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cholesterol Homeostasis</td><td>down</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>2.7e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>G2-M Checkpoint</td><td>down</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>2.7e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Chemokine-Mediated Signaling Pathway (GO:0070098)</td><td>down</td><td>GO_Biological_Process_2023</td><td>nan</td><td>5.2e-04</td><td>healthy_vs_degenerated_all</td></tr>
+</table>
+<h3>Endothelial cells</h3>
+<img src="pathway_enrichment/enrichment_Endothelial_cells_up.png" alt="Endothelial cells up">
+<img src="pathway_enrichment/enrichment_Endothelial_cells_down.png" alt="Endothelial cells down">
+<table><tr><th>Term</th><th>Direction</th><th>Library</th><th>Overlap</th><th>Adj P</th><th>Comparison</th></tr>
+<tr><td>Attenuation Phase R-HSA-3371568</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>3.3e-12</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>HSF1-dependent Transactivation R-HSA-3371571</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>1.9e-11</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>HSP90 Chaperone Cycle For Steroid Hormone Receptors (SHR) In Presence Of Ligand </td><td>up</td><td>Reactome_2022</td><td>nan</td><td>5.3e-11</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>Attenuation Phase R-HSA-3371568</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>1.2e-10</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cellular Response To Heat Stress R-HSA-3371556</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>3.9e-10</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>HSF1 Activation R-HSA-3371511</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>3.9e-10</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>HSF1-dependent Transactivation R-HSA-3371571</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>4.7e-10</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Regulation Of HSF1-mediated Heat Shock Response R-HSA-3371453</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>4.4e-09</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>Cellular Response To Heat (GO:0034605)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>1.9e-08</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>HSF1 Activation R-HSA-3371511</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>2.0e-08</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Response To Unfolded Protein (GO:0006986)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>4.9e-08</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td>Regulation Of HSF1-mediated Heat Shock Response R-HSA-3371453</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>5.9e-08</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>HSP90 Chaperone Cycle For Steroid Hormone Receptors (SHR) In Presence Of Ligand </td><td>up</td><td>Reactome_2022</td><td>nan</td><td>8.6e-08</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cellular Response To Heat Stress R-HSA-3371556</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>1.4e-07</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Regulation Of Inclusion Body Assembly (GO:0090083)</td><td>up</td><td>GO_Biological_Process_2023</td><td>nan</td><td>1.8e-07</td><td>healthy_vs_degenerated_all</td></tr>
+</table>
+<h3>NP_mature_chondrocyte</h3>
+<img src="pathway_enrichment/enrichment_NP_mature_chondrocyte_up.png" alt="NP_mature_chondrocyte up">
+<table><tr><th>Term</th><th>Direction</th><th>Library</th><th>Overlap</th><th>Adj P</th><th>Comparison</th></tr>
+<tr><td>G2-M Checkpoint</td><td>up</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>1.8e-18</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cell Cycle, Mitotic R-HSA-69278</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>3.9e-16</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cell Cycle R-HSA-1640170</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>7.2e-16</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>E2F Targets</td><td>up</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>1.5e-12</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Cell Cycle Checkpoints R-HSA-69620</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>1.7e-10</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Resolution Of Sister Chromatid Cohesion R-HSA-2500257</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>1.9e-10</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Mitotic Spindle</td><td>up</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>3.3e-10</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>RHO GTPase Effectors R-HSA-195258</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>5.7e-09</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Mitotic Spindle Checkpoint R-HSA-69618</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>5.7e-09</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>RHO GTPases Activate Formins R-HSA-5663220</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>7.1e-09</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Mitotic Anaphase R-HSA-68882</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>7.1e-09</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Mitotic Metaphase And Anaphase R-HSA-2555396</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>7.1e-09</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Mitotic Prometaphase R-HSA-68877</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>1.9e-08</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>Unattached Kinetochores Signal Amplification Via A MAD2 Inhibitory Signal R-HSA-</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>2.4e-08</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td>M Phase R-HSA-68886</td><td>up</td><td>Reactome_2022</td><td>nan</td><td>3.0e-08</td><td>healthy_vs_degenerated_severe</td></tr>
+</table>
+<h3>NP_stressed_degenerative</h3>
+<img src="pathway_enrichment/enrichment_NP_stressed_degenerative_up.png" alt="NP_stressed_degenerative up">
+<table><tr><th>Term</th><th>Direction</th><th>Library</th><th>Overlap</th><th>Adj P</th><th>Comparison</th></tr>
+<tr><td>TNF-alpha Signaling via NF-kB</td><td>up</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>3.0e-06</td><td>mild_vs_severe</td></tr>
+<tr><td>Inflammatory_signaling</td><td>up</td><td>IVD_custom</td><td>3/16</td><td>6.6e-06</td><td>mild_vs_severe</td></tr>
+<tr><td>Rheumatoid arthritis</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>7.1e-05</td><td>mild_vs_severe</td></tr>
+<tr><td>Androgen Response</td><td>up</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>8.5e-05</td><td>mild_vs_severe</td></tr>
+<tr><td>Viral protein interaction with cytokine and cytokine receptor</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>2.6e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>TNF signaling pathway</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>2.6e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Cytokine-cytokine receptor interaction</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>2.7e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>IL-6/JAK/STAT3 Signaling</td><td>up</td><td>MSigDB_Hallmark_2020</td><td>nan</td><td>4.6e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Legionellosis</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>6.7e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Hypertrophic cardiomyopathy</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>7.6e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Dilated cardiomyopathy</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>7.6e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Proteoglycans in cancer</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>8.4e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>Amoebiasis</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>8.4e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>IL-17 signaling pathway</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>8.4e-04</td><td>mild_vs_severe</td></tr>
+<tr><td>NF-kappa B signaling pathway</td><td>up</td><td>KEGG_2021_Human</td><td>nan</td><td>1.4e-03</td><td>mild_vs_severe</td></tr>
+</table>
+<h2>2. Gene Set Enrichment Analysis (GSEA)</h2>
+<h3>IVD Custom Gene Sets</h3>
+<img src="pathway_enrichment/gsea_ivd_custom_heatmap.png" alt="GSEA IVD heatmap">
+<h3>Top GSEA Terms</h3>
+<table><tr><th>Term</th><th>NES</th><th>FDR</th><th>Cell Type</th><th>Comparison</th><th>Library</th></tr>
+<tr><td>Cellular Response To Heat (GO:0034605)</td><td>2.35</td><td>0.0e+00</td><td>AF_inner</td><td>mild_vs_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Response To Unfolded Protein (GO:0006986)</td><td>2.33</td><td>0.0e+00</td><td>AF_inner</td><td>mild_vs_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>TNF-alpha Signaling via NF-kB</td><td>2.51</td><td>0.0e+00</td><td>AF_inner</td><td>mild_vs_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>UV Response Up</td><td>2.04</td><td>0.0e+00</td><td>AF_inner</td><td>mild_vs_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>Interferon Gamma Response</td><td>2.01</td><td>0.0e+00</td><td>AF_inner</td><td>mild_vs_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>Inflammatory Response</td><td>1.97</td><td>0.0e+00</td><td>AF_inner</td><td>mild_vs_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>E2F Targets</td><td>-2.47</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_all</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>Inflammatory_signaling</td><td>-2.04</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_mild</td><td>IVD_custom</td></tr>
+<tr><td>Mitotic Spindle Organization (GO:0007052)</td><td>-2.39</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Mitotic Sister Chromatid Segregation (GO:0000070)</td><td>-2.35</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>DNA-templated DNA Replication (GO:0006261)</td><td>-2.35</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Microtubule Cytoskeleton Organization Involved In Mitosis (GO:1902850)</td><td>-2.34</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Cellular Respiration (GO:0045333)</td><td>-2.25</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Aerobic Respiration (GO:0009060)</td><td>-2.23</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>DNA Replication Initiation (GO:0006270)</td><td>-2.19</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Sister Chromatid Segregation (GO:0000819)</td><td>-2.18</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Mitochondrial Translation (GO:0032543)</td><td>-2.17</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Mitochondrial Respiratory Chain Complex Assembly (GO:0033108)</td><td>-2.16</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Mitotic Metaphase Plate Congression (GO:0007080)</td><td>-2.15</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Positive Regulation Of Chromosome Separation (GO:1905820)</td><td>-2.14</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Positive Regulation Of Mitotic Sister Chromatid Separation (GO:1901970)</td><td>-2.14</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Proton Motive Force-Driven Mitochondrial ATP Synthesis (GO:0042776)</td><td>-2.13</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>E2F Targets</td><td>-2.80</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>G2-M Checkpoint</td><td>-2.60</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>Myc Targets V1</td><td>-2.33</td><td>0.0e+00</td><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>E2F Targets</td><td>-2.31</td><td>0.0e+00</td><td>AF_outer</td><td>mild_vs_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>Oxidative Phosphorylation</td><td>-2.19</td><td>0.0e+00</td><td>AF_outer</td><td>mild_vs_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>TNF-alpha Signaling via NF-kB</td><td>2.17</td><td>0.0e+00</td><td>AF_outer</td><td>mild_vs_severe</td><td>MSigDB_Hallmark_2020</td></tr>
+<tr><td>Response To Unfolded Protein (GO:0006986)</td><td>2.53</td><td>0.0e+00</td><td>Endothelial cells</td><td>healthy_vs_degenerated_all</td><td>GO_Biological_Process_2023</td></tr>
+<tr><td>Cellular Response To Heat (GO:0034605)</td><td>2.36</td><td>0.0e+00</td><td>Endothelial cells</td><td>healthy_vs_degenerated_all</td><td>GO_Biological_Process_2023</td></tr>
+</table>
+<h2>3. Transcription Factor Activity</h2>
+<img src="tf_activity/tf_activity_heatmap.png" alt="TF activity heatmap">
+<h3>Top Differential TF Activities</h3>
+<table><tr><th>TF</th><th>Activity</th><th>padj</th><th>Cell Type</th><th>Comparison</th></tr>
+<tr><td><strong>ATF7</strong></td><td>0.40 (UP)</td><td>7.7e-03</td><td>NP_mature_chondrocyte</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>ATF7</strong></td><td>0.40 (UP)</td><td>2.7e-03</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>ETV5</strong></td><td>0.33 (UP)</td><td>2.0e-03</td><td>AF_inner</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>HCFC1</strong></td><td>0.29 (UP)</td><td>4.1e-02</td><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td><strong>KCNIP3</strong></td><td>0.25 (UP)</td><td>4.1e-02</td><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td><strong>SCX</strong></td><td>0.25 (UP)</td><td>2.7e-03</td><td>NP_notochordal</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>HSF2</strong></td><td>0.16 (UP)</td><td>3.8e-04</td><td>AF_inner</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>ONECUT1</strong></td><td>0.15 (UP)</td><td>4.9e-02</td><td>Endothelial cells</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td><strong>ONECUT1</strong></td><td>0.15 (UP)</td><td>4.2e-02</td><td>Endothelial cells</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td><strong>NFKBIB</strong></td><td>0.14 (UP)</td><td>1.1e-02</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>NFYC</strong></td><td>0.12 (UP)</td><td>1.1e-02</td><td>AF_inner</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>TBX21</strong></td><td>0.11 (UP)</td><td>1.5e-02</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>DLX5</strong></td><td>0.11 (UP)</td><td>6.2e-03</td><td>NP_notochordal</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>TFDP1</strong></td><td>0.10 (UP)</td><td>3.3e-02</td><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td><strong>HSF2</strong></td><td>0.10 (UP)</td><td>1.7e-04</td><td>Endothelial cells</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td><strong>MTA1</strong></td><td>0.10 (UP)</td><td>7.1e-04</td><td>NP_mature_chondrocyte</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>NR2F1</strong></td><td>0.10 (UP)</td><td>1.8e-02</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>NFYB</strong></td><td>0.10 (UP)</td><td>1.8e-02</td><td>Endothelial cells</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td><strong>NFYB</strong></td><td>0.10 (UP)</td><td>1.8e-02</td><td>Endothelial cells</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td><strong>SP7</strong></td><td>0.09 (UP)</td><td>6.2e-03</td><td>NP_notochordal</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>HSF1</strong></td><td>0.08 (UP)</td><td>4.8e-08</td><td>Endothelial cells</td><td>healthy_vs_degenerated_all</td></tr>
+<tr><td><strong>ID3</strong></td><td>0.08 (UP)</td><td>2.2e-02</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>MTF1</strong></td><td>0.08 (UP)</td><td>2.4e-02</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>HSF1</strong></td><td>0.08 (UP)</td><td>5.0e-06</td><td>AF_inner</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>FOXA1</strong></td><td>0.07 (UP)</td><td>2.1e-02</td><td>AF_inner</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>NFYB</strong></td><td>0.07 (UP)</td><td>2.1e-02</td><td>AF_inner</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>NR4A2</strong></td><td>0.07 (UP)</td><td>7.4e-03</td><td>NP_notochordal</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>HSF1</strong></td><td>0.07 (UP)</td><td>1.4e-03</td><td>Endothelial cells</td><td>healthy_vs_degenerated_severe</td></tr>
+<tr><td><strong>NR2F2</strong></td><td>0.06 (UP)</td><td>2.9e-02</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+<tr><td><strong>GFI1</strong></td><td>0.06 (UP)</td><td>2.9e-02</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td></tr>
+</table>
+<h2>4. Pain-Associated Gene Analysis</h2>
+<img src="pain_genes_heatmap.png" alt="Pain genes heatmap">
+<h3>Significant Pain-Associated DE Genes</h3>
+<table><tr><th>Gene</th><th>Direction</th><th>log2FC</th><th>padj</th><th>Cell Type</th><th>Comparison</th><th>Pain Category</th></tr>
+<tr><td><strong>TNF</strong></td><td style="color:#e74c3c">UP</td><td>+2.65</td><td>9.3e-07</td><td>NP_stressed_degenerative</td><td>mild_vs_severe</td><td>Inflammatory_pain</td></tr>
+<tr><td><strong>CXCL8</strong></td><td style="color:#2980b9">DOWN</td><td>-2.19</td><td>3.2e-02</td><td>AF_outer</td><td>healthy_vs_degenerated_all</td><td>Inflammatory_pain</td></tr>
+<tr><td><strong>TNF</strong></td><td style="color:#e74c3c">UP</td><td>+2.45</td><td>4.3e-02</td><td>NP_mature_chondrocyte</td><td>mild_vs_severe</td><td>Inflammatory_pain</td></tr>
+</table>
+<h2>5. Human Checkpoint Questions</h2>
+<ol>
+<li>Are the enriched pathways consistent with known IVD degeneration biology?</li>
+<li>Are there novel pathways or TFs that warrant follow-up?</li>
+<li>Do the pain-associated findings suggest specific cell types as primary contributors to discogenic pain?</li>
+<li>Are there actionable targets (druggable genes) among the top hits?</li>
+<li>Are there findings that contradict established IVD biology?</li>
+</ol>
+</body></html>
