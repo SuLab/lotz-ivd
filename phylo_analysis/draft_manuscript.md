@@ -29,7 +29,7 @@
 
 ## 1. Abstract {#abstract}
 
-Intervertebral disc (IVD) degeneration is the leading structural cause of chronic low back pain, affecting approximately 619 million people worldwide and imposing enormous socioeconomic costs. Despite decades of research, no disease-modifying therapy exists; current treatments address symptoms rather than the underlying biology. To systematically map the cellular and molecular landscape of IVD degeneration, we integrated seven publicly available human single-cell RNA sequencing (scRNA-seq) datasets comprising 173,628 cells from 29 donors spanning healthy tissue and mild, moderate, and severe degeneration. We identified 12 distinct cell populations, including five nucleus pulposus (NP) cell states that represent a spectrum from healthy chondrocyte-like cells to stress-response, unfolded protein response (UPR)-driven, and oxidative-stress states. Pseudobulk differential expression analysis using DESeq2 revealed a striking pattern of transcriptional collapse in severe degeneration, with approximately seven times more genes downregulated than upregulated across all NP cell types. Gene set enrichment analysis (GSEA) identified consistent suppression of Wnt signaling, Notch signaling, extracellular matrix (ECM) organization, and RUNX transcription factor activity, alongside upregulation of TNF/NF-kB inflammatory pathways in specific cell states. Cell-cell communication analysis using LIANA identified loss of the protective TIMP1-CD63 metalloproteinase-inhibitory axis and gain of fibronectin (FN1)-driven inflammatory macrophage recruitment as the dominant signaling changes in severe disease. Trajectory analysis identifies the NP stress-response state as a transition hub between canonical NP chondrocytes and the degenerative UPR state. Together, these findings define a molecular roadmap of IVD degeneration — from loss of homeostatic signaling through inflammatory amplification to structural failure — and prioritize several tractable therapeutic targets, including ADAMTS5 inhibition, TIMP1 restoration, Wnt pathway activation, and anti-inflammatory strategies targeting the NF-kB axis.
+Intervertebral disc (IVD) degeneration is the leading structural cause of chronic low back pain, affecting approximately 619 million people worldwide and imposing enormous socioeconomic costs. Despite decades of research, no disease-modifying therapy exists; current treatments address symptoms rather than the underlying biology. To systematically map the cellular and molecular landscape of IVD degeneration, we integrated seven publicly available human single-cell RNA sequencing (scRNA-seq) datasets comprising 173,628 cells from 29 donors spanning healthy tissue and mild, moderate, and severe degeneration. We identified 12 distinct cell populations, including five nucleus pulposus (NP) cell states that represent a spectrum from healthy chondrocyte-like cells to stress-response, unfolded protein response (UPR)-driven, and oxidative-stress states. Pseudobulk differential expression analysis using DESeq2 revealed a striking pattern of transcriptional collapse in severe degeneration, with approximately seven times more genes downregulated than upregulated across all NP cell types. Gene set enrichment analysis (GSEA) identified consistent suppression of Wnt signaling, Notch signaling, cellular senescence programs, and RUNX transcription factor activity across all cell types, alongside upregulation of TNF/NF-kB inflammatory pathways in specific cell states. ECM-related pathways showed a more complex pattern, with upregulation in the most chondrocyte-like states suggesting compensatory remodeling. Cell-cell communication analysis using LIANA identified loss of the protective TIMP1-CD63 metalloproteinase-inhibitory axis and gain of fibronectin (FN1)-driven inflammatory macrophage recruitment as the dominant signaling changes in severe disease. Trajectory analysis identifies the NP stress-response state as a transition hub between canonical NP chondrocytes and the degenerative UPR state. Together, these findings define a molecular roadmap of IVD degeneration — from loss of homeostatic signaling through inflammatory amplification to structural failure — and prioritize several tractable therapeutic targets, including ADAMTS5 inhibition, TIMP1 restoration, Wnt pathway activation, and anti-inflammatory strategies targeting the NF-kB axis.
 
 ---
 
@@ -46,7 +46,7 @@ This glossary defines all technical terms and abbreviations used in this report.
 | CEP | Cartilage Endplate | Thin cartilage layers capping the disc; the primary route for nutrient diffusion into the NP |
 | COL1A1/2 | Collagen Type I Alpha 1/2 | Structural proteins of fibrous connective tissue; marker of AF fibroblasts |
 | COL2A1 | Collagen Type II Alpha 1 | The primary collagen of cartilage and healthy NP; marker of chondrocyte identity |
-| COMP | Cartilage Oligomeric Matrix Protein | An ECM protein that stabilizes collagen fibrils; downregulated in degeneration |
+| COMP | Cartilage Oligomeric Matrix Protein | An ECM protein that stabilizes collagen fibrils; often reported as downregulated in degeneration literature, though upregulated in this dataset (see Section 6.3) |
 | DC | Diffusion Component | A mathematical dimension derived from diffusion map analysis for trajectory inference |
 | DEG | Differentially Expressed Gene | A gene whose expression level is statistically significantly different between two conditions |
 | DPT | Diffusion Pseudotime | A computational method to order cells along a developmental or disease trajectory |
@@ -206,8 +206,8 @@ Seven datasets were downloaded from the NCBI Gene Expression Omnibus (GEO):
 Degeneration severity was harmonized across datasets using a unified schema:
 
 - **Healthy:** No or minimal degeneration (Pfirrmann I-II); n = 100,234 cells, 15 donors
-- **Mild degeneration:** Early structural changes (Pfirrmann II-III); n = 21,648 cells, 7 donors
-- **Moderate degeneration:** Moderate structural loss (Pfirrmann III-IV); n = 32,136 cells, 8 donors
+- **Mild degeneration:** Early structural changes (Pfirrmann II-III); n = 21,646 cells, 4 donors
+- **Moderate degeneration:** Moderate structural loss (Pfirrmann III-IV); n = 32,138 cells, 8 donors
 - **Severe degeneration:** Advanced degeneration (Pfirrmann IV-V); n = 19,610 cells, 3 donors
 
 The imbalance between healthy (n=15 donors) and severe (n=3 donors) reflects the practical reality that healthy disc tissue is primarily obtained from organ donors or scoliosis surgery, while severely degenerated tissue is more commonly available from discectomy procedures. This imbalance is a limitation discussed in Section 9.
@@ -304,7 +304,7 @@ GSEA was run separately for each of the 6 cell types. ORA was also performed as 
 
 **Cell subset:** 140,439 NP lineage cells (5 NP states) were extracted from the integrated dataset.
 
-**PAGA (Partition-based Graph Abstraction)** (Wolf et al., 2019): PAGA computes a graph where nodes are cell clusters and edge weights represent the statistical connectivity between clusters (how many cells transition between them relative to a random expectation). Connectivity values range from 0 (no connection) to 1 (maximum). The NP subset was re-embedded using Harmony-corrected PCA with 30 components and a kNN graph (k=20).
+**PAGA (Partition-based Graph Abstraction)** (Wolf et al., 2019): PAGA computes a graph where nodes are cell clusters and edge weights represent the statistical connectivity between clusters (how many cells transition between them relative to a random expectation). Connectivity values range from 0 (no connection) to 1 (maximum). The NP subset was re-embedded using de novo PCA on the lognorm expression matrix (not the Harmony-corrected embedding, which was found to over-compress the diffusion kernel eigenvalues) with 20 PCs used for the kNN graph (k=20).
 
 **Diffusion Pseudotime (DPT)** (Haghverdi et al., 2016): DPT was also computed using a healthy NP: canonical cell as root. However, the diffusion map components showed extremely low variance (all DC variances = 7.12 x 10^-6), likely because the large, well-mixed dataset compressed the diffusion kernel eigenvalues. The Spearman correlation of pseudotime with degeneration grade was significant but weak (rho = 0.24, p < 10^-300). **PAGA connectivity is therefore reported as the primary trajectory metric.**
 
@@ -348,10 +348,10 @@ After quality control, integration, and clustering, the atlas comprises **173,62
 The five NP states together account for **81% of all cells**, consistent with the NP being the dominant tissue compartment in most datasets. The NP states form a continuum in UMAP space, suggesting they represent related functional states rather than entirely distinct cell types — consistent with the concept of NP cell plasticity under stress (Gan et al., 2021).
 
 ![Figure 1. UMAP atlas overview](figures/05_annotation/umap_annotated_v2.png)
-**Figure 1. Integrated UMAP atlas of 173,628 human IVD cells.** *(A)* Cells colored by annotated cell type, showing 12 populations. The NP lineage (blue/teal shades) forms a continuous landscape, while AF fibroblasts (red), immune cells, and vascular cells form distinct clusters. *(B)* Same UMAP colored by degeneration condition. Blue = healthy (n = 100,234), yellow = mild (n = 21,648), orange = moderate (n = 32,136), red = severe (n = 19,610). Note the enrichment of severe-condition cells overlapping with the NP: degenerative and AF fibroblast clusters.
+**Figure 1. Integrated UMAP atlas of 173,628 human IVD cells.** *(A)* Cells colored by annotated cell type, showing 12 populations. The NP lineage (blue/teal shades) forms a continuous landscape, while AF fibroblasts (red), immune cells, and vascular cells form distinct clusters. *(B)* Same UMAP colored by degeneration condition. Blue = healthy (n = 100,234), yellow = mild (n = 21,646), orange = moderate (n = 32,138), red = severe (n = 19,610). Note the enrichment of severe-condition cells overlapping with the NP: degenerative and AF fibroblast clusters.
 
 ![Figure 2. Marker gene dot plot](figures/05_annotation/dotplot_markers.png)
-**Figure 2. Marker gene expression across Leiden clusters.** Dot size represents the fraction of cells expressing each gene; color intensity represents mean expression level. Columns are grouped by lineage: NP/notochordal, AF, CEP, progenitor, endothelial, and immune markers. Clusters 0-5 express NP markers (ACAN, COL2A1, SOX9); cluster 4 expresses AF markers (COL1A1, SCX); clusters 6-11 represent non-resident cell types.
+**Figure 2. Marker gene expression across Leiden clusters.** Dot size represents the fraction of cells expressing each gene; color intensity represents mean expression level. Columns are grouped by lineage: NP/notochordal, AF, CEP, progenitor, endothelial, and immune markers. Clusters 0-3 and 5 strongly express NP markers (ACAN, COL2A1, SOX9); cluster 4 is distinguished by AF markers (COL1A1, SCX) with weaker NP marker expression; clusters 6-11 represent non-resident cell types.
 
 ![Figure S1. UMAP overview](figures/05_annotation/umap_overview.png)
 **Figure S1. Integration quality assessment.** Four-panel UMAP showing cells colored by Leiden cluster, dataset of origin, degeneration condition, and tissue compartment. Datasets are well-mixed within the NP clusters, indicating successful batch correction by Harmony.
@@ -392,23 +392,25 @@ Pseudobulk DESeq2 analysis comparing severe degeneration to healthy tissue revea
 
 The most striking finding is the overwhelming dominance of **downregulated genes**: across all cell types, the ratio is approximately **7:1 to 12:1**. This "transcriptional collapse" is not simply a statistical artifact — it reflects a genuine biological phenomenon where NP cells are losing the transcriptional programs that define their identity (ECM synthesis, chondrogenic differentiation, tissue homeostasis) while gaining a much smaller set of stress-response and inflammatory genes. This is analogous to what has been described in other degenerative diseases as "transcriptional exhaustion" (Song et al., 2023a; Fine et al., 2023).
 
-**Key upregulated genes** (consistently across multiple cell types):
-- **ADAMTS5:** The primary aggrecan-degrading enzyme; its upregulation directly drives proteoglycan loss (Stanton et al., 2005)
-- **FN1 (fibronectin):** An ECM glycoprotein whose fragments are pro-inflammatory and activate macrophages via CD44 and toll-like receptors (Homandberg et al., 1997)
-- **TNF, IL6, CXCL8:** Pro-inflammatory cytokines that drive the catabolic cascade
-- **KRT19:** Upregulated in the NP: stress response state
+**Key upregulated genes** (reaching significance in multiple cell types):
+- **ADAMTS5:** The primary aggrecan-degrading enzyme; significantly upregulated in 4 of 6 cell types (LFC +2.8 to +3.9, padj < 0.05), with all 6 trending upward (Stanton et al., 2005)
+- **FN1 (fibronectin):** Significantly upregulated in 4 of 6 cell types (LFC +2.0 to +2.3); its fragments are pro-inflammatory and activate macrophages via CD44 and toll-like receptors (Homandberg et al., 1997)
+- **COMP (cartilage oligomeric matrix protein):** Unexpectedly, COMP is significantly upregulated in 4 of 6 cell types (LFC +2.0 to +2.3, padj 0.01-0.02), contrary to some literature reports of its downregulation in degenerated discs. This may reflect a compensatory attempt by NP cells to stabilize collagen fibrils
+- **TNF:** Significantly upregulated in NP: canonical (LFC +3.4, padj=0.017) and NP: degenerative (LFC +3.2, padj=0.036); trends upward in other types but does not reach significance
 
-**Key downregulated genes:**
-- **ACAN (aggrecan):** The major proteoglycan; its loss directly reduces disc hydration
-- **COL2A1 (type II collagen):** The structural collagen of healthy cartilaginous matrix
-- **HAPLN1 (link protein):** Stabilizes aggrecan-hyaluronan aggregates
-- **COMP (cartilage oligomeric matrix protein):** Important for collagen fibril assembly
-- **CILP (cartilage intermediate layer protein):** Modulates TGF-beta signaling in cartilage
+**Key downregulated genes — with important caveats:**
+
+Despite the massive number of DEGs (953-2,641 per cell type), several canonical IVD ECM genes that are widely reported as downregulated in degeneration literature did **not** reach statistical significance in this pseudobulk analysis:
+- **ACAN (aggrecan):** Trends downward in all 6 cell types (LFC -0.6 to -1.6) but does not reach significance in any (padj 0.33-0.86). The consistent direction suggests a real but underpowered effect, likely due to high inter-donor variability with only 3 severe donors.
+- **COL2A1 (type II collagen):** Similarly trends downward (LFC -0.3 to -1.5) but is not significant in any cell type (padj 0.60-0.94).
+- **HAPLN1 (link protein):** Shows no consistent directional change (LFC ranges from -0.28 to +0.30) and is not significant in any cell type.
+
+The failure of these biologically important genes to reach significance — while thousands of other genes do — likely reflects the well-known challenge of detecting expression changes in highly expressed, donor-variable ECM genes with small sample sizes (n=3 severe donors). This should not be interpreted as evidence that these genes are unchanged; rather, the current dataset lacks statistical power for these specific genes.
 
 ![Figure 4. Volcano plots](figures/07_pseudobulk/volcano_severe_vs_healthy.png)
-**Figure 4. Pseudobulk differential expression: severe degeneration vs. healthy.** Volcano plots for each of the 6 cell types. X-axis: log2 fold change (positive = upregulated in severe). Y-axis: -log10(adjusted p-value). Blue: significantly downregulated. Red: significantly upregulated. Gray: non-significant. Selected IVD-relevant genes are labeled. Note the asymmetric distribution toward the left (downregulated) in all cell types.
+**Figure 4. Pseudobulk differential expression: severe degeneration vs. healthy.** Volcano plots for each of the 6 cell types. X-axis: log2 fold change (positive = upregulated in severe). Y-axis: -log10(adjusted p-value). Blue: significantly downregulated. Red: significantly upregulated. Gray: non-significant. Selected IVD-relevant genes are labeled. Note the asymmetric distribution toward the left (downregulated) in all six major disc cell types shown.
 
-### 6.4 Pathway Enrichment: Four Homeostatic Programs Are Universally Suppressed
+### 6.4 Pathway Enrichment: Core Homeostatic Programs Are Universally Suppressed
 
 GSEA on ranked gene lists identified 70-85 significant pathways per cell type. Remarkably, the same core pathways were suppressed in all 6 cell types, suggesting tissue-wide loss of homeostatic signaling (Figure 5).
 
@@ -420,9 +422,11 @@ GSEA on ranked gene lists identified 70-85 significant pathways per cell type. R
 
 3. **Cellular senescence programs** (Oxidative stress-induced senescence, SASP, DNA damage senescence): Paradoxically, the senescence gene sets are downregulated. This likely reflects loss of the active senescence program as cells progress to cell death, or depletion of the senescent cell population itself (Song et al., 2023a).
 
-4. **ECM organization** (Extracellular Matrix Organization, Collagen Formation): Consistent with downregulation of ACAN, COL2A1, COMP, and HAPLN1 at the individual gene level.
+4. **RUNX transcription factor activity** (RUNX1 and RUNX2 target genes): Master regulators of chondrogenesis; their suppression indicates loss of NP chondrocyte transcriptional identity (Oichi et al., 2020).
 
-5. **RUNX transcription factor activity** (RUNX1 and RUNX2 target genes): Master regulators of chondrogenesis; their suppression indicates loss of NP chondrocyte transcriptional identity (Oichi et al., 2020).
+**ECM pathway enrichment — a more nuanced picture:**
+
+Unlike Wnt, Notch, senescence, and RUNX (which are uniformly suppressed), ECM-related pathways show **variable directionality** across cell types. Extracellular Matrix Organization and Collagen Formation are significantly **upregulated** in NP: canonical (NES = +1.64, padj = 0.001) and NP: HAPLN1+ (NES = +1.44, padj = 0.002), while not reaching significance in the other four cell types. This upregulation may reflect compensatory ECM remodeling activity in the cell types that retain the most chondrocyte-like identity, even as individual ECM genes like ACAN and COL2A1 trend downward (see Section 6.3 caveats). The ECM pathway result highlights the distinction between coordinated pathway-level activity and individual gene behavior.
 
 **Pathways upregulated in severe degeneration (selected cell types):**
 
@@ -434,7 +438,7 @@ GSEA on ranked gene lists identified 70-85 significant pathways per cell type. R
 
 4. **Collagen crosslinking** (NP: stress, NP: degenerative, NP: MT-high): Upregulation of lysyl oxidase (LOX) family enzymes that crosslink collagen fibrils, increasing matrix stiffness (Zhang et al., 2025).
 
-5. **Glycolysis** (NP: canonical): Metabolic reprogramming under worsening hypoxic stress as the endplate calcifies.
+5. **Gluconeogenesis** (NP: canonical, padj = 0.049): Marginally significant upregulation of gluconeogenesis in canonical NP cells. Note: no glycolysis pathway reached significance in the GSEA results, though metabolic reprogramming under hypoxic stress remains plausible given the avascular disc environment.
 
 ![Figure 5. GSEA heatmap](figures/08_pathways/gsea_heatmap_severe_vs_healthy.png)
 **Figure 5. Gene set enrichment analysis: severe degeneration vs. healthy.** Heatmap of normalized enrichment scores (NES) across 6 cell types. Blue = downregulated in severe (negative NES); red = upregulated (positive NES). Asterisks = adjusted p < 0.05. Bottom rows: pathways suppressed in all 6 cell types. Top rows: selectively upregulated pathways.
@@ -479,7 +483,7 @@ The topology suggests the following model of NP cell state transitions:
 | NP: MT-high | 26.3% | 13.8% | -12.5% |
 
 ![Figure 6. NP trajectory analysis](figures/09_trajectory/np_trajectory_overview.png)
-**Figure 6. NP lineage trajectory and state transitions.** *(Top left)* NP subset UMAP by cell type. *(Top center)* Same UMAP by degeneration condition. *(Top right)* PAGA connectivity heatmap; darker red = stronger connectivity. The NP: stress <-> NP: degenerative connection (0.76) is the strongest. *(Bottom left)* NP state composition by degeneration grade. *(Bottom center)* Pseudotime density distributions (note caveat about weak DPT resolution). *(Bottom right)* Change in NP state proportions, severe vs. healthy.
+**Figure 6. NP lineage trajectory and state transitions.** *(Top left)* NP subset UMAP by cell type. *(Top center)* Same UMAP by degeneration condition. *(Top right)* PAGA connectivity heatmap; darker red = stronger connectivity. The NP: stress <-> NP: degenerative connection (0.76) is the strongest inter-state connection. *(Bottom left)* NP state composition by degeneration grade. *(Bottom center)* Pseudotime density distributions (note caveat about weak DPT resolution). *(Bottom right)* Change in NP state proportions, severe vs. healthy.
 
 ### 6.6 Cell-Cell Communication: Loss of Protective Signaling, Gain of Inflammatory Circuits
 
@@ -528,7 +532,7 @@ The disc is exposed to cumulative mechanical stress, aging-related oxidative dam
 Chronic stress drives NP cells from the stress response state into the NP: degenerative (UPR) state. The UPR is activated as misfolded proteins accumulate in the ER under hypoxic and oxidative conditions. Simultaneously, the NP: MT-high state activates as cells upregulate antioxidant defenses (MT1G, MT1E, MT1X) to cope with ROS. ADAMTS5 expression increases, accelerating aggrecan cleavage. The MMP/TIMP balance begins to shift toward catabolism.
 
 **Stage 3 — Collapse (Moderate -> Severe degeneration):**
-The transcriptional programs maintaining NP identity collapse across all NP states (7:1 down:up DEG ratio). Wnt, Notch, RUNX, and ECM organization programs are universally suppressed. TNF/NF-kB inflammatory signaling is activated, driving further MMP and ADAMTS expression in a self-amplifying loop. FN1 accumulates and its fragments signal to macrophages via CD44 and C5AR1, recruiting and activating inflammatory cells. AF fibroblasts expand dramatically (7% to 24%), replacing NP tissue with fibrocartilage. Endothelial cells respond to FN1-ITGA6 and COL1A2-CD93 signals, driving angiogenesis and neural ingrowth that contribute to pain.
+The transcriptional programs maintaining NP identity collapse across all NP states (7:1 down:up DEG ratio). Wnt, Notch, RUNX, and senescence programs are universally suppressed. ECM pathway activity shows a more complex pattern — upregulated in the most chondrocyte-like states (NP: canonical, NP: HAPLN1+), possibly reflecting compensatory remodeling, while individual ECM genes trend downward without reaching significance. TNF/NF-kB inflammatory signaling is activated in NP: canonical and NP: degenerative states, driving further MMP and ADAMTS expression in a self-amplifying loop. FN1 accumulates and its fragments signal to macrophages via CD44 and C5AR1, recruiting and activating inflammatory cells. AF fibroblasts expand dramatically (7% to 24%), replacing NP tissue with fibrocartilage. Endothelial cells respond to FN1-ITGA6 and COL1A2-CD93 signals, driving angiogenesis and neural ingrowth that contribute to pain.
 
 ### 7.2 The Central Role of the TIMP1/MMP Axis
 
@@ -660,6 +664,8 @@ Based on the integrated findings, we prioritize therapeutic targets for IVD dege
 7. **Transcriptomics only:** Gene expression does not always predict protein levels or activity. ADAMTS5 mRNA upregulation does not guarantee increased aggrecanase activity — post-translational regulation, inhibitor availability, and substrate accessibility all matter. Proteomic and functional validation is essential.
 
 8. **Human tissue heterogeneity:** Confounders including age, sex, BMI, and genetic background were not fully controlled due to incomplete metadata across datasets.
+
+9. **LLM-generated claims require data verification:** Systematic fact-checking (see `manuscript_fact_check.md`) identified several instances where the LLM analysis agent made biologically plausible claims about specific genes or pathways based on its training knowledge of IVD literature, rather than the actual DESeq2/GSEA output. For example, COMP was initially described as downregulated (consistent with some literature) but is actually significantly upregulated in this dataset. All gene-level and pathway-level claims in this manuscript have been verified against the underlying data files; see the fact-check report for details.
 
 ---
 
