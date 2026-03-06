@@ -3,6 +3,8 @@
 **Draft Manuscript**
 **Analysis Date: March 2026**
 
+> **Companion Analysis:** An independent analysis of 7 of these 12 datasets (173,628 cells, 29 donors) was performed using a separate pipeline (Harmony integration, R-based DESeq2, LIANA CCC). That analysis and its full report are available at [`phylo_analysis/report_IVD_scRNAseq_analysis.md`](../phylo_analysis/report_IVD_scRNAseq_analysis.md), with a corresponding draft manuscript at [`phylo_analysis/draft_manuscript.md`](../phylo_analysis/draft_manuscript.md). The phylo analysis is referenced throughout this document where its findings converge with or diverge from the present 12-dataset analysis.
+
 ---
 
 ## Table of Contents
@@ -19,7 +21,7 @@
    - 5.5 Cell State Trajectories
    - 5.6 Cell-Cell Communication
    - 5.7 Pain Biology
-6. [Biological Interpretation and Mechanistic Model](#6-biological-interpretation)
+6. [Biological Interpretation and Mechanistic Model](#6-biological-interpretation-and-mechanistic-model)
 7. [Therapeutic Targets](#7-therapeutic-targets)
 8. [Novel and Discordant Findings](#8-novel-and-discordant-findings)
 9. [Limitations](#9-limitations)
@@ -129,7 +131,16 @@ LIANA rank_aggregate (Dimitrov et al., 2022) was applied with five consensus met
 
 The atlas comprises 436,239 cells organized into distinct populations. NP cells segregate into three major states: NP_notochordal (expressing KRT8, KRT18, T/TBXT), NP_mature_chondrocyte (ACAN, COL2A1, SOX9), and NP_stressed_degenerative (HSPA5, DDIT3, stress markers). AF cells separate into AF_inner (transitional, cartilage-like) and AF_outer (COL1A1, COL1A2, fibrous). Non-resident populations include immune subtypes (Tcm/Naive helper T cells, Tem/Trm cytotoxic T cells, macrophages, B cells) and endothelial cells.
 
-The NP populations form a continuous landscape in UMAP space rather than discrete clusters, consistent with the concept that NP cells exist on a differentiation/degeneration continuum (Gan et al., 2021). scANVI's semi-supervised integration preserves this continuum while correcting batch effects across the 12 datasets.
+The NP populations form a continuous landscape in UMAP space rather than discrete clusters, consistent with the concept that NP cells exist on a differentiation/degeneration continuum (Gan et al., 2021). scANVI's semi-supervised integration preserves this continuum while correcting batch effects across the 12 datasets. The companion phylo analysis independently identified a similar set of NP cell states — including canonical, stress-response, UPR/degenerative, and metallothionein-high populations — using Harmony integration on a 7-dataset subset ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 4](../phylo_analysis/report_IVD_scRNAseq_analysis.md#4-cell-type-annotation)).
+
+**Figure 1. NP integration comparison across four approaches.**
+![NP integration UMAP](integration/umap_tier2_NP_by_approach.png)
+
+**Figure 2. AF integration comparison across four approaches.**
+![AF integration UMAP](integration/umap_tier2_AF_by_approach.png)
+
+**Figure 3. Integration metrics comparison.**
+![Metrics comparison](integration/metrics_comparison_AF.png)
 
 ### 5.2 Differential Gene Expression
 
@@ -158,7 +169,7 @@ Pseudobulk DE identified **5,328 significant genes** across **17 powered compari
 - **MDK** (log2FC=+2.72, padj=4.9x10^-12): midkine, a heparin-binding growth factor implicated in inflammation and angiogenesis
 - **TNF** (log2FC=+2.45, padj=0.043): master inflammatory cytokine
 
-The CXCL1/2/3 upregulation in NP cells with severe degeneration is consistent with the known role of these chemokines in recruiting neutrophils and amplifying sterile inflammation in cartilaginous tissues (Risbud and Shapiro, 2014; Song et al., 2022). TNF upregulation was confirmed in both NP_mature_chondrocyte (log2FC=+2.45) and NP_stressed_degenerative (log2FC=+2.65, padj=9.3x10^-7), the latter showing the stronger statistical significance.
+The CXCL1/2/3 upregulation in NP cells with severe degeneration is consistent with the known role of these chemokines in recruiting neutrophils and amplifying sterile inflammation in cartilaginous tissues (Risbud and Shapiro, 2014; Song et al., 2022). TNF upregulation was confirmed in both NP_mature_chondrocyte (log2FC=+2.45) and NP_stressed_degenerative (log2FC=+2.65, padj=9.3x10^-7), the latter showing the stronger statistical significance. The companion phylo analysis also detected ADAMTS5, FN1, TNF, and CXCL8 among its top upregulated genes in severe degeneration, and reported a striking ~7:1 down:up DEG ratio — a pattern of transcriptional collapse consistent with our findings ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 6](../phylo_analysis/report_IVD_scRNAseq_analysis.md#6-pseudobulk-differential-expression-deseq2)).
 
 **CXCL2 is consistently upregulated across compartments:** In addition to NP, CXCL2 was significantly DE in NP_stressed_degenerative (log2FC=+2.33, padj=0.010) — indicating the chemokine signal is not restricted to a single NP subtype.
 
@@ -175,6 +186,12 @@ The downregulation of CXCL8 in AF_outer while CXCL1-3 are upregulated in NP repr
 - **SOD2** (superoxide dismutase 2): upregulated in AF_inner mild_vs_severe (log2FC=+1.27, padj=0.024), consistent with oxidative stress response
 - **COL1A1** (type I collagen): upregulated in NP_notochordal mild_vs_severe (log2FC=+4.25, padj=0.0006), suggesting fibrocartilaginous shift even in the most primitive NP state
 - **HSPA1A** and **HSPA1B** (heat shock proteins): upregulated in AF_inner (log2FC=+1.66 and +1.72, padj=1.1x10^-4 and 1.1x10^-5) and endothelial cells (log2FC ~+2.4-3.0, padj<0.01), indicating widespread proteotoxic stress
+
+**Figure 4. Volcano plot — NP mature chondrocyte, mild vs. severe degeneration.**
+![NP mild vs severe volcano](differential/volcano_plots/volcano_NP_mature_chondrocyte_mild_vs_severe.png)
+
+**Figure 5. Volcano plot — AF outer, healthy vs. severe degeneration.**
+![AF healthy vs severe volcano](differential/volcano_plots/volcano_AF_outer_healthy_vs_degenerated_severe.png)
 
 **Endothelial annotation caveat.** ACAN and COL2A1 appeared among endothelial DE genes (ACAN log2FC=-3.4 to -4.5), suggesting possible contamination of the endothelial cluster with misclassified NP/AF cells. These results should be interpreted with caution.
 
@@ -203,13 +220,22 @@ These are driven by the CXCL1/2/3 and TNF upregulation and represent a coherent 
 
 This may indicate compensatory proliferation of surviving chondrocytes, consistent with the "cluster formation" phenomenon observed histologically in degenerated discs (Johnson et al., 2001).
 
+**Figure 6. Pathway enrichment — NP mature chondrocyte, upregulated in severe degeneration.**
+![NP chondrocyte up pathways](interpretation/pathway_enrichment/enrichment_NP_mature_chondrocyte_up.png)
+
+**Figure 7. Pathway enrichment — AF outer, upregulated in severe degeneration.**
+![AF outer up pathways](interpretation/pathway_enrichment/enrichment_AF_outer_up.png)
+
+**Figure 8. GSEA heatmap — IVD-specific custom gene sets across cell types.**
+![GSEA IVD heatmap](interpretation/pathway_enrichment/gsea_ivd_custom_heatmap.png)
+
 **AF_inner (mild_vs_severe):**
 - **Upregulated:** Cellular response to heat (NES=+2.35, FDR=0.0), response to unfolded protein (NES=+2.33, FDR=0.0), TNF-mediated signaling regulation (NES=+1.96, FDR=0.032), granulocyte chemotaxis (NES=+1.95, FDR=0.030)
 - **Downregulated:** Oxidative phosphorylation (NES=-1.96, FDR=0.18), aerobic electron transport chain (NES=-1.93, FDR=0.14), mitochondrial ATP synthesis (NES=-1.92, FDR=0.11)
 
 The simultaneous heat shock protein upregulation and mitochondrial dysfunction in AF cells is a novel observation. It suggests that AF cells are experiencing proteotoxic stress (driving HSP induction) concurrent with metabolic failure (reduced oxidative phosphorylation), a combination that may represent an energy crisis limiting the ability of AF cells to maintain ECM homeostasis.
 
-**Important negative finding:** Neither Wnt signaling, Notch signaling, nor cellular senescence pathways reached significance in our GSEA analysis for any cell type. The Notch signaling pathway showed a positive (non-significant) NES of +1.43 in AF_inner, and regulation of non-canonical Wnt signaling was non-significant (NES=+1.60, FDR=0.27). This contrasts with a prior analysis of a 7-dataset subset (Good, 2026) that reported consistent suppression of Wnt, Notch, and senescence across all cell types. We address this discordance in Section 8.
+**Important negative finding:** Neither Wnt signaling, Notch signaling, nor cellular senescence pathways reached significance in our GSEA analysis for any cell type. The Notch signaling pathway showed a positive (non-significant) NES of +1.43 in AF_inner, and regulation of non-canonical Wnt signaling was non-significant (NES=+1.60, FDR=0.27). This contrasts with the companion phylo analysis ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 7](../phylo_analysis/report_IVD_scRNAseq_analysis.md#7-pathway-enrichment-gsea)), which reported consistent suppression of Wnt, Notch, and senescence across all cell types using its 7-dataset subset. We address this discordance in Section 8.
 
 ### 5.4 Transcription Factor Activity
 
@@ -243,28 +269,52 @@ TF activity inference using CollecTRI regulon overlap identified **113 significa
 
 4. **FOXO3 in NP_stressed_degenerative:** FOXO3 (padj=7.4x10^-4) is a key mediator of apoptosis and cellular stress response. Its activation in the stressed/degenerative NP population is consistent with the extrinsic apoptotic signaling pathway enrichment in this cell type.
 
+**Figure 9. Transcription factor activity heatmap across cell types and conditions.**
+![TF activity heatmap](interpretation/tf_activity/tf_activity_heatmap.png)
+
 ### 5.5 Cell State Trajectories
 
 PAGA + diffusion pseudotime analysis revealed structured connectivity between cell states in both NP and AF compartments.
+
+**Figure 10. NP cell state trajectory — UMAP with pseudotime overlay.**
+![NP trajectory UMAP](trajectories/umap_trajectory_NP.png)
 
 **NP trajectory:** Rooted at NP_notochordal cells, the trajectory progresses through NP_mature_chondrocyte to NP_stressed_degenerative. Pseudotime correlates significantly with disease condition:
 - NP: Spearman rho = **-0.207** (p < 10^-100)
 - Healthy cells occupy earlier pseudotime; degenerated cells occupy later pseudotime
 
+**Figure 11. NP pseudotime distribution by disease condition.**
+![NP pseudotime by condition](trajectories/pseudotime_by_condition_NP.png)
+
 **AF trajectory:** Rooted at AF_inner, progressing toward AF_outer states. Pseudotime-condition correlation:
 - AF: Spearman rho = **-0.177** (p < 10^-100)
 
-**Sensitivity analysis:** scVI embedding (alternative integration) confirmed the direction of the pseudotime-condition correlation (NP rho = -0.132), though with attenuated magnitude, demonstrating robustness to integration method choice.
+**Sensitivity analysis:** scVI embedding (alternative integration) confirmed the direction of the pseudotime-condition correlation (NP rho = -0.132), though with attenuated magnitude, demonstrating robustness to integration method choice. The companion phylo analysis also identified the NP stress-response state as a transition hub between canonical NP chondrocytes and the degenerative UPR state via PAGA, though its diffusion pseudotime was weakly resolved ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 8](../phylo_analysis/report_IVD_scRNAseq_analysis.md#8-np-lineage-trajectory-paga)).
 
 **Trajectory-DE overlap:** 500 trajectory-associated genes per compartment were identified. Approximately **55% overlapped with DE genes**, confirming that the trajectory captures disease-relevant transcriptomic changes rather than batch effects or arbitrary cell state ordering. The non-overlapping 45% may represent gradual, continuous changes not captured by the binary DE framework (e.g., subtle shifts in metabolic gene programs along the continuum).
+
+**Figure 12. Gene expression dynamics along NP pseudotime.**
+![NP gene dynamics](trajectories/gene_dynamics_NP.png)
+
+**Figure 13. AF cell state trajectory — UMAP with pseudotime overlay.**
+![AF trajectory UMAP](trajectories/umap_trajectory_AF.png)
 
 **Gene dynamics along NP pseudotime:** Notochordal markers (KRT8, KRT18) decline monotonically with pseudotime, while stress/inflammatory markers increase, consistent with the proposed continuum model. Mature chondrocyte markers (ACAN, COL2A1) peak at intermediate pseudotime and decline at the degenerative end, suggesting an initial maintenance phase followed by loss of chondrocyte identity.
 
 ### 5.6 Cell-Cell Communication
 
+**Figure 14. Cell-cell interaction heatmap — healthy tissue.**
+![Healthy interactions](communication/interaction_plots/interaction_heatmap_healthy.png)
+
+**Figure 15. Cell-cell interaction heatmap — degenerated tissue.**
+![Degenerated interactions](communication/interaction_plots/interaction_heatmap_degenerated.png)
+
+**Figure 16. Differential interactions between healthy and degenerated tissue.**
+![Differential interactions](communication/interaction_plots/differential_interactions.png)
+
 LIANA consensus analysis identified **44,079 ligand-receptor interactions in healthy** and **53,036 in degenerated** tissue — a **20% increase** in signaling complexity with degeneration.
 
-This increase is consistent with the concept that degenerated discs develop a more complex paracrine environment as inflammatory mediators, ECM fragments, and immune cell-derived signals accumulate. The increase was distributed across cell type pairs, not concentrated in a single axis, suggesting tissue-wide signaling remodeling.
+This increase is consistent with the concept that degenerated discs develop a more complex paracrine environment as inflammatory mediators, ECM fragments, and immune cell-derived signals accumulate. The increase was distributed across cell type pairs, not concentrated in a single axis, suggesting tissue-wide signaling remodeling. The companion phylo analysis similarly found increased overall interaction strength in severe degeneration across all NP states, with FN1-driven inflammatory macrophage signaling as a prominent gained axis ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 9](../phylo_analysis/report_IVD_scRNAseq_analysis.md#9-cell-cell-communication-liana)).
 
 **Pain-relevant interactions:** 4,195 interactions were flagged as pain-relevant through cross-referencing with curated gene sets (nociception, neurotrophins, nerve guidance, inflammatory pain, neovascularization). Key pain-associated ligand-receptor pairs in degenerated tissue include:
 - **CXCL8 -> CD79A** (NP_stressed_degenerative to B cells): pain ligand CXCL8 signaling
@@ -281,6 +331,9 @@ Cross-referencing DE genes with curated pain gene sets revealed a critical insig
 
 **Not detected in our data:**
 - NGF (nerve growth factor) and BDNF (brain-derived neurotrophic factor), which are classically associated with nerve ingrowth into degenerated discs (Freemont et al., 2002), were **not significantly upregulated** in any powered comparison. NGF showed non-significant trends in endothelial cells (negative direction) and NP_stressed_degenerative (positive direction, padj>0.05). This may reflect insufficient statistical power in our dataset for these genes, or may indicate that NGF/BDNF upregulation occurs at a different disease stage or cell population not captured here.
+
+**Figure 17. Pain-associated gene expression heatmap across cell types.**
+![Pain genes heatmap](interpretation/pain_genes_heatmap.png)
 
 **Model:** Degenerated disc cells create a pro-inflammatory microenvironment through TNF and CXC chemokine production that promotes nerve ingrowth and sensitization, rather than directly signaling pain. This is consistent with the two-signal model of discogenic pain: (1) structural disruption permits nerve ingrowth into the NP, and (2) the inflammatory milieu sensitizes ingrown nerves (Freemont et al., 2002; Risbud and Shapiro, 2014).
 
@@ -364,7 +417,7 @@ Based on the evidence from this analysis, we propose the following therapeutic t
 - **Status:** Small molecule inhibitors developed for osteoarthritis are in preclinical testing.
 
 **Target 8: TIMP1 Restoration**
-- **This analysis:** TIMP1-CD63 loss was not among the top differential interactions in our CCC analysis (which was dominated by HMGB1-CXCR4 axes). However, the top interactions differ from a prior 7-dataset analysis (Good, 2026) that identified TIMP1-CD63 as the dominant lost interaction.
+- **This analysis:** TIMP1-CD63 loss was not among the top differential interactions in our CCC analysis (which was dominated by HMGB1-CXCR4 axes). However, the companion phylo analysis ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 9](../phylo_analysis/report_IVD_scRNAseq_analysis.md#9-cell-cell-communication-liana)) identified TIMP1-CD63 as the dominant lost interaction in its 7-dataset CCC analysis.
 - **Literature:** The MMP/TIMP balance is a well-established axis of disc degeneration (Vo et al., 2013; Cabral-Pacheco et al., 2020). AAV-TIMP1 gene therapy has shown preclinical efficacy (Han et al., 2021).
 
 **Target 9: Senolytic Therapy**
@@ -399,23 +452,23 @@ The simultaneous upregulation of CXCL1, CXCL2, and CXCL3 (which all signal throu
 
 CXCL8 (IL-8) is downregulated in AF_outer (log2FC=-2.19) while CXCL1-3 are upregulated in NP. This compartment-specific chemokine divergence has not been previously described. It may reflect the distinct microenvironments of the NP (avascular, hypoxic) versus AF (partially vascularized), leading to different chemokine regulation under degeneration.
 
-### 8.3 Discordance with Prior Analysis: Wnt, Notch, and Senescence
+### 8.3 Discordance with Companion Phylo Analysis: Wnt, Notch, and Senescence
 
-A prior analysis of 7 of the same 12 datasets using Harmony integration and R-based DESeq2 (Good, 2026) reported consistent suppression of Wnt signaling, Notch signaling, and cellular senescence pathways across all NP cell types. Our analysis did not replicate these findings. Several factors likely contribute:
+The companion phylo analysis ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 7](../phylo_analysis/report_IVD_scRNAseq_analysis.md#7-pathway-enrichment-gsea); Good, 2026) — which analyzed 7 of the same 12 datasets using Harmony integration and R-based DESeq2 — reported consistent suppression of Wnt signaling, Notch signaling, and cellular senescence pathways across all NP cell types. Our analysis did not replicate these findings. Several factors likely contribute:
 
-1. **Histone gene artifacts:** Examination of the prior analysis's GSEA results reveals that the top 30+ enriched pathways (including Wnt, Notch, senescence, and DNA methylation) are driven almost exclusively by the same set of replication-dependent histone genes (H4C15, H4C11, H2BC12, H2AC8, etc.). These genes appear in the core enrichment of essentially all "suppressed" pathways because many Reactome pathways include histone-related genes. Histone genes are known to be highly sensitive to cell cycle state, dissociation protocols, and ambient RNA contamination (Slyper et al., 2020), making them unreliable indicators of pathway activity in cross-study comparisons.
+1. **Histone gene artifacts:** Examination of the phylo analysis's GSEA results reveals that the top 30+ enriched pathways (including Wnt, Notch, senescence, and DNA methylation) are driven almost exclusively by the same set of replication-dependent histone genes (H4C15, H4C11, H2BC12, H2AC8, etc.). These genes appear in the core enrichment of essentially all "suppressed" pathways because many Reactome pathways include histone-related genes. Histone genes are known to be highly sensitive to cell cycle state, dissociation protocols, and ambient RNA contamination (Slyper et al., 2020), making them unreliable indicators of pathway activity in cross-study comparisons.
 
-2. **Comparison design:** The prior analysis used healthy_vs_severe comparisons, where study and condition are maximally confounded. Our prioritization of mild_vs_severe (within-study) comparisons reduces this confounding.
+2. **Comparison design:** The phylo analysis used healthy_vs_severe comparisons, where study and condition are maximally confounded. Our prioritization of mild_vs_severe (within-study) comparisons reduces this confounding.
 
-3. **LFC shrinkage:** Our pyDESeq2 analysis applies LFC shrinkage by default, constraining fold-change estimates to biologically plausible ranges. The prior analysis reported log2FC values up to -28 (LINC01578), which likely reflect technical artifacts rather than true expression changes of 10^8-fold magnitude.
+3. **LFC shrinkage:** Our pyDESeq2 analysis applies LFC shrinkage by default, constraining fold-change estimates to biologically plausible ranges. The phylo analysis reported log2FC values up to -28 (LINC01578), which likely reflect technical artifacts rather than true expression changes of 10^8-fold magnitude.
 
 4. **Integration method:** scANVI (semi-supervised, deep learning) vs. Harmony (linear correction) may differentially preserve cell state heterogeneity, affecting which genes appear as DE.
 
-**Our interpretation:** The Wnt, Notch, and senescence pathway suppression reported in the prior analysis is substantially driven by a histone gene artifact that propagates through pathway databases. This does not mean these pathways are unaltered in disc degeneration — literature evidence for Wnt/Notch involvement is substantial (Li et al., 2023a; Long et al., 2019) — but our data does not independently confirm these pathway changes at the GSEA level. The inflammatory/chemokine signature we detect is more robust because it is driven by diverse, biologically coherent gene sets.
+**Our interpretation:** The Wnt, Notch, and senescence pathway suppression reported in the phylo analysis is substantially driven by a histone gene artifact that propagates through pathway databases. This does not mean these pathways are unaltered in disc degeneration — literature evidence for Wnt/Notch involvement is substantial (Li et al., 2023a; Long et al., 2019) — but our data does not independently confirm these pathway changes at the GSEA level. The inflammatory/chemokine signature we detect is more robust because it is driven by diverse, biologically coherent gene sets.
 
 ### 8.4 TIMP1-CD63 Not Replicated
 
-The prior analysis identified TIMP1-CD63 loss as the dominant CCC change. Our CCC analysis was dominated by HMGB1-CXCR4 axes. This discordance likely reflects differences in: (1) cell type resolution (12 vs. ~10 clusters), (2) CCC methodology (per-dataset vs. integrated), and (3) subsampling strategies. The TIMP1-CD63 finding remains biologically plausible (Vo et al., 2013) and warrants targeted investigation.
+The companion phylo analysis ([`phylo_analysis/report_IVD_scRNAseq_analysis.md`, Section 9](../phylo_analysis/report_IVD_scRNAseq_analysis.md#9-cell-cell-communication-liana)) identified TIMP1-CD63 loss as the dominant CCC change, alongside FN1-driven macrophage signaling gains. Our CCC analysis was dominated by HMGB1-CXCR4 axes. This discordance likely reflects differences in: (1) cell type resolution (12 vs. ~10 clusters), (2) CCC methodology (per-dataset vs. integrated), and (3) subsampling strategies. The TIMP1-CD63 finding remains biologically plausible (Vo et al., 2013) and warrants targeted investigation.
 
 ### 8.5 MDK (Midkine) as a Degeneration Marker
 
@@ -487,7 +540,7 @@ Garcia-Alonso L, Holland CH, Ibrahim MM, et al. (2019). Benchmark and integratio
 
 GBD 2021 Low Back Pain Collaborators. (2023). Global, regional, and national burden of low back pain, 1990-2020. *The Lancet Rheumatology*, 5(6):e316-e329.
 
-Good B. (2026). Single-Cell Transcriptomic Atlas of Human Intervertebral Disc Degeneration. Draft manuscript, Phylo/Biomni analysis.
+Good B. (2026). Single-Cell Transcriptomic Atlas of Human Intervertebral Disc Degeneration. Draft manuscript, Phylo/Biomni analysis. Report: [`phylo_analysis/report_IVD_scRNAseq_analysis.md`](../phylo_analysis/report_IVD_scRNAseq_analysis.md); Manuscript: [`phylo_analysis/draft_manuscript.md`](../phylo_analysis/draft_manuscript.md).
 
 Haghverdi L, Buttner M, Wolf FA, Buettner F, Theis FJ. (2016). Diffusion pseudotime robustly reconstructs lineage branching. *Nature Methods*, 13:845-848.
 
