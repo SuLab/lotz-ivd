@@ -4,7 +4,7 @@
 
 Human-gated agentic bioinformatics pipeline analyzing 12 scRNA-seq datasets (436K cells, 78 samples, 57 donors) of human intervertebral disc tissue. Each module produces results that are reviewed at a human checkpoint before the pipeline advances.
 
-**How to read this diagram:** Blue boxes are computational modules (agent-executed). Orange hexagons are human checkpoints where the pipeline pauses — click any checkpoint to jump to its detailed questions and decisions below. Yellow notes show the key decisions made.
+**How to read this diagram:** Blue boxes are computational modules (agent-executed). Orange hexagons are human checkpoints where the pipeline pauses. Yellow notes show the key decisions made. Full questions and rationale for each checkpoint are in the [Checkpoint Details](#checkpoint-details) section below.
 
 ## Workflow Diagram
 
@@ -28,7 +28,7 @@ flowchart TD
     M01 --> CP01
 
     CP01{{"HUMAN CHECKPOINT<br/>Approve Dataset List"}}:::checkpoint
-    N01["Decided:<br/>- Include GSE242443 (culture-expanded CEP)<br/>- Defer Zhou 2023 embryonic data to Module 08<br/>- Drop 2 NGDC datasets (NP well-covered)<br/>- 12 datasets, coverage adequate"]:::decision
+    N01["Details: see #01 below<br/>- Include GSE242443 (culture-expanded CEP)<br/>- Defer Zhou 2023 embryonic data to Module 08<br/>- Drop 2 NGDC datasets (NP well-covered)<br/>- 12 datasets, coverage adequate"]:::decision
     CP01 -.- N01
     CP01 --> M02
 
@@ -37,7 +37,7 @@ flowchart TD
     M02 --> CP02
 
     CP02{{"HUMAN CHECKPOINT<br/>Approve Condition Mappings"}}:::checkpoint
-    N02["Decided (tentative):<br/>- Herniated kept separate from degenerated<br/>- GSE165722 Pfirrmann grades corrected<br/>- GSE244889 Pfirrmann I reclassified as healthy<br/>- Thompson III boundary: degenerated_mild<br/>- MUST revisit mappings before Module 06"]:::decision
+    N02["Details: see #02 below<br/>- Herniated kept separate from degenerated<br/>- GSE165722 Pfirrmann grades corrected<br/>- GSE244889 Pfirrmann I reclassified as healthy<br/>- Thompson III boundary: degenerated_mild<br/>- MUST revisit mappings before Module 06"]:::decision
     CP02 -.- N02
     CP02 --> M03
 
@@ -46,7 +46,7 @@ flowchart TD
     M03 --> CP03
 
     CP03{{"HUMAN CHECKPOINT<br/>QC Review (retroactive)"}}:::checkpoint
-    N03["Decided:<br/>- 4 datasets had 100% retention (pre-filtered)<br/>- GSE251686_NP3 excluded (corrupt matrix)<br/>- Diffuse CD68 expected IVD biology<br/>- No blocking issues"]:::decision
+    N03["Details: see #03 below<br/>- 4 datasets had 100% retention (pre-filtered)<br/>- GSE251686_NP3 excluded (corrupt matrix)<br/>- Diffuse CD68 expected IVD biology<br/>- No blocking issues"]:::decision
     CP03 -.- N03
     CP03 --> M04
 
@@ -55,7 +55,7 @@ flowchart TD
     M04 --> CP04
 
     CP04{{"HUMAN CHECKPOINT<br/>Annotation Review (retroactive)"}}:::checkpoint
-    N04["Decided:<br/>- NP subtypes: notochordal, mature, stressed, fibrocartilaginous<br/>- AF subtypes: inner, outer, mechanical stress<br/>- CellTypist refined immune populations<br/>- No IVD reference atlas available"]:::decision
+    N04["Details: see #04 below<br/>- NP subtypes: notochordal, mature, stressed, fibrocartilaginous<br/>- AF subtypes: inner, outer, mechanical stress<br/>- CellTypist refined immune populations<br/>- No IVD reference atlas available"]:::decision
     CP04 -.- N04
     CP04 --> M05
 
@@ -64,19 +64,19 @@ flowchart TD
     M05 --> CP05a
 
     CP05a{{"HUMAN CHECKPOINT<br/>Tier 1 Integration Review"}}:::checkpoint
-    N05a["Decided:<br/>- Tier 1 scVI integration approved<br/>- Retroactive approval of Modules 03-04<br/>- Proceed to Tier 2"]:::decision
+    N05a["Details: see #05a below<br/>- Tier 1 scVI integration approved<br/>- Retroactive approval of Modules 03-04<br/>- Proceed to Tier 2"]:::decision
     CP05a -.- N05a
     CP05a --> CP05b
 
     CP05b{{"HUMAN CHECKPOINT<br/>Tier 2 Integration Selection"}}:::checkpoint
-    N05b["Decided:<br/>- Primary: scANVI (best overall + cell type ASW)<br/>- Sensitivity: scVI (preserves continuum)<br/>- Harmony rejected (overcorrects)<br/>- BBKNN not primary (no embedding)<br/>- Pseudobulk DE uses scANVI labels"]:::decision
+    N05b["Details: see #05b below (MOST CRITICAL GATE)<br/>- Primary: scANVI (best overall + cell type ASW)<br/>- Sensitivity: scVI (preserves continuum)<br/>- Harmony rejected (overcorrects)<br/>- BBKNN not primary (no embedding)<br/>- Pseudobulk DE uses scANVI labels"]:::decision
     CP05b -.- N05b
 
     %% ── Condition Mapping Revisit ──
     CP05b --> COND_REVIEW
 
     COND_REVIEW{{"HUMAN CHECKPOINT<br/>Condition Mapping Revisit<br/>(required before DE analysis)"}}:::checkpoint
-    N_COND["Decided:<br/>- Herniated: separate, exploratory (10 samples)<br/>- GSE205535_NNP (11yo trauma): exclude from DE<br/>- Thompson III boundary: accepted as mild<br/>- Neonatal (n=3): separate from healthy<br/>- Primary: healthy (20) vs degenerated_all (42)"]:::decision
+    N_COND["Details: see Condition Revisit below<br/>- Herniated: separate, exploratory (10 samples)<br/>- GSE205535_NNP (11yo trauma): exclude from DE<br/>- Thompson III boundary: accepted as mild<br/>- Neonatal (n=3): separate from healthy<br/>- Primary: healthy (20) vs degenerated_all (42)"]:::decision
     COND_REVIEW -.- N_COND
     COND_REVIEW --> M06
 
@@ -85,7 +85,7 @@ flowchart TD
     M06 --> CP06
 
     CP06{{"HUMAN CHECKPOINT<br/>DE Results Review"}}:::checkpoint
-    N06["Decided:<br/>- Herniated comparison exploratory only<br/>- Endothelial annotation caveat noted<br/>- Composition trends sensible despite no FDR hits<br/>- No systematic batch domination"]:::decision
+    N06["Details: see #06 below<br/>- Herniated comparison exploratory only<br/>- Endothelial annotation caveat noted<br/>- Composition trends sensible despite no FDR hits<br/>- No systematic batch domination"]:::decision
     CP06 -.- N06
     CP06 --> M07
 
@@ -94,7 +94,7 @@ flowchart TD
     M07 --> CP07
 
     CP07{{"HUMAN CHECKPOINT<br/>Interpretation Review"}}:::checkpoint
-    N07["Decided:<br/>- Pathways consistent with known IVD biology<br/>- Novel TF findings (ATF3/7, HSF1/2) to highlight<br/>- Pain confirms indirect signaling model<br/>- No contradictions found"]:::decision
+    N07["Details: see #07 below<br/>- Pathways consistent with known IVD biology<br/>- Novel TF findings (ATF3/7, HSF1/2) to highlight<br/>- Pain confirms indirect signaling model<br/>- No contradictions found"]:::decision
     CP07 -.- N07
     CP07 --> M08
 
@@ -103,7 +103,7 @@ flowchart TD
     M08 --> CP08
 
     CP08{{"HUMAN CHECKPOINT<br/>Trajectory Review"}}:::checkpoint
-    N08["Decided:<br/>- NP: notochordal -> mature -> stressed<br/>- AF: inner -> outer -> mechanical_stress<br/>- Pseudotime correlates with disease<br/>- ~55% DE overlap confirms consistency<br/>- Sensitivity check (scVI) confirms direction"]:::decision
+    N08["Details: see #08 below<br/>- NP: notochordal -> mature -> stressed<br/>- AF: inner -> outer -> mechanical_stress<br/>- Pseudotime correlates with disease<br/>- ~55% DE overlap confirms consistency<br/>- Sensitivity check (scVI) confirms direction"]:::decision
     CP08 -.- N08
     CP08 --> M09
 
@@ -112,7 +112,7 @@ flowchart TD
     M09 --> CP09
 
     CP09{{"HUMAN CHECKPOINT<br/>Communication Review"}}:::checkpoint
-    N09["Decided:<br/>- Interactions biologically plausible<br/>- Pain-relevant: neurotrophin + VEGF pathways<br/>- More interactions in degeneration (53K vs 44K)<br/>- Collagen-integrin positive controls confirmed"]:::decision
+    N09["Details: see #09 below<br/>- Interactions biologically plausible<br/>- Pain-relevant: neurotrophin + VEGF pathways<br/>- More interactions in degeneration (53K vs 44K)<br/>- Collagen-integrin positive controls confirmed"]:::decision
     CP09 -.- N09
     CP09 --> M10
 
@@ -140,20 +140,6 @@ flowchart TD
     D4 -.-> M10
     M10 -.-> D5
 
-    %% ── Hyperlinks to checkpoint details ──
-    click CP_SPECS href "#checkpoint-specs-review--approval" _blank
-    click CP01 href "#checkpoint-01-dataset-list" _blank
-    click CP02 href "#checkpoint-02-condition-mappings" _blank
-    click CP03 href "#checkpoint-03-qc-review" _blank
-    click CP04 href "#checkpoint-04-annotation-review" _blank
-    click CP05a href "#checkpoint-05a-tier-1-integration" _blank
-    click CP05b href "#checkpoint-05b-tier-2-integration-selection" _blank
-    click COND_REVIEW href "#checkpoint-condition-mapping-revisit" _blank
-    click CP06 href "#checkpoint-06-differential-analysis-results" _blank
-    click CP07 href "#checkpoint-07-biological-interpretation" _blank
-    click CP08 href "#checkpoint-08-trajectory-analysis" _blank
-    click CP09 href "#checkpoint-09-cell-cell-communication" _blank
-    click CP10 href "#checkpoint-10-final-review" _blank
 ```
 
 ## Legend
@@ -161,7 +147,7 @@ flowchart TD
 | Element | Meaning |
 |---------|---------|
 | Blue boxes | Computational modules (agent-executed) |
-| Orange hexagons | Human checkpoints — click to see questions and decisions |
+| Orange hexagons | Human checkpoints (pipeline pauses for expert review) |
 | Yellow notes | Key decisions made at each checkpoint |
 | Green cylinders | Data artifacts |
 | Dashed arrows | Data flow |
