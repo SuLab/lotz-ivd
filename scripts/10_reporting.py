@@ -30,17 +30,20 @@ def collect_supplementary_tables():
     copies = {
         'S1_dataset_registry.tsv': META / 'dataset_registry.tsv',
         'S2_sample_metadata.tsv': META / 'sample_metadata.tsv',
-        'S3_composition_analysis.tsv': RESULTS / 'differential' / 'composition_analysis.tsv',
-        'S4_de_summary.tsv': RESULTS / 'differential' / 'de_summary_table.tsv',
-        'S5_de_results_combined.tsv': RESULTS / 'differential' / 'de_results_combined.tsv',
-        'S6_skipped_comparisons.tsv': RESULTS / 'differential' / 'skipped_comparisons.tsv',
-        'S7_enrichment_ORA.tsv': RESULTS / 'interpretation' / 'pathway_enrichment' / 'all_enrichment_results.tsv',
-        'S8_gsea_results.tsv': RESULTS / 'interpretation' / 'pathway_enrichment' / 'gsea_results.tsv',
-        'S9_tf_activity.tsv': RESULTS / 'interpretation' / 'tf_activity' / 'tf_activity_results.tsv',
-        'S10_pain_genes.tsv': RESULTS / 'interpretation' / 'pain_genes.tsv',
-        'S11_trajectory_genes_NP.tsv': RESULTS / 'trajectories' / 'trajectory_genes_NP.tsv',
-        'S12_trajectory_genes_AF.tsv': RESULTS / 'trajectories' / 'trajectory_genes_AF.tsv',
-        'S13_pain_interactions.tsv': RESULTS / 'communication' / 'pain_interactions.tsv',
+        'S3_inclusion_summary.tsv': RESULTS / 'integration' / 'inclusion_summary.tsv',
+        'S4_study_caveats.tsv': RESULTS / 'integration' / 'study_caveats.tsv',
+        'S5_composition_analysis.tsv': RESULTS / 'differential' / 'composition_analysis.tsv',
+        'S6_de_summary.tsv': RESULTS / 'differential' / 'de_summary_table.tsv',
+        'S7_de_results_combined.tsv': RESULTS / 'differential' / 'de_results_combined.tsv',
+        'S8_skipped_comparisons.tsv': RESULTS / 'differential' / 'skipped_comparisons.tsv',
+        'S9_enrichment_ORA.tsv': RESULTS / 'interpretation' / 'pathway_enrichment' / 'all_enrichment_results.tsv',
+        'S10_gsea_results.tsv': RESULTS / 'interpretation' / 'pathway_enrichment' / 'gsea_results.tsv',
+        'S11_tf_activity.tsv': RESULTS / 'interpretation' / 'tf_activity' / 'tf_activity_results.tsv',
+        'S12_pain_genes.tsv': RESULTS / 'interpretation' / 'pain_genes.tsv',
+        'S13_trajectory_genes_NP.tsv': RESULTS / 'trajectories' / 'trajectory_genes_NP.tsv',
+        'S14_trajectory_genes_AF.tsv': RESULTS / 'trajectories' / 'trajectory_genes_AF.tsv',
+        'S15_trajectory_genes_CEP.tsv': RESULTS / 'trajectories' / 'trajectory_genes_CEP.tsv',
+        'S16_pain_interactions.tsv': RESULTS / 'communication' / 'pain_interactions.tsv',
     }
 
     for dest_name, src in copies.items():
@@ -172,16 +175,15 @@ def generate_final_report():
     # ── 3. Integration ──
     html.append("""
 <h2 id="integration">3. Integration Strategy</h2>
-<p><strong>Tiered approach:</strong> Non-resident cells (immune, endothelial, 14,566 cells) integrated with standard scVI. Resident cells integrated with 4 approaches (scVI, scANVI, Harmony, BBKNN) for NP (138,937 cells) and AF (282,736 cells).</p>
-<p><strong>Primary: scANVI</strong> — best overall score (0.615) and cell type separation (ASW 0.511-0.521). Semi-supervised approach leverages marker-based annotations.</p>
-<p><strong>Sensitivity: scVI</strong> — perfectly preserves cell state continuum (score variance ratio = 1.0) for trajectory analysis.</p>
+<p><strong>Compartment-specific scVI integration:</strong> Four objects (NP, AF, CEP, all-cells) integrated separately with scVI (n_latent=20, max_epochs=200). Tiered within each object: mesenchymal and non-mesenchymal cells integrated in separate scVI runs to prevent one population from dominating the latent space.</p>
+<p><strong>De novo annotation:</strong> Cell types discovered post-integration from Leiden clustering, cluster DE markers, and canonical marker panels. CellTypist validation for immune subtypes.</p>
 """)
 
     # Integration images
-    for img_name in ['umap_tier2_NP_by_approach.png', 'umap_tier2_AF_by_approach.png',
-                     'metrics_comparison_AF.png']:
+    for img_name in ['resolution_optimization_NP.png', 'resolution_optimization_AF.png',
+                     'resolution_optimization_CEP.png', 'annotation_dotplots/']:
         img_path = RESULTS / 'integration' / img_name
-        if img_path.exists():
+        if img_path.exists() and img_path.is_file():
             html.append(f'<img src="integration/{img_name}" alt="{img_name}">')
 
     # ── 4. DE ──
@@ -250,7 +252,7 @@ def generate_final_report():
     # ── 7. Trajectory ──
     html.append("""
 <h2 id="trajectory">7. Cell State Trajectories</h2>
-<p>PAGA + diffusion pseudotime (DPT) on scANVI embeddings. NP: rooted at notochordal cells. AF: rooted at AF_inner.</p>
+<p>PAGA + diffusion pseudotime (DPT) on scVI mesenchymal embeddings. NP: rooted at notochordal cells. AF: rooted at AF_inner. CEP included.</p>
 """)
 
     for img in ['umap_trajectory_NP.png', 'pseudotime_by_condition_NP.png',
@@ -332,11 +334,11 @@ def generate_final_report():
 <h3>Quality control and preprocessing</h3>
 <p>Per-dataset QC: min 200 genes, max 6000 genes, min 500 counts, max 20% mitochondrial reads. Doublet detection with Scrublet (expected rate 5%). Normalization: total-count to 10,000, log1p. HVG selection: top 2000 genes per dataset using Seurat v3 method.</p>
 
-<h3>Cell type annotation</h3>
-<p>Two-pass annotation: (1) marker-based scoring using 16 IVD-specific gene signatures, (2) CellTypist Immune_All_Low model for immune subtypes. Consensus labels in cell_type_final.</p>
+<h3>Cell classification</h3>
+<p>Coarse binary classification: mesenchymal vs non-mesenchymal using marker gene scoring (immune: PTPRC, CD3D, CD68, PECAM1; mesenchymal: COL2A1, COL1A1, ACAN, SOX9). Cluster-level majority voting to reduce noise. Adaptive expression thresholds to handle normalization artifacts.</p>
 
-<h3>Integration</h3>
-<p>Tiered strategy: non-resident cells (immune, endothelial) integrated with scVI (1 layer, 128 dim). Resident cells: 4 approaches tested (scVI, scANVI, Harmony, BBKNN). scANVI selected as primary (best overall scIB score 0.615, celltype ASW 0.511-0.521).</p>
+<h3>Integration and annotation</h3>
+<p>Four compartment-specific objects (NP, AF, CEP, all-cells) integrated with scVI (n_latent=20, max_epochs=200, batch_key=study). De novo cell type annotation from cluster DE markers and canonical marker panels post-integration. CellTypist Immune_All_Low model used for validation of immune subtypes (flags disagreements but does not override). All-cells object treated as secondary with annotations transferred from compartment-specific objects.</p>
 
 <h3>Differential expression</h3>
 <p>Pseudobulk aggregation per sample per cell type. DE with pyDESeq2 (Python DESeq2 implementation). Significance: |log2FC| > 0.5, adjusted p-value < 0.05 (Benjamini-Hochberg). Minimum 3 samples per condition per cell type.</p>
@@ -348,7 +350,7 @@ def generate_final_report():
 <p>CollecTRI regulon network (42,990 interactions, 1,185 TFs). TF activity scored by Fisher's exact test for enrichment of TF targets among DE genes, with concordance scoring for direction.</p>
 
 <h3>Trajectory analysis</h3>
-<p>PAGA + diffusion pseudotime (DPT) on scANVI embeddings. 50,000 cells per compartment. Root cells: NP notochordal, AF inner. Trajectory genes: Spearman correlation with pseudotime, FDR < 0.05, top 500.</p>
+<p>PAGA + diffusion pseudotime (DPT) on scVI mesenchymal embeddings. 50,000 cells per compartment. Root cells: NP notochordal, AF inner. Trajectory genes: Spearman correlation with pseudotime, FDR < 0.05, top 500.</p>
 
 <h3>Cell-cell communication</h3>
 <p>LIANA rank_aggregate with consensus resource. 5 methods: CellPhoneDB, NATMI, Connectome, SingleCellSignalR, log2FC. 100 permutations. 20,000 cells per condition.</p>

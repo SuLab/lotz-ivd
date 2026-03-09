@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
-"""Module 05: Cross-dataset integration for IVD scRNA-seq atlas.
+"""Module 05: Integration, clustering, and de novo annotation for IVD atlas.
 
-Combines cells across 12 studies into shared representations using a tiered
-strategy: Tier 1 (non-resident immune/endothelial/pericyte) gets standard
-scVI integration; Tier 2 (resident NP/AF) is benchmarked across four
-approaches (scVI, scANVI, Harmony, BBKNN).
+Integrates cells across studies into four compartment-based objects (NP, AF,
+CEP, all-cells), each with tiered scVI integration (mesenchymal and
+non-mesenchymal separately). Clusters are optimized via silhouette/modularity
+analysis, and cell types are annotated de novo from cluster DE markers and
+canonical marker expression. CellTypist validates immune subtypes.
+
+The all-cells object is secondary: annotations transfer from compartment-
+specific objects where possible.
 
 Usage:
-    python3 scripts/05_integration.py                  # All tiers, approaches A-D
-    python3 scripts/05_integration.py --tier1-only     # Non-resident only
-    python3 scripts/05_integration.py --tier2-only     # Resident only (NP + AF)
-    python3 scripts/05_integration.py --approach C     # Single approach for Tier 2
+    python3 scripts/05_integration.py                  # All objects
+    python3 scripts/05_integration.py --object NP      # Single object
     python3 scripts/05_integration.py --validate-only  # Validation only
     python3 scripts/05_integration.py --force          # Re-run even if outputs exist
 """
 
 import gc
 import sys
-import os
 import warnings
 import traceback
 from pathlib import Path
@@ -29,7 +30,6 @@ import pandas as pd
 import scanpy as sc
 import anndata as ad
 from scipy import sparse
-from scipy.stats import pearsonr
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -47,116 +47,204 @@ PROC_DIR = BASE / "data" / "processed"
 INT_DIR = BASE / "data" / "integrated"
 MODEL_DIR = INT_DIR / "models"
 RESULTS_DIR = BASE / "results" / "integration"
+META_DIR = BASE / "metadata"
 
-INT_DIR.mkdir(parents=True, exist_ok=True)
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
-RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+for d in [INT_DIR, MODEL_DIR, RESULTS_DIR,
+          RESULTS_DIR / "clustering_resolution_optimization",
+          RESULTS_DIR / "cluster_markers",
+          RESULTS_DIR / "annotation_dotplots",
+          RESULTS_DIR / "celltypist_validation"]:
+    d.mkdir(parents=True, exist_ok=True)
 
-# ── Dataset ordering ─────────────────────────────────────────────────────────
-ALL_ACCESSIONS = [
-    "GSE160756", "GSE165722", "GSE189916", "GSE199866", "GSE205535",
-    "CNP0002664", "GSE233666", "GSE244889", "GSE251686", "GSE255768",
-    "GSE230809", "GSE242443",
+# ── Study assignments per object ─────────────────────────────────────────────
+# Each entry: (accession, compartment_filter or None for all compartments)
+# compartment_filter is matched against obs['compartment']
+
+NP_STUDIES = [
+    ("GSE160756", "NP"),
+    ("GSE165722", None),        # NP-only study
+    ("GSE199866", "NP"),
+    ("GSE205535", None),        # NP-only study
+    ("GSE244889", None),        # NP-only study
+    ("GSE251686", None),        # NP-only study
+    ("GSE230809", "NP"),
+    ("CNP0002664", None),       # NP-only study
 ]
 
-# ── Tier classification ──────────────────────────────────────────────────────
-# Non-resident cell types (CellTypist-derived or marker-based names)
-NONRESIDENT_KEYWORDS = [
-    "Endothelial", "Macrophage", "T cell", "T_cell", "NK cell", "NK cells",
-    "B cell", "B_cell", "Mast", "Pericyte", "SMC", "DC", "monocyte",
-    "Monocyte", "Plasma", "Neutrophil", "pre-B", "Pro-B",
-    "Tem/", "Tcm/", "CD16+",
+AF_STUDIES = [
+    ("GSE160756", "AF"),
+    ("GSE199866", "AF"),        # Inner AF
+    ("GSE230809", "AF"),
 ]
 
-NP_KEYWORDS = ["NP_"]
-AF_KEYWORDS = ["AF_"]
-EP_KEYWORDS = ["EP_"]
-FIBROBLAST_KEYWORDS = ["Fibroblast"]
+CEP_STUDIES = [
+    ("GSE160756", "CEP"),
+    ("GSE255768", None),        # CEP-only study
+    ("GSE242443", None),        # CEP-only study (culture-expanded)
+]
 
-# Signature score columns for continuum metrics
-NP_SCORE_COLS = [
-    "score_NP_notochordal", "score_NP_mature_chondrocyte",
-    "score_NP_stressed_degenerative", "score_NP_fibrocartilaginous",
+# All-cells: union of above plus GSE189916 (adult only, compartments not separated)
+ALL_CELLS_EXTRA = [
+    ("GSE189916", None),        # Adult whole IVD (neonatal excluded in Module 04)
 ]
-AF_SCORE_COLS = [
-    "score_AF_inner", "score_AF_outer", "score_AF_mechanical_stress",
-]
+
+# Sample-level exclusions
+EXCLUDED_SAMPLES = {
+    "GSE251686_NP3",  # Corrupt matrix file
+}
 
 # obs columns to keep during concatenation
 OBS_COLS_KEEP = [
     "sample_id", "study", "compartment", "condition_harmonized",
-    "cell_type_final", "cell_type_confidence",
-    "pct_counts_mt",
-    "score_NP_notochordal", "score_NP_mature_chondrocyte",
-    "score_NP_stressed_degenerative", "score_NP_fibrocartilaginous",
-    "score_AF_inner", "score_AF_outer", "score_AF_mechanical_stress",
-    "score_EP_hyaline_cartilage", "score_EP_ossification",
+    "cell_class", "pct_counts_mt",
 ]
 
+# ── scVI parameters (from spec) ─────────────────────────────────────────────
+SCVI_PARAMS = {
+    "batch_key": "study",
+    "n_latent": 20,
+    "max_epochs": 200,
+    "n_top_genes": 3000,
+}
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# CELL TIER CLASSIFICATION
-# ═══════════════════════════════════════════════════════════════════════════════
+# ── Canonical marker panels for annotation ───────────────────────────────────
+CANONICAL_MARKERS = {
+    # NP subtypes
+    "NP_notochordal":      ["T", "SHH", "NOG", "CD24", "KRT8", "KRT18", "KRT19"],
+    "NP_mature_chondrocyte": ["ACAN", "COL2A1", "SOX9", "COMP", "PRG4"],
+    "NP_stressed_degen":   ["MMP13", "ADAMTS5", "IL1B", "TNF", "VEGFA", "HIF1A"],
+    "NP_fibrocartilaginous": ["COL1A1", "COL2A1", "VCAN"],
+    # AF subtypes
+    "AF_inner":            ["COL2A1", "ACAN", "SOX9"],
+    "AF_outer":            ["COL1A1", "COL1A2", "THY1", "DCN", "LUM"],
+    "AF_mechanical_stress": ["COMP", "CILP", "THBS1"],
+    # Endplate
+    "EP_hyaline":          ["COL2A1", "COL10A1", "SOX9"],
+    "EP_ossification":     ["RUNX2", "SP7", "BGLAP"],
+    # Non-mesenchymal
+    "Macrophage":          ["CD68", "CD14", "CSF1R", "CD163", "CD86"],
+    "T_cell":              ["CD3D", "CD3E", "CD4", "CD8A"],
+    "B_cell":              ["CD79A", "MS4A1"],
+    "NK_cell":             ["NKG7", "GNLY"],
+    "Mast_cell":           ["KIT", "TPSAB1"],
+    "Endothelial":         ["PECAM1", "VWF", "CDH5"],
+    "Pericyte_SMC":        ["ACTA2", "RGS5", "PDGFRB"],
+}
 
-def classify_cell_tier(label):
-    """Classify a cell_type_final label into a tier.
+# Gene aliases
+GENE_ALIASES = {"T": ["T", "TBXT"], "TBXT": ["TBXT", "T"], "SP7": ["SP7", "OSX"]}
 
-    Returns one of: "nonresident", "NP", "AF", "EP", "fibroblast", "other".
-    """
-    if pd.isna(label) or label == "unassigned":
-        return "other"
-    s = str(label)
-    for kw in NONRESIDENT_KEYWORDS:
-        if kw in s:
-            return "nonresident"
-    for kw in NP_KEYWORDS:
-        if s.startswith(kw):
-            return "NP"
-    for kw in AF_KEYWORDS:
-        if s.startswith(kw):
-            return "AF"
-    for kw in EP_KEYWORDS:
-        if s.startswith(kw):
-            return "EP"
-    for kw in FIBROBLAST_KEYWORDS:
-        if kw in s:
-            return "fibroblast"
-    return "other"
+# Continuous score signatures for mesenchymal continuum
+CONTINUUM_SCORES = {
+    "score_notochordal":   ["T", "SHH", "NOG", "CD24", "KRT8", "KRT18", "KRT19"],
+    "score_degenerative":  ["MMP13", "ADAMTS5", "IL1B", "TNF", "VEGFA", "HIF1A"],
+    "score_fibrotic":      ["COL1A1", "COL3A1", "FN1", "VCAN", "ACTA2", "TGFB1"],
+}
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# GENE RESOLUTION
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _resolve_gene(name, var_names):
+    """Resolve gene name to form present in var_names."""
+    if name in var_names:
+        return name
+    for alias in GENE_ALIASES.get(name, []):
+        if alias in var_names:
+            return alias
+    return None
+
+
+def _resolve_gene_list(gene_list, var_names):
+    """Resolve genes, returning (resolved, missing)."""
+    var_set = set(var_names)
+    resolved, missing = [], []
+    for g in gene_list:
+        match = _resolve_gene(g, var_set)
+        (resolved if match else missing).append(match or g)
+    return resolved, missing
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# STUDY ASSIGNMENTS
+# ═════════════════════════════════════════════════════════════════════════════
+
+def get_study_assignments(object_name):
+    """Return list of (accession, compartment_filter) for an object."""
+    if object_name == "NP":
+        return NP_STUDIES
+    elif object_name == "AF":
+        return AF_STUDIES
+    elif object_name == "CEP":
+        return CEP_STUDIES
+    elif object_name == "all_cells":
+        # Union of all compartment-specific studies + extra
+        seen = set()
+        assignments = []
+        for study_list in [NP_STUDIES, AF_STUDIES, CEP_STUDIES, ALL_CELLS_EXTRA]:
+            for acc, comp in study_list:
+                key = (acc, comp)
+                if key not in seen:
+                    seen.add(key)
+                    assignments.append((acc, comp))
+        return assignments
+    else:
+        raise ValueError(f"Unknown object: {object_name}")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # MEMORY-EFFICIENT LOADING & CONCATENATION
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
 
-def load_subset_concat(accessions, filter_fn, obs_cols=None):
-    """Load cells matching filter_fn from all datasets, concatenate efficiently.
+def load_and_build_object(object_name):
+    """Load and concatenate cells for one integrated object.
 
-    Args:
-        accessions: list of dataset accession IDs
-        filter_fn: callable(obs_df) -> boolean mask
-        obs_cols: obs columns to keep (None = all in OBS_COLS_KEEP)
+    Filters by compartment where specified, excludes excluded samples,
+    and splits by cell_class.
 
-    Returns:
-        AnnData with .X (log-norm), .layers['counts'], selected obs columns.
+    Returns AnnData with .X (log-norm), .layers['counts'], selected obs cols.
     """
-    if obs_cols is None:
-        obs_cols = OBS_COLS_KEEP
+    assignments = get_study_assignments(object_name)
+    obs_cols = OBS_COLS_KEEP
 
-    # Phase 1: scan backed to identify matching cells and common genes
-    print("  Phase 1: Scanning datasets for matching cells...")
+    print(f"  Loading cells for {object_name} object...")
+    print(f"    Studies: {[a for a, _ in assignments]}")
+
+    # Phase 1: scan to identify matching cells and common genes
     gene_sets = []
     cell_counts = {}
-    for acc in accessions:
+
+    for acc, comp_filter in assignments:
         path = PROC_DIR / f"{acc}.h5ad"
         if not path.exists():
             print(f"    WARNING: {path} not found, skipping")
             continue
         adata = sc.read_h5ad(path, backed='r')
         obs_df = adata.obs
-        mask = filter_fn(obs_df)
+
+        # Build filter mask
+        mask = pd.Series(True, index=obs_df.index)
+
+        # Compartment filter
+        if comp_filter is not None and 'compartment' in obs_df.columns:
+            mask &= obs_df['compartment'].str.upper().str.contains(comp_filter.upper(), na=False)
+
+        # Sample exclusions
+        if 'sample_id' in obs_df.columns:
+            mask &= ~obs_df['sample_id'].isin(EXCLUDED_SAMPLES)
+
+        # Must have cell_class from Module 04
+        if 'cell_class' in obs_df.columns:
+            mask &= obs_df['cell_class'].isin(['mesenchymal', 'non_mesenchymal'])
+        else:
+            print(f"    WARNING: {acc} missing cell_class column, skipping")
+            adata.file.close()
+            continue
+
         n_match = mask.sum()
         if n_match > 0:
-            cell_counts[acc] = n_match
+            cell_counts[(acc, comp_filter)] = n_match
             gene_sets.append(set(adata.var_names))
         adata.file.close()
 
@@ -164,99 +252,100 @@ def load_subset_concat(accessions, filter_fn, obs_cols=None):
         print("  WARNING: No matching cells found!")
         return None
 
-    # Common genes across datasets that have matching cells
     common_genes = sorted(set.intersection(*gene_sets))
     total_cells = sum(cell_counts.values())
-    print(f"    Found {total_cells:,} matching cells across {len(cell_counts)} datasets")
+    print(f"    Found {total_cells:,} cells across {len(cell_counts)} study-compartment combos")
     print(f"    Common genes: {len(common_genes):,}")
 
-    # Phase 2: sequential load, subset, collect
-    print("  Phase 2: Loading and subsetting...")
+    # Phase 2: load, subset, collect
     adatas = []
-    for acc in accessions:
-        if acc not in cell_counts:
+    for acc, comp_filter in assignments:
+        if (acc, comp_filter) not in cell_counts:
             continue
         path = PROC_DIR / f"{acc}.h5ad"
         adata = sc.read_h5ad(path)
-        mask = filter_fn(adata.obs)
+
+        mask = pd.Series(True, index=adata.obs.index)
+        if comp_filter is not None and 'compartment' in adata.obs.columns:
+            mask &= adata.obs['compartment'].str.upper().str.contains(comp_filter.upper(), na=False)
+        if 'sample_id' in adata.obs.columns:
+            mask &= ~adata.obs['sample_id'].isin(EXCLUDED_SAMPLES)
+        if 'cell_class' in adata.obs.columns:
+            mask &= adata.obs['cell_class'].isin(['mesenchymal', 'non_mesenchymal'])
+
         adata_sub = adata[mask, common_genes].copy()
 
         # Keep only selected obs columns
         cols_available = [c for c in obs_cols if c in adata_sub.obs.columns]
         adata_sub.obs = adata_sub.obs[cols_available].copy()
 
-        # Ensure counts layer exists and uses int32 (not int64) to save ~50% space
+        # Ensure study column
+        if 'study' not in adata_sub.obs.columns:
+            adata_sub.obs['study'] = acc
+
+        # Ensure counts layer, int32
         if 'counts' in adata_sub.layers:
             if adata_sub.layers['counts'].dtype != np.int32:
                 adata_sub.layers['counts'] = adata_sub.layers['counts'].astype(np.int32)
         else:
-            print(f"    WARNING: {acc} missing 'counts' layer, using .X")
             adata_sub.layers['counts'] = adata_sub.X.copy().astype(np.int32)
 
         adatas.append(adata_sub)
-        print(f"    {acc}: {adata_sub.shape[0]:,} cells")
+        print(f"    {acc} ({comp_filter or 'all'}): {adata_sub.shape[0]:,} cells")
         del adata
 
-    # Phase 3: concatenate
-    print("  Phase 3: Concatenating...")
+    # Concatenate
+    print("  Concatenating...")
     adata = ad.concat(adatas, merge='same')
     del adatas
 
-    # Ensure sparse
     if not sparse.issparse(adata.X):
         adata.X = sparse.csr_matrix(adata.X)
     if not sparse.issparse(adata.layers['counts']):
         adata.layers['counts'] = sparse.csr_matrix(adata.layers['counts'])
 
-    print(f"    Final shape: {adata.shape[0]:,} cells × {adata.shape[1]:,} genes")
+    print(f"    Final shape: {adata.shape[0]:,} cells x {adata.shape[1]:,} genes")
     return adata
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PREPARE INTEGRATED OBJECT (HVG, PCA, NEIGHBORS, UMAP)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# PREPARE OBJECT (HVG, PCA, NEIGHBORS, UMAP BASELINE)
+# ═════════════════════════════════════════════════════════════════════════════
 
-def prepare_integrated_object(adata, n_top_genes=3000):
-    """Re-derive HVGs, PCA, neighbors, and UMAP on concatenated object.
+def prepare_object(adata, n_top_genes=3000):
+    """Re-derive HVGs, PCA, neighbors, UMAP on concatenated object.
 
     Stores unintegrated baseline in obsm['X_pca_unintegrated'] and
     obsm['X_umap_unintegrated'].
     """
-    print("  Preparing integrated object (HVG, PCA, neighbors, UMAP)...")
+    print("  Preparing object (HVG, PCA, neighbors, UMAP)...")
 
-    # HVG selection using counts layer (seurat_v3 requires raw counts)
     n_top = min(n_top_genes, adata.shape[1] - 1)
-    n_studies = adata.obs['study'].nunique()
 
-    # Filter out tiny batches for HVG selection (seurat_v3 loess fails on <50 cells)
-    MIN_CELLS_HVG_BATCH = 50
-    study_counts = adata.obs['study'].value_counts()
-    large_studies = study_counts[study_counts >= MIN_CELLS_HVG_BATCH].index.tolist()
-
+    # Batch-aware HVG selection
     hvg_done = False
-    if n_studies > 1 and len(large_studies) > 1:
-        try:
-            adata_hvg = adata[adata.obs['study'].isin(large_studies)].copy()
-            sc.pp.highly_variable_genes(
-                adata_hvg, n_top_genes=n_top, flavor='seurat_v3',
-                batch_key='study', layer='counts'
-            )
-            # Transfer HVG annotations to full object
-            adata.var['highly_variable'] = False
-            adata.var.loc[adata_hvg.var_names[adata_hvg.var['highly_variable']], 'highly_variable'] = True
-            # Copy other HVG columns
-            for col in ['highly_variable_rank', 'highly_variable_nbatches',
-                        'highly_variable_intersection', 'means', 'variances',
-                        'variances_norm']:
-                if col in adata_hvg.var.columns:
-                    adata.var[col] = adata_hvg.var[col]
-            del adata_hvg
-            hvg_done = True
-            n_excluded = n_studies - len(large_studies)
-            if n_excluded > 0:
-                print(f"    HVG: excluded {n_excluded} studies with <{MIN_CELLS_HVG_BATCH} cells")
-        except Exception as e:
-            print(f"    WARNING: batch-aware HVG failed ({e}), falling back to non-batch")
+    MIN_CELLS_HVG_BATCH = 50
+    if 'study' in adata.obs.columns:
+        study_counts = adata.obs['study'].value_counts()
+        large_studies = study_counts[study_counts >= MIN_CELLS_HVG_BATCH].index.tolist()
+        if len(large_studies) > 1:
+            try:
+                adata_hvg = adata[adata.obs['study'].isin(large_studies)].copy()
+                sc.pp.highly_variable_genes(
+                    adata_hvg, n_top_genes=n_top, flavor='seurat_v3',
+                    batch_key='study', layer='counts'
+                )
+                adata.var['highly_variable'] = False
+                adata.var.loc[adata_hvg.var_names[adata_hvg.var['highly_variable']],
+                              'highly_variable'] = True
+                for col in ['highly_variable_rank', 'highly_variable_nbatches',
+                            'means', 'variances', 'variances_norm']:
+                    if col in adata_hvg.var.columns:
+                        adata.var[col] = adata_hvg.var[col]
+                del adata_hvg
+                hvg_done = True
+            except Exception as e:
+                print(f"    WARNING: batch-aware HVG failed ({e}), falling back")
 
     if not hvg_done:
         sc.pp.highly_variable_genes(
@@ -272,7 +361,6 @@ def prepare_integrated_object(adata, n_top_genes=3000):
     n_comps = min(50, min(adata_pca.shape) - 1)
     sc.tl.pca(adata_pca, n_comps=n_comps, svd_solver='arpack')
 
-    # Transfer PCA back
     adata.obsm['X_pca'] = adata_pca.obsm['X_pca']
     adata.uns['pca'] = adata_pca.uns['pca']
     adata.varm['PCs'] = np.zeros((adata.shape[1], n_comps))
@@ -280,54 +368,35 @@ def prepare_integrated_object(adata, n_top_genes=3000):
     adata.varm['PCs'][hvg_idx] = adata_pca.varm['PCs']
     del adata_pca
 
-    # Determine effective dimensionality
-    var_ratio = adata.uns['pca']['variance_ratio']
-    cumvar = np.cumsum(var_ratio)
-    n_pcs = int(np.searchsorted(cumvar, 0.90) + 1)
-    n_pcs = max(n_pcs, 10)
-    n_pcs = min(n_pcs, n_comps)
-    adata.uns['n_pcs_used'] = n_pcs
-    print(f"    PCA: {n_comps} components, using {n_pcs} (90% variance)")
-
     # Unintegrated baseline
+    n_pcs = min(30, n_comps)
     sc.pp.neighbors(adata, n_pcs=n_pcs)
     sc.tl.umap(adata)
     adata.obsm['X_pca_unintegrated'] = adata.obsm['X_pca'].copy()
     adata.obsm['X_umap_unintegrated'] = adata.obsm['X_umap'].copy()
-    print("    Unintegrated baseline computed")
+    print(f"    PCA: {n_comps} components, baseline UMAP computed")
 
     return adata
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# APPROACH A: scVI
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# scVI INTEGRATION
+# ═════════════════════════════════════════════════════════════════════════════
 
 def run_scvi(adata, batch_key='study', n_latent=20, max_epochs=200,
-             use_covariates=True, model_dir=None, label="scvi"):
-    """Run scVI integration (Approach A).
-
-    Returns the trained scVI model for potential scANVI initialization.
-    Stores obsm['X_scvi'] and obsm['X_umap_scvi'].
-    """
+             model_dir=None, label="scvi"):
+    """Run scVI integration. Stores obsm[f'X_scvi_{label}'] and UMAP."""
     import scvi as scvi_module
 
-    print(f"  Running scVI (Approach A): batch_key={batch_key}, n_latent={n_latent}")
+    print(f"  Running scVI: batch_key={batch_key}, n_latent={n_latent}")
 
-    # Setup anndata for scVI
     scvi_module.model.SCVI.setup_anndata(
-        adata,
-        layer='counts',
-        batch_key=batch_key,
-        categorical_covariate_keys=['compartment'] if use_covariates and 'compartment' in adata.obs.columns else None,
-        continuous_covariate_keys=['pct_counts_mt'] if use_covariates and 'pct_counts_mt' in adata.obs.columns else None,
+        adata, layer='counts', batch_key=batch_key,
     )
 
     model = scvi_module.model.SCVI(
-        adata,
-        n_latent=n_latent,
-        dispersion='gene-batch',
-        gene_likelihood='nb',
+        adata, n_latent=n_latent,
+        dispersion='gene-batch', gene_likelihood='nb',
     )
 
     model.train(
@@ -339,138 +408,25 @@ def run_scvi(adata, batch_key='study', n_latent=20, max_epochs=200,
         batch_size=256,
     )
 
-    # Extract latent representation
-    adata.obsm['X_scvi'] = model.get_latent_representation()
-    print(f"    scVI training complete: {model.history['elbo_train'].shape[0]} epochs")
+    embedding_key = f'X_scvi_{label}'
+    adata.obsm[embedding_key] = model.get_latent_representation()
+    print(f"    scVI complete: {model.history['elbo_train'].shape[0]} epochs")
 
-    # Compute neighbors and UMAP on scVI latent space
-    sc.pp.neighbors(adata, use_rep='X_scvi')
+    # Neighbors and UMAP on this embedding
+    sc.pp.neighbors(adata, use_rep=embedding_key)
     sc.tl.umap(adata)
-    adata.obsm['X_umap_scvi'] = adata.obsm['X_umap'].copy()
+    adata.obsm[f'X_umap_scvi_{label}'] = adata.obsm['X_umap'].copy()
 
-    # Save model
     if model_dir is not None:
         save_path = model_dir / f"scvi_{label}"
         model.save(str(save_path), overwrite=True)
-        print(f"    Model saved: {save_path}")
 
-    return model
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# APPROACH B: scANVI (semi-supervised)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def run_scanvi(adata, scvi_model, max_epochs=50, model_dir=None, label="scanvi"):
-    """Run scANVI integration (Approach B), initialized from scVI model.
-
-    Uses high+medium confidence labels as seeds; low confidence → "Unknown".
-    Stores obsm['X_scanvi'], obsm['X_umap_scanvi'], obs['cell_type_scanvi_predicted'].
-    """
-    import scvi as scvi_module
-
-    print("  Running scANVI (Approach B): semi-supervised from scVI")
-
-    # Create label column: use high+medium confidence, mask low as Unknown
-    labels_col = '_scanvi_labels'
-    labels = adata.obs['cell_type_final'].astype(str).copy()
-    if 'cell_type_confidence' in adata.obs.columns:
-        low_mask = adata.obs['cell_type_confidence'] == 'low'
-        labels[low_mask] = 'Unknown'
-        n_seed = (~low_mask).sum()
-        print(f"    Seed labels: {n_seed:,} / {adata.shape[0]:,} cells "
-              f"({n_seed / adata.shape[0] * 100:.1f}%)")
-    else:
-        print("    No confidence column; using all labels as seeds")
-    adata.obs[labels_col] = labels
-
-    scanvi_model = scvi_module.model.SCANVI.from_scvi_model(
-        scvi_model,
-        unlabeled_category='Unknown',
-        labels_key=labels_col,
-    )
-
-    scanvi_model.train(
-        max_epochs=max_epochs,
-        early_stopping=True,
-        early_stopping_patience=5,
-        train_size=0.9,
-        batch_size=256,
-    )
-
-    # Extract latent representation and predictions
-    adata.obsm['X_scanvi'] = scanvi_model.get_latent_representation()
-    adata.obs['cell_type_scanvi_predicted'] = scanvi_model.predict()
-    print(f"    scANVI training complete: {scanvi_model.history['elbo_train'].shape[0]} epochs")
-
-    # Compute neighbors and UMAP on scANVI latent space
-    sc.pp.neighbors(adata, use_rep='X_scanvi')
-    sc.tl.umap(adata)
-    adata.obsm['X_umap_scanvi'] = adata.obsm['X_umap'].copy()
-
-    # Clean up temp column
-    del adata.obs[labels_col]
-
-    # Save model
-    if model_dir is not None:
-        save_path = model_dir / f"scanvi_{label}"
-        scanvi_model.save(str(save_path), overwrite=True)
-        print(f"    Model saved: {save_path}")
-
-    return scanvi_model
+    return model, embedding_key
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# APPROACH C: Harmony
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def run_harmony(adata, batch_key='study', thetas=(0.5, 1.0, 2.0)):
-    """Run Harmony integration (Approach C).
-
-    Tests multiple theta values. Selects the best by quick iLISI check.
-    Stores obsm['X_harmony'] and obsm['X_umap_harmony'].
-    """
-    from harmonypy import run_harmony
-
-    print(f"  Running Harmony (Approach C): testing theta={list(thetas)}")
-
-    n_pcs = adata.uns.get('n_pcs_used', 20)
-    pca_input = adata.obsm['X_pca'][:, :n_pcs]
-    batch_labels = adata.obs[batch_key].values
-
-    best_theta = None
-    best_score = -np.inf
-    best_embedding = None
-
-    for theta in thetas:
-        print(f"    theta={theta}...", end=" ")
-        harmony_out = run_harmony(
-            pca_input, adata.obs, batch_key,
-            theta=theta, max_iter_harmony=30,
-        )
-        embedding = harmony_out.Z_corr  # (n_cells, n_pcs) — harmonypy >= 0.0.9
-
-        # Quick iLISI estimate on a subsample
-        score = _quick_ilisi(embedding, batch_labels, n_sample=5000)
-        print(f"iLISI={score:.3f}")
-
-        if score > best_score:
-            best_score = score
-            best_theta = theta
-            best_embedding = embedding
-
-    print(f"    Best theta: {best_theta} (iLISI={best_score:.3f})")
-
-    adata.obsm['X_harmony'] = best_embedding
-    adata.uns['harmony_theta'] = best_theta
-
-    # Compute neighbors and UMAP on Harmony embedding
-    sc.pp.neighbors(adata, use_rep='X_harmony')
-    sc.tl.umap(adata)
-    adata.obsm['X_umap_harmony'] = adata.obsm['X_umap'].copy()
-
-    return best_theta
-
+# ═════════════════════════════════════════════════════════════════════════════
+# INTEGRATION METRICS
+# ═════════════════════════════════════════════════════════════════════════════
 
 def _quick_ilisi(embedding, batch_labels, n_sample=5000, k=30):
     """Quick iLISI estimate on a random subsample."""
@@ -481,16 +437,15 @@ def _quick_ilisi(embedding, batch_labels, n_sample=5000, k=30):
         rng = np.random.RandomState(42)
         idx = rng.choice(n, n_sample, replace=False)
         emb_sub = embedding[idx]
-        labels_sub = batch_labels[idx] if isinstance(batch_labels, np.ndarray) else np.array(batch_labels)[idx]
+        labels_sub = np.asarray(batch_labels)[idx]
     else:
         emb_sub = embedding
-        labels_sub = batch_labels if isinstance(batch_labels, np.ndarray) else np.array(batch_labels)
+        labels_sub = np.asarray(batch_labels)
 
     nn = NearestNeighbors(n_neighbors=k, algorithm='auto')
     nn.fit(emb_sub)
     indices = nn.kneighbors(emb_sub, return_distance=False)
 
-    # Compute inverse Simpson's index per cell
     ilisi_scores = []
     for i in range(len(emb_sub)):
         neighbor_labels = labels_sub[indices[i]]
@@ -502,668 +457,959 @@ def _quick_ilisi(embedding, batch_labels, n_sample=5000, k=30):
     return np.mean(ilisi_scores)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# APPROACH D: BBKNN
-# ═══════════════════════════════════════════════════════════════════════════════
+def compute_integration_metrics(adata, embedding_key, batch_key='study',
+                                max_cells=30_000):
+    """Compute integration quality metrics (iLISI, batch-ASW, condition-ASW).
 
-def run_bbknn(adata, batch_key='study', n_pcs=20, neighbors_within_batch=3):
-    """Run BBKNN integration (Approach D).
-
-    Modifies the neighbor graph directly. No embedding stored — only UMAP.
-    Stores obsm['X_umap_bbknn'].
+    Returns dict with metric values.
     """
-    import bbknn
-
-    print(f"  Running BBKNN (Approach D): n_pcs={n_pcs}, neighbors_within_batch={neighbors_within_batch}")
-
-    n_pcs_actual = min(n_pcs, adata.obsm['X_pca'].shape[1])
-
-    bbknn.bbknn(
-        adata,
-        batch_key=batch_key,
-        n_pcs=n_pcs_actual,
-        neighbors_within_batch=neighbors_within_batch,
-    )
-
-    sc.tl.umap(adata)
-    adata.obsm['X_umap_bbknn'] = adata.obsm['X_umap'].copy()
-    print("    BBKNN complete")
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# INTEGRATION METRICS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def compute_metrics(adata, embedding_key, batch_key='study', label_key='cell_type_final',
-                    max_cells=30_000, random_state=42):
-    """Compute integration quality metrics using scib-metrics.
-
-    When the dataset exceeds *max_cells*, a stratified random subsample is
-    drawn (preserving the proportions of *label_key*) so that metric
-    computation stays within memory on 16 GB machines.  Embeddings and
-    integration are still computed on the full dataset — only evaluation is
-    subsampled, consistent with the scIB benchmark (Luecken et al. 2022).
-
-    Returns dict with iLISI, cLISI, batch_ASW, celltype_ASW, isolated_label_F1,
-    scib_overall, and n_cells_metrics (number of cells used for evaluation).
-    """
-    import gc
-
     print(f"    Computing metrics for {embedding_key}...")
-
     metrics = {}
 
-    # Get embedding
-    if embedding_key in adata.obsm:
-        embedding = adata.obsm[embedding_key]
-    else:
-        print(f"    WARNING: {embedding_key} not in obsm, skipping metrics")
+    if embedding_key not in adata.obsm:
+        print(f"    WARNING: {embedding_key} not in obsm")
         return metrics
 
+    embedding = adata.obsm[embedding_key]
     batch = adata.obs[batch_key].values
-    labels = adata.obs[label_key].values
 
-    # --- Subsample if needed (stratified by cell type) ---
+    # Subsample if needed
     n_cells = embedding.shape[0]
     if n_cells > max_cells:
-        rng = np.random.RandomState(random_state)
-        # Stratified sampling: keep proportions of each label
-        unique_labels, label_indices = np.unique(labels, return_inverse=True)
-        idx = np.arange(n_cells)
-        sampled = []
-        for li in range(len(unique_labels)):
-            mask = label_indices == li
-            group_idx = idx[mask]
-            # Always keep at least all members of tiny groups
-            n_take = max(1, int(round(max_cells * mask.sum() / n_cells)))
-            if n_take >= len(group_idx):
-                sampled.append(group_idx)
-            else:
-                sampled.append(rng.choice(group_idx, size=n_take, replace=False))
-        sampled = np.concatenate(sampled)
-        rng.shuffle(sampled)
-        embedding = embedding[sampled]
-        batch = batch[sampled]
-        labels = labels[sampled]
-        print(f"    Subsampled {n_cells:,} → {len(sampled):,} cells for metric evaluation (stratified, seed={random_state})")
+        rng = np.random.RandomState(42)
+        idx = rng.choice(n_cells, max_cells, replace=False)
+        embedding = embedding[idx]
+        batch = batch[idx]
+        cond = adata.obs['condition_harmonized'].values[idx] if 'condition_harmonized' in adata.obs.columns else None
+        print(f"    Subsampled {n_cells:,} -> {max_cells:,} for metrics")
+    else:
+        cond = adata.obs['condition_harmonized'].values if 'condition_harmonized' in adata.obs.columns else None
+
     metrics['n_cells_metrics'] = int(embedding.shape[0])
 
+    # iLISI
     try:
-        from scib_metrics import ilisi_knn, clisi_knn, silhouette_batch, silhouette_label, isolated_labels
-        from scib_metrics.nearest_neighbors import pynndescent
-    except ImportError:
-        print("    WARNING: scib_metrics not available, using manual metrics")
-        return _manual_metrics(embedding, batch, labels)
-
-    # scib-metrics LISI functions expect a NeighborsResults object, not raw arrays
-    knn_result = None
-    try:
-        knn_result = pynndescent(embedding, n_neighbors=90)
-    except Exception as e:
-        print(f"    WARNING: pynndescent kNN failed: {e}")
-
-    try:
-        # iLISI — batch mixing (higher = better mixing)
-        if knn_result is not None:
-            ilisi = ilisi_knn(knn_result, batch)
-            metrics['iLISI'] = float(np.median(ilisi))
-            del ilisi
-        else:
-            metrics['iLISI'] = np.nan
+        metrics['iLISI'] = float(_quick_ilisi(embedding, batch))
     except Exception as e:
         print(f"    WARNING: iLISI failed: {e}")
         metrics['iLISI'] = np.nan
 
+    # Batch ASW
     try:
-        # cLISI — cell type separation (lower = better separation, closer to 1)
-        if knn_result is not None:
-            clisi = clisi_knn(knn_result, labels)
-            metrics['cLISI'] = float(np.median(clisi))
-            del clisi
+        from sklearn.metrics import silhouette_score
+        if len(set(batch)) > 1:
+            metrics['batch_ASW'] = float(silhouette_score(
+                embedding, batch, sample_size=min(5000, len(embedding)),
+                random_state=42
+            ))
         else:
-            metrics['cLISI'] = np.nan
-    except Exception as e:
-        print(f"    WARNING: cLISI failed: {e}")
-        metrics['cLISI'] = np.nan
-
-    # Free kNN graph before silhouette computation
-    del knn_result
-    gc.collect()
-
-    try:
-        # Batch ASW — should be close to 0 (no batch structure)
-        metrics['batch_ASW'] = float(silhouette_batch(embedding, labels, batch))
+            metrics['batch_ASW'] = np.nan
     except Exception as e:
         print(f"    WARNING: batch_ASW failed: {e}")
         metrics['batch_ASW'] = np.nan
-    gc.collect()
 
+    # Condition ASW
     try:
-        # Cell type ASW — should be positive (cell types separate)
-        metrics['celltype_ASW'] = float(silhouette_label(embedding, labels))
-    except Exception as e:
-        print(f"    WARNING: celltype_ASW failed: {e}")
-        metrics['celltype_ASW'] = np.nan
-    gc.collect()
-
-    try:
-        # Isolated label F1
-        metrics['isolated_label_F1'] = float(isolated_labels(embedding, labels, batch))
-    except Exception as e:
-        print(f"    WARNING: isolated_label_F1 failed: {e}")
-        metrics['isolated_label_F1'] = np.nan
-    gc.collect()
-
-    # scib overall: average of normalized scores
-    batch_scores = []
-    bio_scores = []
-    if not np.isnan(metrics.get('iLISI', np.nan)):
-        # Normalize iLISI: 1 = no mixing, n_batches = perfect; scale to 0-1
-        n_batches = len(set(batch))
-        batch_scores.append((metrics['iLISI'] - 1) / max(n_batches - 1, 1))
-    if not np.isnan(metrics.get('batch_ASW', np.nan)):
-        batch_scores.append(metrics['batch_ASW'])
-    if not np.isnan(metrics.get('celltype_ASW', np.nan)):
-        bio_scores.append(metrics['celltype_ASW'])
-    if not np.isnan(metrics.get('cLISI', np.nan)):
-        # Normalize cLISI: 1 = perfect, n_types = worst; invert
-        n_types = len(set(labels))
-        bio_scores.append(1 - (metrics['cLISI'] - 1) / max(n_types - 1, 1))
-    if not np.isnan(metrics.get('isolated_label_F1', np.nan)):
-        bio_scores.append(metrics['isolated_label_F1'])
-
-    batch_mean = np.mean(batch_scores) if batch_scores else 0.0
-    bio_mean = np.mean(bio_scores) if bio_scores else 0.0
-    metrics['scib_overall'] = 0.4 * batch_mean + 0.6 * bio_mean
-
-    return metrics
-
-
-def _manual_metrics(embedding, batch, labels):
-    """Fallback manual metrics using sklearn if scib-metrics fails."""
-    from sklearn.metrics import silhouette_score
-    from sklearn.neighbors import NearestNeighbors
-
-    metrics = {}
-    try:
-        # Quick iLISI
-        metrics['iLISI'] = _quick_ilisi(embedding, batch, n_sample=5000)
-    except Exception:
-        metrics['iLISI'] = np.nan
-
-    try:
-        # Cell type ASW
-        if len(set(labels)) > 1:
-            metrics['celltype_ASW'] = float(silhouette_score(
-                embedding[:5000] if len(embedding) > 5000 else embedding,
-                labels[:5000] if len(labels) > 5000 else labels,
-                sample_size=min(5000, len(embedding)),
-            ))
-        else:
-            metrics['celltype_ASW'] = np.nan
-    except Exception:
-        metrics['celltype_ASW'] = np.nan
-
-    metrics['batch_ASW'] = np.nan
-    metrics['cLISI'] = np.nan
-    metrics['isolated_label_F1'] = np.nan
-    metrics['scib_overall'] = np.nan
-    return metrics
-
-
-def compute_continuum_metrics(adata, embedding_key, score_cols, label_key='cell_type_final'):
-    """Compute continuum-preservation metrics for a given embedding.
-
-    Returns dict with:
-        score_variance_ratio: ratio of score variance in integrated vs unintegrated
-        n_clusters_05: number of clusters at resolution 0.5 on integrated embedding
-        condition_accuracy: logistic regression accuracy on integrated embedding (5-fold CV)
-    """
-    metrics = {}
-
-    # Score variance ratio: how much cell state score variance is preserved
-    if score_cols:
-        available_scores = [c for c in score_cols if c in adata.obs.columns]
-        if available_scores:
-            # Variance in integrated embedding's neighbor-smoothed space
-            # Simpler: compare raw score variance (which is unchanged) — use as baseline
-            # Instead compare cluster-level score variance
-            unint_var = 0
-            int_var = 0
-            for col in available_scores:
-                scores = adata.obs[col].values
-                unint_var += np.var(scores)
-                # Smoothed variance: average within Leiden clusters
-                if f'leiden_integrated' in adata.obs.columns:
-                    cluster_means = adata.obs.groupby('leiden_integrated')[col].mean()
-                    int_var += np.var(cluster_means)
-                else:
-                    int_var += np.var(scores)  # fallback
-            metrics['score_variance_ratio'] = int_var / max(unint_var, 1e-10)
-
-    # Cluster count at resolution 0.5
-    try:
-        if embedding_key in adata.obsm:
-            # Temporarily compute neighbors on this embedding
-            adata_tmp = adata.copy()
-            if embedding_key.startswith('X_umap'):
-                # For BBKNN: use the existing neighbor graph (already modified)
-                pass
-            else:
-                sc.pp.neighbors(adata_tmp, use_rep=embedding_key)
-            sc.tl.leiden(adata_tmp, resolution=0.5, key_added='_temp_leiden')
-            n_clusters = adata_tmp.obs['_temp_leiden'].nunique()
-            metrics['n_clusters_05'] = n_clusters
-            adata.obs['leiden_integrated'] = adata_tmp.obs['_temp_leiden'].values
-            del adata_tmp
-        else:
-            metrics['n_clusters_05'] = np.nan
-    except Exception as e:
-        print(f"    WARNING: Cluster count failed: {e}")
-        metrics['n_clusters_05'] = np.nan
-
-    # Condition classifier accuracy
-    try:
-        if 'condition_harmonized' in adata.obs.columns and embedding_key in adata.obsm:
-            cond = adata.obs['condition_harmonized'].values
+        if cond is not None:
             valid = pd.notna(cond)
-            unique_cond = set(cond[valid])
-            if len(unique_cond) >= 2:
-                from sklearn.linear_model import LogisticRegression
-                from sklearn.model_selection import cross_val_score
-                X = adata.obsm[embedding_key][valid]
-                y = cond[valid]
-                # Subsample for speed
-                n_sub = min(10000, len(X))
-                rng = np.random.RandomState(42)
-                idx = rng.choice(len(X), n_sub, replace=False)
-                clf = LogisticRegression(max_iter=500, random_state=42)
-                scores = cross_val_score(clf, X[idx], y[idx], cv=5, scoring='accuracy')
-                metrics['condition_accuracy'] = float(np.mean(scores))
+            if valid.sum() > 100 and len(set(cond[valid])) > 1:
+                metrics['condition_ASW'] = float(silhouette_score(
+                    embedding[valid], cond[valid],
+                    sample_size=min(5000, valid.sum()),
+                    random_state=42
+                ))
             else:
-                metrics['condition_accuracy'] = np.nan
+                metrics['condition_ASW'] = np.nan
         else:
-            metrics['condition_accuracy'] = np.nan
+            metrics['condition_ASW'] = np.nan
     except Exception as e:
-        print(f"    WARNING: Condition classifier failed: {e}")
-        metrics['condition_accuracy'] = np.nan
+        print(f"    WARNING: condition_ASW failed: {e}")
+        metrics['condition_ASW'] = np.nan
 
     return metrics
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TIER 1: NON-RESIDENT INTEGRATION
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# CLUSTERING WITH RESOLUTION OPTIMIZATION
+# ═════════════════════════════════════════════════════════════════════════════
 
-def process_tier1(force=False):
-    """Integrate non-resident cells (immune, endothelial, pericyte) with scVI."""
-    output_path = INT_DIR / "tier1_nonresident.h5ad"
+def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
+                                   resolutions=None):
+    """Test Leiden clustering at multiple resolutions, compute silhouette and modularity.
 
-    if output_path.exists() and not force:
-        print("\n=== Tier 1: Non-resident integration (already exists, skipping) ===")
-        print(f"    Use --force to re-run")
-        return output_path
+    Returns the selected resolution and stores results in obs.
+    """
+    if resolutions is None:
+        resolutions = np.arange(0.1, 2.1, 0.1)
 
-    print("\n" + "=" * 60)
-    print("Tier 1: Non-resident cell integration (scVI)")
-    print("=" * 60)
+    print(f"  Optimizing clustering resolution ({tier_name})...")
 
-    # Load non-resident cells
-    def filter_nonresident(obs_df):
-        return obs_df['cell_type_final'].map(classify_cell_tier) == 'nonresident'
+    # Ensure neighbors are computed on this embedding
+    sc.pp.neighbors(adata, use_rep=embedding_key)
 
-    adata = load_subset_concat(ALL_ACCESSIONS, filter_nonresident)
-    if adata is None or adata.shape[0] < 100:
-        print("  ERROR: Too few non-resident cells for integration")
+    embedding = adata.obsm[embedding_key]
+    results = []
+
+    for res in resolutions:
+        key = f'leiden_{res:.1f}'
+        sc.tl.leiden(adata, resolution=res, key_added=key)
+        n_clusters = adata.obs[key].nunique()
+
+        # Silhouette score on embedding
+        sil = np.nan
+        if n_clusters > 1:
+            try:
+                from sklearn.metrics import silhouette_score
+                n_sub = min(10000, adata.shape[0])
+                sil = float(silhouette_score(
+                    embedding, adata.obs[key].values,
+                    sample_size=n_sub, random_state=42
+                ))
+            except Exception:
+                pass
+
+        # Modularity from the graph partition
+        mod_score = np.nan
+        try:
+            import leidenalg
+            import igraph as ig
+            # Build igraph from scanpy neighbor graph
+            adj = adata.obsp['connectivities']
+            sources, targets = adj.nonzero()
+            weights = np.asarray(adj[sources, targets]).ravel()
+            g = ig.Graph(n=adata.shape[0], edges=list(zip(sources.tolist(), targets.tolist())),
+                         directed=False)
+            g.es['weight'] = weights.tolist()
+            membership = adata.obs[key].astype(int).values.tolist()
+            mod_score = float(g.modularity(membership, weights=g.es['weight']))
+        except Exception:
+            pass
+
+        results.append({
+            'resolution': round(res, 1),
+            'n_clusters': n_clusters,
+            'silhouette': sil,
+            'modularity': mod_score,
+        })
+
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(
+        RESULTS_DIR / "clustering_resolution_optimization" / f"{object_name}_{tier_name}_resolutions.tsv",
+        sep='\t', index=False
+    )
+
+    # Select resolution: peak silhouette, or knee in modularity
+    valid = results_df.dropna(subset=['silhouette'])
+    if len(valid) > 0:
+        best_idx = valid['silhouette'].idxmax()
+        selected_res = valid.loc[best_idx, 'resolution']
+    else:
+        selected_res = 0.5  # fallback
+
+    print(f"    Selected resolution: {selected_res} "
+          f"({results_df.loc[results_df['resolution'] == selected_res, 'n_clusters'].values[0]} clusters)")
+
+    # Store selected clustering
+    selected_key = f'leiden_{selected_res:.1f}'
+    adata.obs['leiden'] = adata.obs[selected_key].copy()
+    adata.uns['selected_resolution'] = selected_res
+
+    # Also store a couple of reference resolutions
+    for ref_res in [0.5, 1.0]:
+        ref_key = f'leiden_{ref_res:.1f}'
+        if ref_key in adata.obs.columns:
+            adata.obs[f'leiden_{ref_res}'] = adata.obs[ref_key].copy()
+
+    # Plot
+    _plot_resolution_optimization(results_df, object_name, tier_name, selected_res)
+
+    # Clean up intermediate leiden columns
+    for res in resolutions:
+        key = f'leiden_{res:.1f}'
+        if key in adata.obs.columns and key != selected_key:
+            del adata.obs[key]
+
+    return selected_res
+
+
+def _plot_resolution_optimization(results_df, object_name, tier_name, selected_res):
+    """Plot silhouette and modularity vs resolution."""
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+
+    # Silhouette
+    ax = axes[0]
+    ax.plot(results_df['resolution'], results_df['silhouette'], 'o-', color='#2196F3')
+    ax.axvline(selected_res, color='red', linestyle='--', alpha=0.7)
+    ax.set_xlabel('Resolution')
+    ax.set_ylabel('Silhouette Score')
+    ax.set_title('Silhouette Score')
+
+    # Modularity
+    ax = axes[1]
+    ax.plot(results_df['resolution'], results_df['modularity'], 'o-', color='#4CAF50')
+    ax.axvline(selected_res, color='red', linestyle='--', alpha=0.7)
+    ax.set_xlabel('Resolution')
+    ax.set_ylabel('Modularity')
+    ax.set_title('Modularity')
+
+    # Cluster count
+    ax = axes[2]
+    ax.plot(results_df['resolution'], results_df['n_clusters'], 'o-', color='#FF9800')
+    ax.axvline(selected_res, color='red', linestyle='--', alpha=0.7)
+    ax.set_xlabel('Resolution')
+    ax.set_ylabel('Number of Clusters')
+    ax.set_title('Cluster Count')
+
+    plt.suptitle(f'{object_name} — {tier_name}', fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(RESULTS_DIR / "clustering_resolution_optimization" /
+                f"{object_name}_{tier_name}_optimization.png",
+                dpi=150, bbox_inches='tight')
+    plt.close()
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# DE NOVO ANNOTATION
+# ═════════════════════════════════════════════════════════════════════════════
+
+def compute_cluster_markers(adata, object_name, tier_name, n_genes=50):
+    """Compute DE markers per cluster using Wilcoxon rank-sum test."""
+    print(f"  Computing cluster markers ({tier_name})...")
+
+    sc.tl.rank_genes_groups(adata, groupby='leiden', method='wilcoxon',
+                            n_genes=n_genes)
+
+    # Save to TSV
+    marker_df = sc.get.rank_genes_groups_df(adata, group=None)
+    marker_df.to_csv(
+        RESULTS_DIR / "cluster_markers" / f"{object_name}_{tier_name}_markers.tsv",
+        sep='\t', index=False
+    )
+    print(f"    Saved markers: {len(marker_df)} rows")
+    return marker_df
+
+
+def generate_annotation_dotplots(adata, object_name, tier_name, marker_panel):
+    """Generate dot plots of canonical markers per cluster."""
+    var_names = set(adata.var_names)
+    resolved_markers = {}
+    for group, genes in marker_panel.items():
+        resolved = [_resolve_gene(g, var_names) for g in genes
+                     if _resolve_gene(g, var_names) is not None]
+        if resolved:
+            resolved_markers[group] = resolved
+
+    if not resolved_markers and adata.obs['leiden'].nunique() <= 1:
+        return
+
+    try:
+        # Flat list for dotplot, preserving group structure
+        all_genes = []
+        for genes in resolved_markers.values():
+            for g in genes:
+                if g not in all_genes:
+                    all_genes.append(g)
+
+        if all_genes:
+            sc.pl.dotplot(adata, var_names=all_genes[:50], groupby='leiden', show=False)
+            plt.savefig(
+                RESULTS_DIR / "annotation_dotplots" /
+                f"{object_name}_{tier_name}_canonical_markers.pdf",
+                bbox_inches='tight'
+            )
+            plt.close()
+    except Exception as e:
+        print(f"    WARNING: Dotplot failed: {e}")
+
+
+def annotate_clusters_de_novo(adata, object_name, tier_name):
+    """Annotate clusters using DE markers + canonical marker expression.
+
+    Assigns obs['cell_type'], obs['cell_type_confidence'], obs['annotation_evidence'].
+    """
+    print(f"  Annotating clusters de novo ({tier_name})...")
+
+    # Select appropriate marker panel based on tier and object
+    if tier_name == "non_mesenchymal":
+        panel = {k: v for k, v in CANONICAL_MARKERS.items()
+                 if k in ("Macrophage", "T_cell", "B_cell", "NK_cell",
+                           "Mast_cell", "Endothelial", "Pericyte_SMC")}
+    else:
+        if object_name in ("NP", "all_cells"):
+            panel = {k: v for k, v in CANONICAL_MARKERS.items()
+                     if k.startswith("NP_")}
+        elif object_name == "AF":
+            panel = {k: v for k, v in CANONICAL_MARKERS.items()
+                     if k.startswith("AF_")}
+        elif object_name == "CEP":
+            panel = {k: v for k, v in CANONICAL_MARKERS.items()
+                     if k.startswith("EP_")}
+        else:
+            panel = CANONICAL_MARKERS
+
+    # Generate dotplots
+    generate_annotation_dotplots(adata, object_name, tier_name, panel)
+
+    # Score each cluster for each canonical marker set
+    var_names = set(adata.var_names)
+    cluster_scores = {}
+
+    for cluster in adata.obs['leiden'].unique():
+        mask = adata.obs['leiden'] == cluster
+        cluster_scores[cluster] = {}
+
+        for ct_name, genes in panel.items():
+            resolved = [_resolve_gene(g, var_names) for g in genes
+                         if _resolve_gene(g, var_names) is not None]
+            if not resolved:
+                cluster_scores[cluster][ct_name] = 0.0
+                continue
+
+            # Mean expression of resolved markers in this cluster
+            expr = adata[mask, resolved].X
+            if sparse.issparse(expr):
+                expr = expr.toarray()
+            # Fraction expressing (>0) + mean expression
+            frac_expr = (expr > 0).mean()
+            mean_expr = expr.mean()
+            cluster_scores[cluster][ct_name] = float(frac_expr * 0.5 + mean_expr * 0.5)
+
+    # Assign labels
+    cell_types = pd.Series("unassigned", index=adata.obs_names, dtype=object)
+    confidences = pd.Series("low", index=adata.obs_names, dtype=object)
+    evidences = pd.Series("", index=adata.obs_names, dtype=object)
+
+    for cluster in adata.obs['leiden'].unique():
+        mask = adata.obs['leiden'] == cluster
+        scores = cluster_scores[cluster]
+
+        if not scores or all(v == 0 for v in scores.values()):
+            continue
+
+        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        best_name, best_score = sorted_scores[0]
+        second_score = sorted_scores[1][1] if len(sorted_scores) > 1 else 0
+
+        margin = best_score - second_score
+
+        if best_score > 0.05:
+            cell_types.loc[mask] = best_name
+            if margin > 0.1:
+                confidences.loc[mask] = "high"
+            elif margin > 0.03:
+                confidences.loc[mask] = "medium"
+            else:
+                confidences.loc[mask] = "low"
+            evidences.loc[mask] = f"top_marker={best_name}(score={best_score:.3f})"
+
+    adata.obs['cell_type'] = cell_types.values
+    adata.obs['cell_type_confidence'] = confidences.values
+    adata.obs['annotation_evidence'] = evidences.values
+
+    # Summary
+    ct_counts = adata.obs['cell_type'].value_counts()
+    print(f"    Annotation summary ({tier_name}):")
+    for ct, n in ct_counts.items():
+        pct = n / adata.shape[0] * 100
+        print(f"      {ct}: {n} ({pct:.1f}%)")
+
+
+def compute_continuous_scores(adata):
+    """Compute continuous gene signature scores for mesenchymal continuum."""
+    var_names = set(adata.var_names)
+    for score_name, genes in CONTINUUM_SCORES.items():
+        resolved = [_resolve_gene(g, var_names) for g in genes
+                     if _resolve_gene(g, var_names) is not None]
+        if resolved:
+            try:
+                sc.tl.score_genes(adata, gene_list=resolved, score_name=score_name)
+            except Exception:
+                adata.obs[score_name] = 0.0
+        else:
+            adata.obs[score_name] = 0.0
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CELLTYPIST VALIDATION (immune subtypes)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def validate_immune_with_celltypist(adata, object_name):
+    """Run CellTypist on non-mesenchymal cells as a validation check.
+
+    Compares CellTypist predictions against de novo labels per cluster.
+    Saves concordance table. Flags disagreements in annotation_evidence.
+    """
+    print(f"  Running CellTypist validation on non-mesenchymal cells...")
+
+    try:
+        import celltypist
+        from celltypist import models as ct_models
+    except ImportError:
+        print("    WARNING: celltypist not installed, skipping validation")
         return None
 
-    # Prepare (HVG, PCA, baseline UMAP)
-    adata = prepare_integrated_object(adata, n_top_genes=3000)
+    try:
+        model = ct_models.Model.load(model="Immune_All_Low.pkl")
+    except Exception as e:
+        print(f"    WARNING: Could not load CellTypist model: {e}")
+        return None
 
-    # Run scVI
-    scvi_model = run_scvi(
-        adata, batch_key='study', n_latent=20, max_epochs=200,
-        use_covariates=False,  # non-resident don't need compartment covariate
-        model_dir=MODEL_DIR, label="tier1_nonresident"
+    try:
+        predictions = celltypist.annotate(adata, model=model, majority_voting=True)
+        result_adata = predictions.to_adata()
+        adata.obs['celltypist_prediction'] = result_adata.obs['majority_voting'].values
+    except Exception as e:
+        print(f"    WARNING: CellTypist annotation failed: {e}")
+        return None
+
+    # Build concordance table: cluster × CellTypist majority prediction
+    concordance = []
+    for cluster in adata.obs['leiden'].unique():
+        mask = adata.obs['leiden'] == cluster
+        de_novo_label = adata.obs.loc[mask, 'cell_type'].mode()
+        de_novo_label = de_novo_label.iloc[0] if len(de_novo_label) > 0 else "unknown"
+        ct_labels = adata.obs.loc[mask, 'celltypist_prediction']
+        ct_majority = ct_labels.mode()
+        ct_majority = ct_majority.iloc[0] if len(ct_majority) > 0 else "unknown"
+        ct_agreement = (ct_labels == ct_majority).mean()
+
+        agrees = _labels_agree(de_novo_label, ct_majority)
+
+        concordance.append({
+            'cluster': cluster,
+            'n_cells': mask.sum(),
+            'de_novo_label': de_novo_label,
+            'celltypist_majority': ct_majority,
+            'celltypist_agreement_pct': f"{ct_agreement * 100:.1f}",
+            'concordant': agrees,
+        })
+
+        # Flag disagreements
+        if not agrees:
+            mask_idx = mask[mask].index
+            current_evidence = adata.obs.loc[mask_idx, 'annotation_evidence']
+            adata.obs.loc[mask_idx, 'annotation_evidence'] = (
+                current_evidence + f"; CELLTYPIST_DISAGREES={ct_majority}"
+            )
+            print(f"    WARNING: Cluster {cluster}: de novo={de_novo_label}, "
+                  f"CellTypist={ct_majority} — flagged for review")
+
+    conc_df = pd.DataFrame(concordance)
+    conc_df.to_csv(
+        RESULTS_DIR / "celltypist_validation" / f"{object_name}_concordance.tsv",
+        sep='\t', index=False
     )
-    del scvi_model
-
-    # Compute Leiden clusters on scVI embedding
-    sc.pp.neighbors(adata, use_rep='X_scvi')
-    sc.tl.leiden(adata, resolution=0.5, key_added='leiden_scvi_05')
-    sc.tl.leiden(adata, resolution=1.0, key_added='leiden_scvi_10')
-
-    # Compute metrics
-    metrics = compute_metrics(adata, 'X_scvi')
-    print(f"  Metrics: {metrics}")
-
-    # Generate UMAP figure
-    _plot_tier1_umaps(adata)
-
-    # Save
-    adata.write_h5ad(output_path)
-    print(f"  Saved: {output_path}")
-
-    # Return metrics for summary
-    metrics['tier'] = 'tier1'
-    metrics['compartment'] = 'nonresident'
-    metrics['approach'] = 'scVI'
-    return output_path, metrics
+    n_agree = conc_df['concordant'].sum()
+    print(f"    Concordance: {n_agree}/{len(conc_df)} clusters agree")
+    return conc_df
 
 
-def _plot_tier1_umaps(adata):
-    """Generate UMAP plots for Tier 1 non-resident integration."""
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+def _labels_agree(de_novo, celltypist):
+    """Check if de novo and CellTypist labels broadly agree."""
+    dn = de_novo.lower()
+    ct = celltypist.lower()
 
-    for ax, (color_key, title) in zip(axes, [
-        ('study', 'By study'),
-        ('cell_type_final', 'By cell type'),
-        ('condition_harmonized', 'By condition'),
-    ]):
-        if color_key in adata.obs.columns:
-            sc.pl.umap(adata, color=color_key, ax=ax, show=False,
-                       title=f"Tier 1 — {title}", frameon=False, s=5)
-        else:
-            ax.set_title(f"Tier 1 — {title} (N/A)")
-
-    plt.tight_layout()
-    fig.savefig(RESULTS_DIR / "umap_tier1_nonresident.png", dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"  Saved: {RESULTS_DIR / 'umap_tier1_nonresident.png'}")
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TIER 2: RESIDENT INTEGRATION (PER COMPARTMENT)
-# ═══════════════════════════════════════════════════════════════════════════════
-
-def _approach_key_map():
-    """Map approach letter to the obsm key that marks it as complete."""
-    return {
-        'A': 'X_scvi',
-        'B': 'X_scanvi',
-        'C': 'X_harmony',
-        'D': 'X_umap_bbknn',
+    # Map common label patterns
+    mappings = {
+        'macrophage': ['macro', 'mono', 'dc', 'dendritic'],
+        't_cell': ['t cell', 'cd4', 'cd8', 'tem', 'tcm', 'treg'],
+        'b_cell': ['b cell', 'plasma', 'pre-b', 'pro-b'],
+        'nk_cell': ['nk'],
+        'mast_cell': ['mast'],
+        'endothelial': ['endothelial'],
+        'pericyte_smc': ['pericyte', 'smooth muscle', 'smc'],
     }
 
+    dn_category = None
+    ct_category = None
 
-def _save_checkpoint(adata, output_path, approach_label):
-    """Save adata to disk after completing an approach (resumable checkpoint).
+    for key, patterns in mappings.items():
+        if any(p in dn for p in patterns) or key in dn:
+            dn_category = key
+        if any(p in ct for p in patterns):
+            ct_category = key
 
-    Writes to a temp file first, then atomically renames, so a crash
-    mid-write cannot corrupt the existing checkpoint.
+    # If both match a known category, they must match the same one
+    if dn_category is not None and ct_category is not None:
+        return dn_category == ct_category
+
+    # If only one matches a known category, they disagree
+    if dn_category is not None or ct_category is not None:
+        return False
+
+    # If neither matches known patterns, can't determine disagreement
+    return True
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# TIER MERGING
+# ═════════════════════════════════════════════════════════════════════════════
+
+def merge_tiers(mes_adata, non_mes_adata, mes_embedding_key, non_mes_embedding_key):
+    """Merge mesenchymal and non-mesenchymal tiers into a single object.
+
+    Stores tier-specific embeddings as X_scvi_mesenchymal and X_scvi_non_mesenchymal.
     """
+    print("  Merging tiers...")
+
+    # Store tier-specific embeddings with NaN for the other tier
+    n_latent_mes = mes_adata.obsm[mes_embedding_key].shape[1]
+    n_latent_non = non_mes_adata.obsm[non_mes_embedding_key].shape[1]
+
+    # Pad non-mesenchymal with NaN for mesenchymal embedding and vice versa
+    mes_adata.obsm['X_scvi_mesenchymal'] = mes_adata.obsm[mes_embedding_key].copy()
+    mes_adata.obsm['X_scvi_non_mesenchymal'] = np.full(
+        (mes_adata.shape[0], n_latent_non), np.nan
+    )
+
+    non_mes_adata.obsm['X_scvi_non_mesenchymal'] = non_mes_adata.obsm[non_mes_embedding_key].copy()
+    non_mes_adata.obsm['X_scvi_mesenchymal'] = np.full(
+        (non_mes_adata.shape[0], n_latent_mes), np.nan
+    )
+
+    # Ensure both have the same obs columns
+    common_obs = list(set(mes_adata.obs.columns) & set(non_mes_adata.obs.columns))
+    mes_adata.obs = mes_adata.obs[common_obs].copy()
+    non_mes_adata.obs = non_mes_adata.obs[common_obs].copy()
+
+    # Ensure same var
+    common_genes = sorted(set(mes_adata.var_names) & set(non_mes_adata.var_names))
+    mes_sub = mes_adata[:, common_genes].copy()
+    non_mes_sub = non_mes_adata[:, common_genes].copy()
+
+    # Concatenate
+    merged = ad.concat([mes_sub, non_mes_sub], merge='same')
+
+    if not sparse.issparse(merged.X):
+        merged.X = sparse.csr_matrix(merged.X)
+
+    print(f"    Merged: {merged.shape[0]:,} cells "
+          f"({mes_adata.shape[0]:,} mes + {non_mes_adata.shape[0]:,} non-mes)")
+
+    del mes_sub, non_mes_sub
+    return merged
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# CHECKPOINT SAVE
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _save_checkpoint(adata, output_path, label):
+    """Atomic save of adata checkpoint."""
     import anndata
     anndata.settings.allow_write_nullable_strings = True
     tmp_path = Path(str(output_path) + '.tmp')
     adata.write_h5ad(tmp_path)
     tmp_path.rename(output_path)
-    print(f"  Checkpoint saved after {approach_label}: {output_path}")
+    print(f"  Checkpoint saved ({label}): {output_path}")
     sys.stdout.flush()
 
 
-def process_tier2_compartment(compartment, approaches=('A', 'B', 'C', 'D'), force=False):
-    """Integrate resident cells for one compartment across 4 approaches.
+# ═════════════════════════════════════════════════════════════════════════════
+# PROCESS ONE OBJECT (MAIN ORCHESTRATOR)
+# ═════════════════════════════════════════════════════════════════════════════
 
-    Saves a checkpoint after each approach completes so the run can be
-    resumed if interrupted.  On resume, existing approaches found in the
-    h5ad are skipped (unless --force is passed).
+def process_object(object_name, force=False):
+    """Full pipeline for one integrated object.
 
-    Args:
-        compartment: "NP" or "AF"
-        approaches: tuple of approach letters to run
-        force: re-run even if output exists
-
-    Returns:
-        (output_path, list_of_metric_dicts)
+    Steps: load → split by cell_class → integrate tiers → cluster →
+    annotate → CellTypist validation → compute continuum scores → merge → save.
     """
-    output_path = INT_DIR / f"tier2_resident_{compartment}.h5ad"
-    key_map = _approach_key_map()
+    output_path = INT_DIR / f"{object_name}.h5ad"
 
-    # Determine which approaches still need running
-    existing_keys = set()
     if output_path.exists() and not force:
-        adata_check = sc.read_h5ad(output_path, backed='r')
-        existing_keys = set(adata_check.obsm.keys())
-        adata_check.file.close()
+        print(f"\n=== {object_name}: output exists, skipping (use --force) ===")
+        return output_path, {}
 
-    needed = [a for a in approaches if force or key_map.get(a, '') not in existing_keys]
-    if not needed:
-        print(f"\n=== Tier 2 {compartment}: all approaches already exist, skipping ===")
-        print(f"    Use --force to re-run")
-        return output_path, []
+    print(f"\n{'='*60}")
+    print(f"Processing object: {object_name}")
+    print(f"{'='*60}")
 
-    skipped = [a for a in approaches if a not in needed]
-    if skipped:
-        print(f"\n  Resuming Tier 2 {compartment}: skipping completed approaches {skipped}")
+    # Load all cells for this object
+    adata_all = load_and_build_object(object_name)
+    if adata_all is None or adata_all.shape[0] < 50:
+        print(f"  ERROR: Too few cells for {object_name}")
+        return None, {}
 
-    print(f"\n{'=' * 60}")
-    print(f"Tier 2: {compartment} resident cell integration")
-    print(f"  Approaches to run: {needed}")
-    print(f"{'=' * 60}")
-    sys.stdout.flush()
+    # Split by cell_class
+    mes_mask = adata_all.obs['cell_class'] == 'mesenchymal'
+    non_mes_mask = adata_all.obs['cell_class'] == 'non_mesenchymal'
 
-    # Define filter function
-    if compartment == "NP":
-        def filter_fn(obs_df):
-            tiers = obs_df['cell_type_final'].map(classify_cell_tier)
-            return (tiers == 'NP') | (tiers == 'EP')  # EP included with NP
-        score_cols = NP_SCORE_COLS
-    elif compartment == "AF":
-        def filter_fn(obs_df):
-            tiers = obs_df['cell_type_final'].map(classify_cell_tier)
-            return (tiers == 'AF') | (tiers == 'fibroblast')  # fibroblasts with AF
-        score_cols = AF_SCORE_COLS
+    n_mes = mes_mask.sum()
+    n_non = non_mes_mask.sum()
+    print(f"  Mesenchymal: {n_mes:,} cells")
+    print(f"  Non-mesenchymal: {n_non:,} cells")
+
+    all_metrics = {}
+    mes_adata = None
+    non_mes_adata = None
+    mes_emb_key = None
+    non_mes_emb_key = None
+
+    # ── Tier A: Mesenchymal ──────────────────────────────────────────────
+    if n_mes >= 50:
+        print(f"\n  --- Tier A: Mesenchymal ({object_name}) ---")
+        mes_adata = adata_all[mes_mask].copy()
+        mes_adata = prepare_object(mes_adata, n_top_genes=SCVI_PARAMS['n_top_genes'])
+
+        _, mes_emb_key = run_scvi(
+            mes_adata,
+            batch_key=SCVI_PARAMS['batch_key'],
+            n_latent=SCVI_PARAMS['n_latent'],
+            max_epochs=SCVI_PARAMS['max_epochs'],
+            model_dir=MODEL_DIR,
+            label=f"{object_name}_mesenchymal"
+        )
+
+        # Integration metrics
+        mes_metrics = compute_integration_metrics(mes_adata, mes_emb_key)
+        all_metrics['mesenchymal'] = mes_metrics
+
+        # Clustering
+        optimize_clustering_resolution(mes_adata, mes_emb_key, object_name, "mesenchymal")
+
+        # DE markers
+        compute_cluster_markers(mes_adata, object_name, "mesenchymal")
+
+        # Annotation
+        annotate_clusters_de_novo(mes_adata, object_name, "mesenchymal")
+
+        # Continuum scores
+        compute_continuous_scores(mes_adata)
+
+        gc.collect()
     else:
-        raise ValueError(f"Unknown compartment: {compartment}")
+        print(f"  Skipping mesenchymal tier: only {n_mes} cells")
 
-    # Load from checkpoint if available, otherwise from raw data
-    if output_path.exists() and not force and existing_keys:
-        print("  Loading from checkpoint (sparse-backed to save memory)...")
-        sys.stdout.flush()
-        # Load X as sparse to keep peak memory manageable on 16 GB machines.
-        # The dense X is only needed by scVI/scANVI setup; approaches C/D and
-        # metric evaluation work fine with sparse or convert small slices.
-        adata = sc.read_h5ad(output_path)
-        # Convert X to sparse if it is dense — saves ~4 GB for 139K×11K
-        import scipy.sparse as sp
-        if not sp.issparse(adata.X):
-            print("    Converting X to sparse CSR to reduce memory footprint...")
-            adata.X = sp.csr_matrix(adata.X)
-            gc.collect()
-        print(f"    Loaded: {adata.shape[0]:,} cells × {adata.shape[1]:,} genes")
-        print(f"    Existing obsm: {list(adata.obsm.keys())}")
-        sys.stdout.flush()
+    # ── Tier B: Non-mesenchymal ──────────────────────────────────────────
+    if n_non >= 50:
+        print(f"\n  --- Tier B: Non-mesenchymal ({object_name}) ---")
+        non_mes_adata = adata_all[non_mes_mask].copy()
+        non_mes_adata = prepare_object(non_mes_adata, n_top_genes=SCVI_PARAMS['n_top_genes'])
+
+        _, non_mes_emb_key = run_scvi(
+            non_mes_adata,
+            batch_key=SCVI_PARAMS['batch_key'],
+            n_latent=SCVI_PARAMS['n_latent'],
+            max_epochs=SCVI_PARAMS['max_epochs'],
+            model_dir=MODEL_DIR,
+            label=f"{object_name}_non_mesenchymal"
+        )
+
+        # Integration metrics
+        non_mes_metrics = compute_integration_metrics(non_mes_adata, non_mes_emb_key)
+        all_metrics['non_mesenchymal'] = non_mes_metrics
+
+        # Clustering
+        optimize_clustering_resolution(non_mes_adata, non_mes_emb_key,
+                                       object_name, "non_mesenchymal")
+
+        # DE markers
+        compute_cluster_markers(non_mes_adata, object_name, "non_mesenchymal")
+
+        # Annotation
+        annotate_clusters_de_novo(non_mes_adata, object_name, "non_mesenchymal")
+
+        # CellTypist validation
+        validate_immune_with_celltypist(non_mes_adata, object_name)
+
+        gc.collect()
     else:
-        adata = load_subset_concat(ALL_ACCESSIONS, filter_fn)
-        if adata is None or adata.shape[0] < 100:
-            print(f"  ERROR: Too few {compartment} cells for integration")
-            return None, []
+        print(f"  Skipping non-mesenchymal tier: only {n_non} cells")
 
-        # Flag EP cells
-        if compartment == "NP":
-            adata.obs['is_ep'] = adata.obs['cell_type_final'].map(
-                lambda x: classify_cell_tier(x) == 'EP'
-            )
-            n_ep = adata.obs['is_ep'].sum()
-            print(f"  EP cells included: {n_ep:,}")
-
-        # Prepare (HVG, PCA, baseline UMAP)
-        adata = prepare_integrated_object(adata, n_top_genes=3000)
-
-    # Run approaches
-    all_metrics = []
-    scvi_model = None
-
-    # Approach A: scVI
-    if 'A' in needed:
-        try:
-            scvi_model = run_scvi(
-                adata, batch_key='study', n_latent=20, max_epochs=200,
-                use_covariates=True, model_dir=MODEL_DIR,
-                label=f"tier2_{compartment}"
-            )
-            m = compute_metrics(adata, 'X_scvi')
-            m.update(compute_continuum_metrics(adata, 'X_scvi', score_cols))
-            m['tier'] = 'tier2'
-            m['compartment'] = compartment
-            m['approach'] = 'A_scVI'
-            all_metrics.append(m)
-            print(f"    Approach A metrics: {m}")
-            _save_checkpoint(adata, output_path, 'A_scVI')
-        except Exception as e:
-            print(f"  ERROR in Approach A (scVI): {e}")
-            traceback.print_exc()
-
-    # Approach B: scANVI
-    if 'B' in needed:
-        if scvi_model is None:
-            # Try to reload saved scVI model
-            saved_model_path = MODEL_DIR / f"scvi_tier2_{compartment}"
-            if saved_model_path.exists():
-                print("  Loading saved scVI model for scANVI initialization...")
-                import scvi as scvi_module
-                scvi_module.model.SCVI.setup_anndata(
-                    adata, layer='counts', batch_key='study',
-                    categorical_covariate_keys=['compartment'] if 'compartment' in adata.obs.columns else None,
-                    continuous_covariate_keys=['pct_counts_mt'] if 'pct_counts_mt' in adata.obs.columns else None,
-                )
-                scvi_model = scvi_module.model.SCVI.load(str(saved_model_path), adata=adata)
-            else:
-                print("  WARNING: scANVI requires scVI model; running scVI first...")
-                try:
-                    scvi_model = run_scvi(
-                        adata, batch_key='study', n_latent=20, max_epochs=200,
-                        use_covariates=True, model_dir=MODEL_DIR,
-                        label=f"tier2_{compartment}"
-                    )
-                    _save_checkpoint(adata, output_path, 'A_scVI_for_B')
-                except Exception as e:
-                    print(f"  ERROR: Could not train scVI for scANVI init: {e}")
-        if scvi_model is not None:
-            try:
-                run_scanvi(
-                    adata, scvi_model, max_epochs=50,
-                    model_dir=MODEL_DIR, label=f"tier2_{compartment}"
-                )
-                m = compute_metrics(adata, 'X_scanvi')
-                m.update(compute_continuum_metrics(adata, 'X_scanvi', score_cols))
-                m['tier'] = 'tier2'
-                m['compartment'] = compartment
-                m['approach'] = 'B_scANVI'
-                all_metrics.append(m)
-                print(f"    Approach B metrics: {m}")
-                _save_checkpoint(adata, output_path, 'B_scANVI')
-            except Exception as e:
-                print(f"  ERROR in Approach B (scANVI): {e}")
-                traceback.print_exc()
-
-    del scvi_model  # free memory
+    del adata_all
     gc.collect()
 
-    # Approach C: Harmony
-    if 'C' in needed:
-        try:
-            best_theta = run_harmony(adata, batch_key='study', thetas=(0.5, 1.0, 2.0))
-            m = compute_metrics(adata, 'X_harmony')
-            m.update(compute_continuum_metrics(adata, 'X_harmony', score_cols))
-            m['tier'] = 'tier2'
-            m['compartment'] = compartment
-            m['approach'] = 'C_Harmony'
-            m['harmony_theta'] = best_theta
-            all_metrics.append(m)
-            print(f"    Approach C metrics: {m}")
-            _save_checkpoint(adata, output_path, 'C_Harmony')
-        except Exception as e:
-            print(f"  ERROR in Approach C (Harmony): {e}")
-            traceback.print_exc()
+    # ── Merge tiers ──────────────────────────────────────────────────────
+    if mes_adata is not None and non_mes_adata is not None:
+        merged = merge_tiers(mes_adata, non_mes_adata, mes_emb_key, non_mes_emb_key)
+        del mes_adata, non_mes_adata
+    elif mes_adata is not None:
+        merged = mes_adata
+        merged.obsm['X_scvi_mesenchymal'] = merged.obsm[mes_emb_key].copy()
+        del mes_adata
+    elif non_mes_adata is not None:
+        merged = non_mes_adata
+        merged.obsm['X_scvi_non_mesenchymal'] = merged.obsm[non_mes_emb_key].copy()
+        del non_mes_adata
+    else:
+        print(f"  ERROR: No tiers processed for {object_name}")
+        return None, {}
 
-    # Approach D: BBKNN
-    if 'D' in needed:
-        try:
-            run_bbknn(adata, batch_key='study', n_pcs=20, neighbors_within_batch=3)
-            # BBKNN has no embedding — use PCA for metrics, UMAP for viz
-            m = compute_metrics(adata, 'X_pca')
-            m.update(compute_continuum_metrics(adata, 'X_pca', score_cols))
-            m['tier'] = 'tier2'
-            m['compartment'] = compartment
-            m['approach'] = 'D_BBKNN'
-            all_metrics.append(m)
-            print(f"    Approach D metrics: {m}")
-            _save_checkpoint(adata, output_path, 'D_BBKNN')
-        except Exception as e:
-            print(f"  ERROR in Approach D (BBKNN): {e}")
-            traceback.print_exc()
+    # ── Generate UMAPs ───────────────────────────────────────────────────
+    _plot_object_umaps(merged, object_name)
 
-    # Generate UMAP figures
-    _plot_tier2_umaps(adata, compartment)
+    # ── Save ─────────────────────────────────────────────────────────────
+    _save_checkpoint(merged, output_path, "final")
+    print(f"  {object_name} complete: {merged.shape[0]:,} cells, "
+          f"{merged.obs['cell_type'].nunique()} cell types")
 
-    # Final save (with plots info in uns)
-    _save_checkpoint(adata, output_path, 'final')
-    print(f"  Saved: {output_path}")
-
+    del merged
+    gc.collect()
     return output_path, all_metrics
 
 
-def _plot_tier2_umaps(adata, compartment):
-    """Generate multi-panel UMAP comparison for Tier 2 approaches."""
-    # Collect available embeddings
-    umap_keys = []
-    umap_labels = []
-    if 'X_umap_unintegrated' in adata.obsm:
-        umap_keys.append('X_umap_unintegrated')
-        umap_labels.append('Unintegrated')
-    if 'X_umap_scvi' in adata.obsm:
-        umap_keys.append('X_umap_scvi')
-        umap_labels.append('A: scVI')
-    if 'X_umap_scanvi' in adata.obsm:
-        umap_keys.append('X_umap_scanvi')
-        umap_labels.append('B: scANVI')
-    if 'X_umap_harmony' in adata.obsm:
-        umap_keys.append('X_umap_harmony')
-        umap_labels.append('C: Harmony')
-    if 'X_umap_bbknn' in adata.obsm:
-        umap_keys.append('X_umap_bbknn')
-        umap_labels.append('D: BBKNN')
+def process_all_cells_secondary(force=False):
+    """Process all-cells as a secondary object.
 
-    n_cols = len(umap_keys)
-    if n_cols == 0:
+    Cells from compartment-specific objects carry their annotations.
+    Only GSE189916 adult cells get de novo annotation.
+    """
+    output_path = INT_DIR / "all_cells.h5ad"
+
+    if output_path.exists() and not force:
+        print(f"\n=== all_cells: output exists, skipping (use --force) ===")
+        return output_path, {}
+
+    print(f"\n{'='*60}")
+    print(f"Processing object: all_cells (secondary)")
+    print(f"{'='*60}")
+
+    # Load all cells
+    adata_all = load_and_build_object("all_cells")
+    if adata_all is None:
+        return None, {}
+
+    # Transfer annotations from compartment-specific objects
+    print("  Transferring annotations from compartment-specific objects...")
+    adata_all.obs['cell_type'] = "unassigned"
+    adata_all.obs['cell_type_confidence'] = "low"
+    adata_all.obs['annotation_evidence'] = ""
+
+    n_transferred = 0
+    for obj_name in ["NP", "AF", "CEP"]:
+        obj_path = INT_DIR / f"{obj_name}.h5ad"
+        if not obj_path.exists():
+            continue
+        obj_adata = sc.read_h5ad(obj_path)
+        if 'cell_type' not in obj_adata.obs.columns:
+            del obj_adata
+            continue
+
+        # Match cells by obs_names
+        common_cells = adata_all.obs_names.intersection(obj_adata.obs_names)
+        if len(common_cells) > 0:
+            adata_all.obs.loc[common_cells, 'cell_type'] = obj_adata.obs.loc[common_cells, 'cell_type'].values
+            if 'cell_type_confidence' in obj_adata.obs.columns:
+                adata_all.obs.loc[common_cells, 'cell_type_confidence'] = obj_adata.obs.loc[common_cells, 'cell_type_confidence'].values
+            if 'annotation_evidence' in obj_adata.obs.columns:
+                adata_all.obs.loc[common_cells, 'annotation_evidence'] = obj_adata.obs.loc[common_cells, 'annotation_evidence'].values
+            n_transferred += len(common_cells)
+            print(f"    {obj_name}: transferred {len(common_cells):,} cell annotations")
+        del obj_adata
+
+    # De novo annotate remaining unassigned cells (e.g. GSE189916)
+    unassigned_mask = adata_all.obs['cell_type'] == 'unassigned'
+    n_unassigned = unassigned_mask.sum()
+    print(f"  Cells with transferred annotations: {n_transferred:,}")
+    print(f"  Cells needing de novo annotation: {n_unassigned:,}")
+
+    if n_unassigned > 50:
+        print("  Running de novo annotation on unassigned cells...")
+        unassigned_adata = adata_all[unassigned_mask].copy()
+
+        # Quick integration + clustering for unassigned cells
+        if unassigned_adata.obs['study'].nunique() > 1:
+            unassigned_adata = prepare_object(unassigned_adata)
+            _, emb_key = run_scvi(unassigned_adata, model_dir=MODEL_DIR,
+                                  label="all_cells_unassigned")
+            optimize_clustering_resolution(unassigned_adata, emb_key,
+                                           "all_cells", "unassigned")
+        else:
+            # Single study — just cluster on PCA
+            sc.pp.pca(unassigned_adata)
+            sc.pp.neighbors(unassigned_adata)
+            sc.tl.leiden(unassigned_adata, resolution=0.5, key_added='leiden')
+            emb_key = 'X_pca'
+
+        annotate_clusters_de_novo(unassigned_adata, "all_cells", "unassigned")
+
+        # Transfer back
+        adata_all.obs.loc[unassigned_mask, 'cell_type'] = unassigned_adata.obs['cell_type'].values
+        adata_all.obs.loc[unassigned_mask, 'cell_type_confidence'] = unassigned_adata.obs['cell_type_confidence'].values
+        del unassigned_adata
+
+    # Integration of the full all-cells object for visualization
+    print("  Integrating all-cells for unified visualization...")
+    adata_all = prepare_object(adata_all)
+
+    # Run scVI on mesenchymal tier for visualization
+    mes_mask = adata_all.obs['cell_class'] == 'mesenchymal'
+    if mes_mask.sum() > 100:
+        mes = adata_all[mes_mask].copy()
+        run_scvi(mes, model_dir=MODEL_DIR, label="all_cells_mesenchymal")
+        # Store embedding back
+        adata_all.obsm['X_scvi_mesenchymal'] = np.full(
+            (adata_all.shape[0], SCVI_PARAMS['n_latent']), np.nan
+        )
+        adata_all.obsm['X_scvi_mesenchymal'][np.where(mes_mask)[0]] = \
+            mes.obsm[f'X_scvi_all_cells_mesenchymal']
+        del mes
+
+    # Compute integration metrics on full object
+    metrics = compute_integration_metrics(adata_all, 'X_pca', batch_key='study')
+
+    # UMAPs
+    _plot_object_umaps(adata_all, "all_cells")
+
+    # Save
+    _save_checkpoint(adata_all, output_path, "final")
+    print(f"  all_cells complete: {adata_all.shape[0]:,} cells")
+
+    del adata_all
+    gc.collect()
+    return output_path, {'all_cells': metrics}
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# UMAP PLOTS
+# ═════════════════════════════════════════════════════════════════════════════
+
+def _plot_object_umaps(adata, object_name):
+    """Generate UMAP panels for one object."""
+    color_keys = ['study', 'leiden', 'cell_type', 'condition_harmonized', 'cell_class']
+    color_keys = [c for c in color_keys if c in adata.obs.columns]
+    n_cols = len(color_keys)
+
+    if n_cols == 0 or 'X_umap' not in adata.obsm:
         return
 
-    color_keys = ['study', 'cell_type_final', 'condition_harmonized', 'compartment']
-    color_keys = [c for c in color_keys if c in adata.obs.columns]
-    n_rows = len(color_keys)
-
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4.5 * n_rows))
-    if n_rows == 1:
-        axes = axes[np.newaxis, :]
+    fig, axes = plt.subplots(1, n_cols, figsize=(5 * n_cols, 4.5))
     if n_cols == 1:
-        axes = axes[:, np.newaxis]
+        axes = [axes]
 
-    for col_i, (umap_key, umap_label) in enumerate(zip(umap_keys, umap_labels)):
-        # Temporarily set X_umap for sc.pl.umap
-        adata.obsm['X_umap'] = adata.obsm[umap_key]
-        for row_i, color_key in enumerate(color_keys):
-            ax = axes[row_i, col_i]
-            try:
-                sc.pl.umap(adata, color=color_key, ax=ax, show=False,
-                           frameon=False, s=2, alpha=0.5)
-                if row_i == 0:
-                    ax.set_title(umap_label, fontsize=11, fontweight='bold')
-                if col_i == 0:
-                    ax.set_ylabel(color_key.replace('_', ' '), fontsize=10)
-            except Exception:
-                ax.set_title(f"{umap_label}\n({color_key})")
+    for ax, color in zip(axes, color_keys):
+        try:
+            sc.pl.umap(adata, color=color, ax=ax, show=False,
+                       frameon=False, s=2, alpha=0.5,
+                       title=f"{object_name} — {color}")
+        except Exception:
+            ax.set_title(f"{object_name} — {color} (failed)")
 
     plt.tight_layout()
-    fig.savefig(RESULTS_DIR / f"umap_tier2_{compartment}_by_approach.png",
+    fig.savefig(RESULTS_DIR / f"umap_{object_name}.png",
                 dpi=150, bbox_inches='tight')
     plt.close(fig)
-    print(f"  Saved: {RESULTS_DIR / f'umap_tier2_{compartment}_by_approach.png'}")
+    print(f"  Saved: umap_{object_name}.png")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# REPORT GENERATION
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
+# INCLUSION SUMMARY & STUDY CAVEATS
+# ═════════════════════════════════════════════════════════════════════════════
+
+def generate_inclusion_summary():
+    """Generate inclusion_summary.tsv and .html for manuscript supplement."""
+    print("\n  Generating inclusion summary...")
+
+    meta_path = META_DIR / "sample_metadata.tsv"
+    meta = pd.read_csv(meta_path, sep='\t') if meta_path.exists() else None
+
+    rows = []
+    for obj_name in ["NP", "AF", "CEP", "all_cells"]:
+        obj_path = INT_DIR / f"{obj_name}.h5ad"
+        if not obj_path.exists():
+            continue
+        adata = sc.read_h5ad(obj_path, backed='r')
+
+        for study in sorted(adata.obs['study'].unique()):
+            study_mask = adata.obs['study'] == study
+            n_cells = int(study_mask.sum())
+            n_samples = adata.obs.loc[study_mask, 'sample_id'].nunique() if 'sample_id' in adata.obs.columns else 0
+
+            # Get metadata
+            first_author = ""
+            year = ""
+            compartment = ""
+            conditions = ""
+            platform = ""
+            if meta is not None:
+                study_meta = meta[meta['study_accession'] == study]
+                if len(study_meta) > 0:
+                    first_author = study_meta.iloc[0].get('first_author', '')
+                    year = str(study_meta.iloc[0].get('year', ''))
+                    compartment = ', '.join(study_meta['compartment'].unique())
+                    conditions = ', '.join(study_meta['condition_harmonized'].dropna().unique())
+                    platform = study_meta.iloc[0].get('sequencing_platform', '')
+
+            rows.append({
+                'object': obj_name,
+                'accession': study,
+                'first_author': first_author,
+                'year': year,
+                'n_samples': n_samples,
+                'n_cells': n_cells,
+                'compartment': compartment,
+                'conditions': conditions,
+                'platform': platform,
+            })
+        adata.file.close()
+
+    df = pd.DataFrame(rows)
+    df.to_csv(RESULTS_DIR / "inclusion_summary.tsv", sep='\t', index=False)
+
+    # HTML version
+    html = df.to_html(index=False, classes='summary-table')
+    html_page = f"""<!DOCTYPE html>
+<html><head><title>Inclusion Summary</title>
+<style>
+body {{ font-family: Arial; max-width: 1200px; margin: 0 auto; padding: 20px; }}
+.summary-table {{ border-collapse: collapse; width: 100%; }}
+.summary-table th {{ background: #3498db; color: white; padding: 8px; }}
+.summary-table td {{ border: 1px solid #ddd; padding: 6px; }}
+.summary-table tr:nth-child(even) {{ background: #f2f2f2; }}
+</style></head><body>
+<h1>Study Inclusion Summary</h1>
+<p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+{html}
+</body></html>"""
+    (RESULTS_DIR / "inclusion_summary.html").write_text(html_page)
+    print(f"  Saved: inclusion_summary.tsv and .html")
+
+
+def generate_study_caveats():
+    """Generate study_caveats.tsv for manuscript supplement."""
+    caveats = [
+        {"study": "GSE165722", "first_author": "Tu 2022",
+         "caveat": "BD Rhapsody platform (not 10x)",
+         "impact": "Different capture efficiency, gene detection",
+         "mitigation": "Platform-aware batch correction via scVI study-level batch key"},
+        {"study": "GSE205535", "first_author": "Li 2022",
+         "caveat": "BD Rhapsody platform; published corrigenda",
+         "impact": "See above; potential data quality issues",
+         "mitigation": "Monitor for outlier behavior in integration"},
+        {"study": "CNP0002664", "first_author": "Han 2022",
+         "caveat": "Singleron Matrix platform (not 10x)",
+         "impact": "Different capture efficiency",
+         "mitigation": "Same as above"},
+        {"study": "GSE242443", "first_author": "Kuchynsky 2024",
+         "caveat": "Culture-expanded CEP cells",
+         "impact": "Culture alters cell states; may not reflect in vivo biology",
+         "mitigation": "Caveat in all CEP results; compare with non-expanded CEP from GSE160756"},
+        {"study": "GSE255768", "first_author": "Shi 2024",
+         "caveat": "Degenerative endplate only; no healthy control",
+         "impact": "Cannot do healthy vs. degenerated comparison for this study alone",
+         "mitigation": "Healthy CEP baseline from GSE160756"},
+        {"study": "GSE230809", "first_author": "Swahn 2024",
+         "caveat": "All-male donors; age-disease confounded",
+         "impact": "Cannot separate age from degeneration effects",
+         "mitigation": "Note in interpretation; sex-specific effects cannot be assessed"},
+        {"study": "GSE205535 NNP", "first_author": "Li 2022",
+         "caveat": "11yo spinal cord injury, classified as 'healthy'",
+         "impact": "Trauma confound",
+         "mitigation": "Excluded from DE comparisons"},
+        {"study": "GSE189916", "first_author": "Jiang 2022",
+         "caveat": "Whole IVD (compartments not separated)",
+         "impact": "Cannot assign cells to NP/AF/CEP",
+         "mitigation": "Included only in all-cells object"},
+    ]
+    df = pd.DataFrame(caveats)
+    df.to_csv(RESULTS_DIR / "study_caveats.tsv", sep='\t', index=False)
+    print(f"  Saved: study_caveats.tsv")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# INTEGRATION REPORT
+# ═════════════════════════════════════════════════════════════════════════════
 
 INTEGRATION_REPORT_TEMPLATE = """<!DOCTYPE html>
 <html>
@@ -1173,7 +1419,6 @@ INTEGRATION_REPORT_TEMPLATE = """<!DOCTYPE html>
   body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }
   h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
   h2 { color: #34495e; margin-top: 30px; }
-  h3 { color: #7f8c8d; }
   table { border-collapse: collapse; width: 100%; margin: 10px 0; }
   th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
   th { background-color: #3498db; color: white; }
@@ -1183,234 +1428,78 @@ INTEGRATION_REPORT_TEMPLATE = """<!DOCTYPE html>
   .stat-box { background: #ecf0f1; padding: 15px; border-radius: 5px; }
   .stat-box h3 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 12px; }
   .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
-  .warning { color: #e74c3c; font-weight: bold; }
+  .warning { color: #e74c3c; }
   .pass { color: #27ae60; }
-  .info { color: #7f8c8d; }
-  .best { background-color: #d5f5e3; }
+  .secondary { color: #95a5a6; font-style: italic; }
   .validation li { margin: 4px 0; }
 </style>
 </head>
 <body>
-<h1>Module 05: Cross-Dataset Integration Report</h1>
+<h1>Module 05: Integration, Clustering, and De Novo Annotation</h1>
 <p>Generated: {{ date }}</p>
 
-<div class="stats-grid">
-  <div class="stat-box"><h3>Total cells integrated</h3><p>{{ total_cells }}</p></div>
-  <div class="stat-box"><h3>Tier 1 (non-resident)</h3><p>{{ tier1_cells }}</p></div>
-  <div class="stat-box"><h3>Tier 2 NP</h3><p>{{ tier2_np_cells }}</p></div>
-  <div class="stat-box"><h3>Tier 2 AF</h3><p>{{ tier2_af_cells }}</p></div>
-  <div class="stat-box"><h3>Studies</h3><p>{{ n_studies }}</p></div>
-  <div class="stat-box"><h3>Approaches tested</h3><p>{{ n_approaches }}</p></div>
-</div>
-
-<h2>Tier 1: Non-Resident Cells</h2>
-{% if has_tier1_umap %}
-<img src="umap_tier1_nonresident.png" alt="Tier 1 UMAP">
+{% for obj in objects %}
+<h2>{{ obj.name }}{% if obj.secondary %} <span class="secondary">(secondary)</span>{% endif %}</h2>
+{% if obj.umap_exists %}
+<img src="umap_{{ obj.name }}.png" alt="{{ obj.name }} UMAP">
 {% endif %}
-
-<h2>Tier 2: NP Resident Cells</h2>
-{% if has_tier2_np_umap %}
-<img src="umap_tier2_NP_by_approach.png" alt="Tier 2 NP UMAP">
-{% endif %}
-
-<h2>Tier 2: AF Resident Cells</h2>
-{% if has_tier2_af_umap %}
-<img src="umap_tier2_AF_by_approach.png" alt="Tier 2 AF UMAP">
-{% endif %}
-
-<h2>Integration Metrics</h2>
-<table>
-  <tr>
-    <th>Tier</th><th>Compartment</th><th>Approach</th>
-    <th>iLISI</th><th>cLISI</th><th>Batch ASW</th><th>Cell Type ASW</th>
-    <th>Isolated Label F1</th><th>Overall Score</th>
-    <th>Clusters (res 0.5)</th><th>Condition Accuracy</th>
-  </tr>
-  {% for row in metrics_table %}
-  <tr class="{{ 'best' if row.is_best else '' }}">
-    <td>{{ row.tier }}</td>
-    <td>{{ row.compartment }}</td>
-    <td>{{ row.approach }}</td>
-    <td>{{ row.iLISI }}</td>
-    <td>{{ row.cLISI }}</td>
-    <td>{{ row.batch_ASW }}</td>
-    <td>{{ row.celltype_ASW }}</td>
-    <td>{{ row.isolated_label_F1 }}</td>
-    <td>{{ row.scib_overall }}</td>
-    <td>{{ row.n_clusters_05 }}</td>
-    <td>{{ row.condition_accuracy }}</td>
-  </tr>
-  {% endfor %}
-</table>
-
-{% if has_metrics_comparison %}
-<h2>Metrics Comparison</h2>
-<img src="metrics_comparison_NP.png" alt="NP metrics comparison">
-<img src="metrics_comparison_AF.png" alt="AF metrics comparison">
-{% endif %}
-
-{% if has_cluster_count %}
-<h2>Cluster Count Comparison</h2>
-<img src="cluster_count_comparison.png" alt="Cluster count comparison">
-{% endif %}
+<p>Cells: {{ obj.n_cells }} | Cell types: {{ obj.n_types }}</p>
+{% endfor %}
 
 <h2>Validation</h2>
 <ul class="validation">
   {% for msg in validation_messages %}
-  <li class="{{ 'pass' if msg.startswith('PASS') else 'warning' if msg.startswith('FAIL') or msg.startswith('WARNING') else 'info' }}">{{ msg }}</li>
+  <li class="{{ 'pass' if msg.startswith('PASS') else 'warning' if msg.startswith('FAIL') or msg.startswith('WARNING') else '' }}">{{ msg }}</li>
   {% endfor %}
 </ul>
 
 <h2>Human Checkpoint Questions</h2>
 <ol>
-  <li>Which integration approach (A-D) best preserves cell state variation while adequately removing batch effects?</li>
-  <li>Is any approach clearly superior, or is a combination needed (e.g., scANVI for NP, Harmony for AF)?</li>
-  <li>Does the "blob" problem recur with any approach? If so, is Approach E or F the appropriate fallback?</li>
-  <li>Should the analysis proceed with integrated data, per-dataset data, or both in parallel?</li>
-  <li>Are there any study-specific effects that persist after integration?</li>
-  <li>Does the integration reveal any new cell states not visible in per-dataset analysis?</li>
+  <li>Does the clustering resolution capture biologically meaningful groups without over-splitting?</li>
+  <li>Do the cell type annotations make biological sense?</li>
+  <li>Are any clusters clearly batch-driven rather than biology-driven?</li>
+  <li>For the mesenchymal continuum: are discrete labels appropriate, or should some clusters be merged?</li>
+  <li>Are there unexpected cell types or missing expected types?</li>
+  <li>Is the all-cells object consistent with the compartment-specific objects?</li>
+  <li>Are the study caveats adequately documented?</li>
+  <li>Should any annotations be revised before proceeding to differential analysis?</li>
 </ol>
 
 </body>
 </html>"""
 
 
-def generate_integration_report(all_metrics, validation_messages):
+def generate_integration_report(validation_messages):
     """Generate HTML integration report."""
     print("\n  Generating integration report...")
 
-    # Load cell counts from output files
-    tier1_cells = 0
-    tier2_np_cells = 0
-    tier2_af_cells = 0
-    n_studies = 12
-
-    t1_path = INT_DIR / "tier1_nonresident.h5ad"
-    if t1_path.exists():
-        a = sc.read_h5ad(t1_path, backed='r')
-        tier1_cells = a.shape[0]
-        a.file.close()
-    np_path = INT_DIR / "tier2_resident_NP.h5ad"
-    if np_path.exists():
-        a = sc.read_h5ad(np_path, backed='r')
-        tier2_np_cells = a.shape[0]
-        a.file.close()
-    af_path = INT_DIR / "tier2_resident_AF.h5ad"
-    if af_path.exists():
-        a = sc.read_h5ad(af_path, backed='r')
-        tier2_af_cells = a.shape[0]
-        a.file.close()
-
-    total_cells = tier1_cells + tier2_np_cells + tier2_af_cells
-
-    # Build metrics table rows
-    metrics_table = []
-    # Find best overall per compartment
-    best_by_comp = {}
-    for m in all_metrics:
-        comp = m.get('compartment', '')
-        score = m.get('scib_overall', 0)
-        if comp not in best_by_comp or score > best_by_comp[comp]:
-            best_by_comp[comp] = score
-
-    for m in all_metrics:
-        comp = m.get('compartment', '')
-        is_best = (m.get('scib_overall', 0) == best_by_comp.get(comp, -1)
-                   and not np.isnan(m.get('scib_overall', np.nan)))
-        metrics_table.append({
-            'tier': m.get('tier', ''),
-            'compartment': comp,
-            'approach': m.get('approach', ''),
-            'iLISI': f"{m.get('iLISI', np.nan):.3f}" if not np.isnan(m.get('iLISI', np.nan)) else '—',
-            'cLISI': f"{m.get('cLISI', np.nan):.3f}" if not np.isnan(m.get('cLISI', np.nan)) else '—',
-            'batch_ASW': f"{m.get('batch_ASW', np.nan):.3f}" if not np.isnan(m.get('batch_ASW', np.nan)) else '—',
-            'celltype_ASW': f"{m.get('celltype_ASW', np.nan):.3f}" if not np.isnan(m.get('celltype_ASW', np.nan)) else '—',
-            'isolated_label_F1': f"{m.get('isolated_label_F1', np.nan):.3f}" if not np.isnan(m.get('isolated_label_F1', np.nan)) else '—',
-            'scib_overall': f"{m.get('scib_overall', np.nan):.3f}" if not np.isnan(m.get('scib_overall', np.nan)) else '—',
-            'n_clusters_05': str(m.get('n_clusters_05', '—')),
-            'condition_accuracy': f"{m.get('condition_accuracy', np.nan):.3f}" if not np.isnan(m.get('condition_accuracy', np.nan)) else '—',
-            'is_best': is_best,
-        })
+    objects = []
+    for obj_name in ["NP", "AF", "CEP", "all_cells"]:
+        obj_path = INT_DIR / f"{obj_name}.h5ad"
+        if obj_path.exists():
+            adata = sc.read_h5ad(obj_path, backed='r')
+            objects.append({
+                'name': obj_name,
+                'n_cells': f"{adata.shape[0]:,}",
+                'n_types': adata.obs['cell_type'].nunique() if 'cell_type' in adata.obs.columns else 0,
+                'umap_exists': (RESULTS_DIR / f"umap_{obj_name}.png").exists(),
+                'secondary': obj_name == 'all_cells',
+            })
+            adata.file.close()
 
     template = Template(INTEGRATION_REPORT_TEMPLATE)
     html = template.render(
         date=datetime.now().strftime("%Y-%m-%d %H:%M"),
-        total_cells=f"{total_cells:,}",
-        tier1_cells=f"{tier1_cells:,}",
-        tier2_np_cells=f"{tier2_np_cells:,}",
-        tier2_af_cells=f"{tier2_af_cells:,}",
-        n_studies=n_studies,
-        n_approaches=len(all_metrics),
-        has_tier1_umap=(RESULTS_DIR / "umap_tier1_nonresident.png").exists(),
-        has_tier2_np_umap=(RESULTS_DIR / "umap_tier2_NP_by_approach.png").exists(),
-        has_tier2_af_umap=(RESULTS_DIR / "umap_tier2_AF_by_approach.png").exists(),
-        has_metrics_comparison=(RESULTS_DIR / "metrics_comparison_NP.png").exists(),
-        has_cluster_count=(RESULTS_DIR / "cluster_count_comparison.png").exists(),
-        metrics_table=metrics_table,
+        objects=objects,
         validation_messages=validation_messages,
     )
-
-    report_path = RESULTS_DIR / "integration_report.html"
-    report_path.write_text(html)
-    print(f"  Report: {report_path}")
+    (RESULTS_DIR / "integration_report.html").write_text(html)
+    print(f"  Report: {RESULTS_DIR / 'integration_report.html'}")
 
 
-def plot_metrics_comparison(all_metrics):
-    """Generate grouped bar charts comparing metrics across approaches."""
-    if not all_metrics:
-        return
-
-    df = pd.DataFrame(all_metrics)
-
-    for compartment in df['compartment'].unique():
-        comp_df = df[df['compartment'] == compartment].copy()
-        if len(comp_df) < 2:
-            continue
-
-        metric_cols = ['iLISI', 'celltype_ASW', 'batch_ASW', 'isolated_label_F1', 'scib_overall']
-        available = [c for c in metric_cols if c in comp_df.columns and comp_df[c].notna().any()]
-        if not available:
-            continue
-
-        fig, ax = plt.subplots(figsize=(10, 5))
-        x = np.arange(len(available))
-        width = 0.8 / len(comp_df)
-
-        for i, (_, row) in enumerate(comp_df.iterrows()):
-            vals = [row.get(c, np.nan) for c in available]
-            ax.bar(x + i * width, vals, width, label=row['approach'], alpha=0.8)
-
-        ax.set_xticks(x + width * (len(comp_df) - 1) / 2)
-        ax.set_xticklabels(available, rotation=30, ha='right')
-        ax.set_ylabel('Score')
-        ax.set_title(f'{compartment}: Integration Metrics Comparison')
-        ax.legend()
-        plt.tight_layout()
-        fig.savefig(RESULTS_DIR / f"metrics_comparison_{compartment}.png",
-                    dpi=150, bbox_inches='tight')
-        plt.close(fig)
-
-    # Cluster count comparison
-    if 'n_clusters_05' in df.columns and df['n_clusters_05'].notna().any():
-        fig, ax = plt.subplots(figsize=(8, 5))
-        for compartment in df['compartment'].unique():
-            comp_df = df[df['compartment'] == compartment]
-            ax.bar(
-                [f"{row['approach']}\n({compartment})" for _, row in comp_df.iterrows()],
-                comp_df['n_clusters_05'].values,
-                alpha=0.8,
-            )
-        ax.set_ylabel('Number of clusters (resolution 0.5)')
-        ax.set_title('Cluster Count by Approach')
-        plt.tight_layout()
-        fig.savefig(RESULTS_DIR / "cluster_count_comparison.png",
-                    dpi=150, bbox_inches='tight')
-        plt.close(fig)
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
 # VALIDATION
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
 
 def validate_integration():
     """Validate integration outputs. Returns (pass, messages)."""
@@ -1421,197 +1510,149 @@ def validate_integration():
     messages = []
     all_pass = True
 
-    # Check output files exist
-    for fname, desc in [
-        ("tier1_nonresident.h5ad", "Tier 1 non-resident"),
-        ("tier2_resident_NP.h5ad", "Tier 2 NP"),
-        ("tier2_resident_AF.h5ad", "Tier 2 AF"),
-    ]:
-        path = INT_DIR / fname
+    # Check all four output files
+    for obj_name in ["NP", "AF", "CEP", "all_cells"]:
+        path = INT_DIR / f"{obj_name}.h5ad"
         if path.exists():
-            messages.append(f"PASS: {desc} output exists ({path})")
+            messages.append(f"PASS: {obj_name} output exists")
+            adata = sc.read_h5ad(path, backed='r')
+
+            # Check cell_type column
+            if 'cell_type' in adata.obs.columns:
+                n_unassigned = (adata.obs['cell_type'] == 'unassigned').sum()
+                pct_unassigned = n_unassigned / adata.shape[0] * 100
+                if pct_unassigned < 10:
+                    messages.append(f"PASS: {obj_name} unassigned = {pct_unassigned:.1f}% (< 10%)")
+                else:
+                    messages.append(f"WARNING: {obj_name} unassigned = {pct_unassigned:.1f}% (>= 10%)")
+            else:
+                messages.append(f"FAIL: {obj_name} missing cell_type column")
+                all_pass = False
+
+            # Blob check
+            if 'leiden' in adata.obs.columns:
+                n_clusters = adata.obs['leiden'].nunique()
+                if n_clusters > 1:
+                    messages.append(f"PASS: {obj_name} has {n_clusters} clusters (no blob)")
+                else:
+                    messages.append(f"WARNING: {obj_name} has only {n_clusters} cluster (blob?)")
+
+            # ARI check (study shouldn't perfectly predict clusters)
+            if 'leiden' in adata.obs.columns and 'study' in adata.obs.columns:
+                try:
+                    from sklearn.metrics import adjusted_rand_score
+                    ari = adjusted_rand_score(
+                        adata.obs['study'].values[:10000],
+                        adata.obs['leiden'].values[:10000]
+                    )
+                    if ari < 1.0:
+                        messages.append(f"PASS: {obj_name} study-cluster ARI = {ari:.3f} (< 1.0)")
+                    else:
+                        messages.append(f"WARNING: {obj_name} study perfectly predicts clusters")
+                except Exception:
+                    pass
+
+            adata.file.close()
         else:
-            messages.append(f"FAIL: {desc} output missing ({path})")
+            messages.append(f"FAIL: {obj_name} output missing")
             all_pass = False
 
-    # Check obsm keys for Tier 2
-    for fname, comp in [
-        ("tier2_resident_NP.h5ad", "NP"),
-        ("tier2_resident_AF.h5ad", "AF"),
-    ]:
-        path = INT_DIR / fname
-        if not path.exists():
-            continue
-        adata = sc.read_h5ad(path, backed='r')
-        obsm_keys = set(adata.obsm.keys())
-        for key, approach in [
-            ('X_scvi', 'A_scVI'),
-            ('X_scanvi', 'B_scANVI'),
-            ('X_harmony', 'C_Harmony'),
-            ('X_umap_bbknn', 'D_BBKNN'),
-        ]:
-            if key in obsm_keys:
-                messages.append(f"PASS: {comp} has {approach} embedding ({key})")
-            else:
-                messages.append(f"FAIL: {comp} missing {approach} embedding ({key})")
-                all_pass = False
-        adata.file.close()
-
-    # Blob check: every approach should produce >1 cluster at res 0.5
-    for fname, comp in [
-        ("tier2_resident_NP.h5ad", "NP"),
-        ("tier2_resident_AF.h5ad", "AF"),
-    ]:
-        path = INT_DIR / fname
-        if not path.exists():
-            continue
-        adata = sc.read_h5ad(path)
-        for key, approach in [
-            ('X_scvi', 'A_scVI'),
-            ('X_scanvi', 'B_scANVI'),
-            ('X_harmony', 'C_Harmony'),
-        ]:
-            if key not in adata.obsm:
-                continue
-            try:
-                sc.pp.neighbors(adata, use_rep=key)
-                sc.tl.leiden(adata, resolution=0.5, key_added='_blob_check')
-                n_clusters = adata.obs['_blob_check'].nunique()
-                if n_clusters > 1:
-                    messages.append(f"PASS: {comp} {approach} blob check: {n_clusters} clusters at res 0.5")
-                else:
-                    messages.append(f"WARNING: {comp} {approach} blob detected: only {n_clusters} cluster(s) at res 0.5")
-            except Exception as e:
-                messages.append(f"WARNING: {comp} {approach} blob check failed: {e}")
-
-        # Study→cluster ARI check (ARI < 1.0 means integration worked)
-        for key, approach in [
-            ('X_scvi', 'A_scVI'),
-            ('X_scanvi', 'B_scANVI'),
-            ('X_harmony', 'C_Harmony'),
-        ]:
-            if key not in adata.obsm:
-                continue
-            try:
-                from sklearn.metrics import adjusted_rand_score
-                sc.pp.neighbors(adata, use_rep=key)
-                sc.tl.leiden(adata, resolution=0.5, key_added='_ari_check')
-                ari = adjusted_rand_score(
-                    adata.obs['study'].values,
-                    adata.obs['_ari_check'].values
-                )
-                if ari < 1.0:
-                    messages.append(f"PASS: {comp} {approach} study-cluster ARI = {ari:.3f} (< 1.0)")
-                else:
-                    messages.append(f"WARNING: {comp} {approach} study perfectly predicts clusters (ARI = {ari:.3f})")
-            except Exception as e:
-                messages.append(f"WARNING: {comp} {approach} ARI check failed: {e}")
-        del adata
-
-    # Check metrics file
-    metrics_path = RESULTS_DIR / "integration_metrics.tsv"
-    if metrics_path.exists():
-        mdf = pd.read_csv(metrics_path, sep='\t')
-        messages.append(f"PASS: Metrics file exists with {len(mdf)} rows")
-    else:
-        messages.append(f"FAIL: Metrics file missing ({metrics_path})")
-        all_pass = False
+    # Check supplementary outputs
+    for fname in ["inclusion_summary.tsv", "study_caveats.tsv"]:
+        if (RESULTS_DIR / fname).exists():
+            messages.append(f"PASS: {fname} exists")
+        else:
+            messages.append(f"FAIL: {fname} missing")
+            all_pass = False
 
     # Check report
-    report_path = RESULTS_DIR / "integration_report.html"
-    if report_path.exists():
-        messages.append(f"PASS: Integration report exists")
+    if (RESULTS_DIR / "integration_report.html").exists():
+        messages.append("PASS: Integration report exists")
     else:
-        messages.append(f"FAIL: Integration report missing")
+        messages.append("FAIL: Integration report missing")
         all_pass = False
 
-    # Print results
     for msg in messages:
-        status = "PASS" if msg.startswith("PASS") else "FAIL" if msg.startswith("FAIL") else "WARN"
-        print(f"  [{status}] {msg}")
+        print(f"  {msg}")
 
+    print(f"\n{'='*60}")
+    print(f"OVERALL: {'ALL CHECKS PASSED' if all_pass else 'SOME CHECKS FAILED'}")
+    print(f"{'='*60}")
     return all_pass, messages
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
 # MAIN
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════════════════
 
 def main():
     args = sys.argv[1:]
 
-    # Parse flags
     validate_only = '--validate-only' in args
-    tier1_only = '--tier1-only' in args
-    tier2_only = '--tier2-only' in args
     force = '--force' in args
 
-    # Parse --approach
-    approach_filter = None
+    # Parse --object
+    object_filter = None
     for i, a in enumerate(args):
-        if a == '--approach' and i + 1 < len(args):
-            approach_filter = tuple(args[i + 1].upper().split(','))
+        if a == '--object' and i + 1 < len(args):
+            object_filter = args[i + 1]
 
-    # Validation only
     if validate_only:
-        passed, messages = validate_integration()
+        passed, _ = validate_integration()
         sys.exit(0 if passed else 1)
 
     print("=" * 60)
-    print("Module 05: Cross-Dataset Integration")
+    print("Module 05: Integration, Clustering, and De Novo Annotation")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
-    all_metrics = []
+    all_metrics = {}
 
-    # Tier 1
-    if not tier2_only:
-        result = process_tier1(force=force)
-        if result is not None and isinstance(result, tuple):
-            _, tier1_metrics = result
-            all_metrics.append(tier1_metrics)
-
-    # Tier 2
-    if not tier1_only:
-        approaches = approach_filter if approach_filter else ('A', 'B', 'C', 'D')
-
-        # NP
-        _, np_metrics = process_tier2_compartment('NP', approaches=approaches, force=force)
-        all_metrics.extend(np_metrics)
-
-        # AF
-        _, af_metrics = process_tier2_compartment('AF', approaches=approaches, force=force)
-        all_metrics.extend(af_metrics)
-
-    # Save metrics — merge with any existing from previous runs
-    metrics_path = RESULTS_DIR / "integration_metrics.tsv"
-    if all_metrics:
-        new_df = pd.DataFrame(all_metrics)
-        if metrics_path.exists():
-            old_df = pd.read_csv(metrics_path, sep='\t')
-            # Remove old rows that were re-computed in this run
-            new_keys = set(zip(new_df['tier'], new_df['compartment'], new_df['approach']))
-            old_df = old_df[~old_df.apply(
-                lambda r: (r.get('tier'), r.get('compartment'), r.get('approach')) in new_keys,
-                axis=1
-            )]
-            metrics_df = pd.concat([old_df, new_df], ignore_index=True)
+    # Process compartment-specific objects (primary)
+    primary_objects = ["NP", "AF", "CEP"]
+    if object_filter:
+        if object_filter in primary_objects:
+            primary_objects = [object_filter]
+        elif object_filter == "all_cells":
+            primary_objects = []
         else:
-            metrics_df = new_df
-        metrics_df.to_csv(metrics_path, sep='\t', index=False)
-        print(f"\n  Metrics saved: {metrics_path} ({len(metrics_df)} total rows)")
+            print(f"Unknown object: {object_filter}")
+            sys.exit(1)
 
-        # Generate comparison plots
-        plot_metrics_comparison(all_metrics)
+    for obj_name in primary_objects:
+        _, metrics = process_object(obj_name, force=force)
+        all_metrics[obj_name] = metrics
+
+    # Process all-cells (secondary) — after primary objects are done
+    if object_filter is None or object_filter == "all_cells":
+        _, metrics = process_all_cells_secondary(force=force)
+        all_metrics['all_cells'] = metrics
+
+    # Save metrics
+    metrics_rows = []
+    for obj_name, obj_metrics in all_metrics.items():
+        for tier, tier_metrics in obj_metrics.items():
+            if isinstance(tier_metrics, dict):
+                row = {'object': obj_name, 'tier': tier}
+                row.update(tier_metrics)
+                metrics_rows.append(row)
+    if metrics_rows:
+        pd.DataFrame(metrics_rows).to_csv(
+            RESULTS_DIR / "integration_metrics.tsv", sep='\t', index=False
+        )
+
+    # Generate supplementary tables
+    generate_inclusion_summary()
+    generate_study_caveats()
 
     # Validation
     passed, val_messages = validate_integration()
 
-    # Generate report
-    generate_integration_report(all_metrics, val_messages)
+    # Report
+    generate_integration_report(val_messages)
 
     print(f"\nCompleted: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Overall validation: {'PASSED' if passed else 'FAILED'}")
+    print(f"Overall: {'PASSED' if passed else 'FAILED'}")
 
 
 if __name__ == "__main__":

@@ -92,9 +92,9 @@ def load_integrated_data():
 
     datasets = {}
     for fname, label in [
-        ("tier1_nonresident.h5ad", "nonresident"),
-        ("tier2_resident_NP.h5ad", "NP"),
-        ("tier2_resident_AF.h5ad", "AF"),
+        ("NP.h5ad", "NP"),
+        ("AF.h5ad", "AF"),
+        ("CEP.h5ad", "CEP"),
     ]:
         path = INT_DIR / fname
         if not path.exists():
@@ -159,7 +159,7 @@ def run_composition_analysis(datasets, meta):
     # Combine obs from all datasets
     all_obs = []
     for label, adata in datasets.items():
-        obs = adata.obs[['sample_id', 'cell_type_final']].copy()
+        obs = adata.obs[['sample_id', 'cell_type']].copy()
         obs['tier'] = label
         all_obs.append(obs)
     combined_obs = pd.concat(all_obs, axis=0)
@@ -173,14 +173,14 @@ def run_composition_analysis(datasets, meta):
             continue
 
         # Compute proportions per sample
-        ct_counts = merged.groupby(['sample_id', 'cell_type_final', 'group']).size().reset_index(name='n_cells')
+        ct_counts = merged.groupby(['sample_id', 'cell_type', 'group']).size().reset_index(name='n_cells')
         sample_totals = merged.groupby('sample_id').size().reset_index(name='total')
         ct_counts = ct_counts.merge(sample_totals, on='sample_id')
         ct_counts['proportion'] = ct_counts['n_cells'] / ct_counts['total']
 
         # Test each cell type
-        for ct in ct_counts['cell_type_final'].unique():
-            ct_data = ct_counts[ct_counts['cell_type_final'] == ct]
+        for ct in ct_counts['cell_type'].unique():
+            ct_data = ct_counts[ct_counts['cell_type'] == ct]
             ref_props = ct_data[ct_data['group'] == 'reference']['proportion'].values
             test_props = ct_data[ct_data['group'] == 'test']['proportion'].values
 
@@ -245,7 +245,7 @@ def _plot_composition(results_df, combined_obs, meta):
 
         _, cond_ref, cond_test = comp_info
         merged = filter_to_comparison(combined_obs.reset_index(), meta, cond_ref, cond_test)
-        ct_data = merged[merged['cell_type_final'] == ct]
+        ct_data = merged[merged['cell_type'] == ct]
         sample_props = ct_data.groupby(['sample_id', 'group']).size().reset_index(name='n')
         totals = merged.groupby('sample_id').size().reset_index(name='total')
         sample_props = sample_props.merge(totals, on='sample_id')
@@ -269,7 +269,7 @@ def _plot_composition(results_df, combined_obs, meta):
 def pseudobulk_aggregate(adata, obs_merged, cell_type):
     """Aggregate raw counts per sample for a given cell type."""
     # Filter to cell type
-    ct_mask = obs_merged['cell_type_final'] == cell_type
+    ct_mask = obs_merged['cell_type'] == cell_type
     ct_obs = obs_merged[ct_mask]
 
     # Count cells per sample
@@ -401,11 +401,11 @@ def run_de_analysis(datasets, meta):
         print(f"\n  === Tier: {tier_label} ===")
 
         # Get cell types in this tier
-        cell_types = adata.obs['cell_type_final'].unique()
+        cell_types = adata.obs['cell_type'].unique()
 
         for comp_name, cond_ref, cond_test in COMPARISONS:
             # Build merged obs for this comparison
-            obs_reset = adata.obs[['sample_id', 'cell_type_final']].copy()
+            obs_reset = adata.obs[['sample_id', 'cell_type']].copy()
             obs_reset.index = adata.obs.index  # preserve index for alignment
             merged = filter_to_comparison(obs_reset.reset_index(), meta, cond_ref, cond_test)
 
@@ -554,7 +554,7 @@ def _plot_heatmap(combined, datasets):
         # Find the adata containing this cell type
         target_adata = None
         for label, adata in datasets.items():
-            if ct in adata.obs['cell_type_final'].values:
+            if ct in adata.obs['cell_type'].values:
                 target_adata = adata
                 break
 
@@ -562,7 +562,7 @@ def _plot_heatmap(combined, datasets):
             continue
 
         # Get pseudobulk expression for top genes (log-normalized X, averaged per sample)
-        ct_mask = target_adata.obs['cell_type_final'] == ct
+        ct_mask = target_adata.obs['cell_type'] == ct
         ct_adata = target_adata[ct_mask]
         available_genes = [g for g in top_genes if g in ct_adata.var_names]
         if len(available_genes) < 5:

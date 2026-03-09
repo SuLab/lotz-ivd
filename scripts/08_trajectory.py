@@ -42,14 +42,15 @@ DE_DIR = BASE / "results" / "differential"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Configuration ────────────────────────────────────────────────────────────
-# Cell types to include per compartment (resident only)
-NP_RESIDENT = ['NP_mature_chondrocyte', 'NP_notochordal', 'NP_stressed_degenerative',
-               'NP_fibrocartilaginous']
-AF_RESIDENT = ['AF_outer', 'AF_inner', 'AF_mechanical_stress']
+# Cell types to include per compartment (mesenchymal/resident only)
+# These will be updated after Module 05 de novo annotation assigns final labels.
+# For now, filter to mesenchymal cells and let the de novo labels drive the analysis.
+NP_RESIDENT = None  # Will use all mesenchymal cell types in NP object
+AF_RESIDENT = None  # Will use all mesenchymal cell types in AF object
 
 # Embeddings to use
-PRIMARY_EMBEDDING = 'X_scanvi'    # scANVI (Approach B)
-SENSITIVITY_EMBEDDING = 'X_scvi'  # scVI (Approach A)
+PRIMARY_EMBEDDING = 'X_scvi_mesenchymal'    # scVI mesenchymal tier
+SENSITIVITY_EMBEDDING = None  # No second embedding in new pipeline
 
 PSEUDOTIME_CORR_FDR = 0.05
 N_TOP_TRAJECTORY_GENES = 500
@@ -62,14 +63,7 @@ DOWNSAMPLE_FOR_PAGA = 50000  # Max cells for PAGA computation
 
 def load_compartment(compartment):
     """Load integrated data for a compartment."""
-    if compartment == 'NP':
-        path = INT_DIR / "tier2_resident_NP.h5ad"
-        resident_types = NP_RESIDENT
-    elif compartment == 'AF':
-        path = INT_DIR / "tier2_resident_AF.h5ad"
-        resident_types = AF_RESIDENT
-    else:
-        raise ValueError(f"Unknown compartment: {compartment}")
+    path = INT_DIR / f"{compartment}.h5ad"
 
     if not path.exists():
         print(f"  WARNING: {path} not found")
@@ -79,11 +73,13 @@ def load_compartment(compartment):
     adata = sc.read_h5ad(path)
     print(f"    Full: {adata.n_obs:,} cells × {adata.n_vars} genes")
 
-    # Subset to resident cell types
-    mask = adata.obs['cell_type_final'].isin(resident_types)
-    adata = adata[mask].copy()
-    print(f"    Resident only: {adata.n_obs:,} cells")
-    print(f"    Cell types: {dict(adata.obs['cell_type_final'].value_counts())}")
+    # Subset to mesenchymal cells (trajectory on resident/mesenchymal only)
+    if 'cell_class' in adata.obs.columns:
+        mask = adata.obs['cell_class'] == 'mesenchymal'
+        adata = adata[mask].copy()
+        print(f"    Mesenchymal only: {adata.n_obs:,} cells")
+
+    print(f"    Cell types: {dict(adata.obs['cell_type'].value_counts())}")
 
     return adata
 
@@ -149,13 +145,13 @@ def run_trajectory(adata, compartment, embedding_key, embedding_name):
           f"{adata.obs['dpt_pseudotime'].max():.3f}]")
 
     # Save pseudotime
-    pt_df = adata.obs[['cell_type_final', 'dpt_pseudotime']].copy()
+    pt_df = adata.obs[['cell_type', 'dpt_pseudotime']].copy()
     if 'condition_harmonized' in adata.obs.columns:
         pt_df['condition'] = adata.obs['condition_harmonized']
     if 'study_id' in adata.obs.columns:
         pt_df['study'] = adata.obs['study_id']
 
-    suffix = f"_{embedding_name}" if embedding_name != 'scANVI' else ""
+    suffix = f"_{embedding_name}" if embedding_name != 'scVI_mesenchymal' else ""
     pt_df.to_csv(RESULTS_DIR / f"pseudotime_{compartment}{suffix}.tsv", sep='\t')
 
     return adata
@@ -163,14 +159,17 @@ def run_trajectory(adata, compartment, embedding_key, embedding_name):
 
 def _select_root(adata, compartment):
     """Select root cluster for DPT based on biology."""
-    ct_col = 'cell_type_final'
+    ct_col = 'cell_type'
 
     if compartment == 'NP':
         # Root = notochordal cells (most primitive/healthy)
         preferred = ['NP_notochordal', 'NP_mature_chondrocyte']
-    else:
+    elif compartment == 'AF':
         # Root = AF_inner (less exposed to mechanical stress)
         preferred = ['AF_inner', 'AF_outer']
+    else:
+        # CEP or other — use healthy-enriched cluster as fallback
+        preferred = []
 
     # Find leiden cluster with highest proportion of preferred cell types
     cross = pd.crosstab(adata.obs['leiden_traj'], adata.obs[ct_col], normalize='index')
@@ -218,12 +217,12 @@ def _get_root_cell(adata, cluster):
 
 def plot_trajectory(adata, compartment, embedding_name):
     """Generate trajectory visualization plots."""
-    suffix = f"_{embedding_name}" if embedding_name != 'scANVI' else ""
+    suffix = f"_{embedding_name}" if embedding_name != 'scVI_mesenchymal' else ""
 
     fig, axes = plt.subplots(2, 2, figsize=(16, 14))
 
     # 1. UMAP by cell type
-    sc.pl.umap(adata, color='cell_type_final', ax=axes[0, 0], show=False,
+    sc.pl.umap(adata, color='cell_type', ax=axes[0, 0], show=False,
                title=f'{compartment} Cell Types')
 
     # 2. UMAP by pseudotime
@@ -252,7 +251,7 @@ def plot_trajectory(adata, compartment, embedding_name):
     # PAGA graph
     fig, axes = plt.subplots(1, 2, figsize=(16, 7))
     sc.pl.paga(adata, ax=axes[0], show=False, title=f'{compartment} PAGA (Leiden)')
-    sc.tl.paga(adata, groups='cell_type_final')
+    sc.tl.paga(adata, groups='cell_type')
     sc.pl.paga(adata, ax=axes[1], show=False, title=f'{compartment} PAGA (Cell Type)')
     plt.tight_layout()
     fig.savefig(RESULTS_DIR / f"paga_{compartment}{suffix}.png",
@@ -277,9 +276,9 @@ def plot_trajectory(adata, compartment, embedding_name):
         plt.close(fig)
 
     # Pseudotime by cell type (violin)
-    if adata.obs['cell_type_final'].nunique() > 1:
+    if adata.obs['cell_type'].nunique() > 1:
         fig, ax = plt.subplots(figsize=(10, 6))
-        sc.pl.violin(adata, keys='dpt_pseudotime', groupby='cell_type_final',
+        sc.pl.violin(adata, keys='dpt_pseudotime', groupby='cell_type',
                      ax=ax, show=False, rotation=45)
         ax.set_title(f'{compartment} Pseudotime by Cell Type')
         plt.tight_layout()
@@ -292,7 +291,7 @@ def plot_trajectory(adata, compartment, embedding_name):
 
 def pseudotime_condition_correlation(adata, compartment, embedding_name):
     """Test if pseudotime correlates with condition."""
-    suffix = f"_{embedding_name}" if embedding_name != 'scANVI' else ""
+    suffix = f"_{embedding_name}" if embedding_name != 'scVI_mesenchymal' else ""
     results = []
 
     if 'condition_harmonized' not in adata.obs.columns:
@@ -337,8 +336,8 @@ def pseudotime_condition_correlation(adata, compartment, embedding_name):
               f"p={pval:.1e}")
 
     # Per cell type
-    for ct in adata.obs['cell_type_final'].unique():
-        ct_mask = adata.obs['cell_type_final'] == ct
+    for ct in adata.obs['cell_type'].unique():
+        ct_mask = adata.obs['cell_type'] == ct
         ct_pt = pt[ct_mask]
         ct_cond = cond[ct_mask]
 
@@ -391,7 +390,7 @@ def check_velocity_data(adata, compartment):
 
 def find_trajectory_genes(adata, compartment, embedding_name):
     """Find genes correlated with pseudotime."""
-    suffix = f"_{embedding_name}" if embedding_name != 'scANVI' else ""
+    suffix = f"_{embedding_name}" if embedding_name != 'scVI_mesenchymal' else ""
     print(f"\n  Finding trajectory-associated genes ({compartment}, {embedding_name})...")
 
     pt = adata.obs['dpt_pseudotime'].values
@@ -442,7 +441,7 @@ def find_trajectory_genes(adata, compartment, embedding_name):
 
 def plot_trajectory_genes(adata, traj_genes, compartment, embedding_name):
     """Plot key gene expression along pseudotime."""
-    suffix = f"_{embedding_name}" if embedding_name != 'scANVI' else ""
+    suffix = f"_{embedding_name}" if embedding_name != 'scVI_mesenchymal' else ""
 
     if traj_genes.empty:
         return
@@ -518,7 +517,7 @@ def plot_trajectory_genes(adata, traj_genes, compartment, embedding_name):
 
 def cross_reference_de(traj_genes, compartment, embedding_name):
     """Cross-reference trajectory genes with DE results."""
-    suffix = f"_{embedding_name}" if embedding_name != 'scANVI' else ""
+    suffix = f"_{embedding_name}" if embedding_name != 'scVI_mesenchymal' else ""
 
     de_path = DE_DIR / "de_results_combined.tsv"
     if not de_path.exists() or traj_genes.empty:
@@ -633,11 +632,7 @@ def generate_report(compartments_run, velocity_available):
                            f'<td>{row["padj"]:.1e}</td><td>{row["program"]}</td></tr>')
             html.append('</table>')
 
-        # Sensitivity (scVI)
-        scvi_umap = f"umap_trajectory_{comp}_scVI.png"
-        if (RESULTS_DIR / scvi_umap).exists():
-            html.append(f'<h3>Sensitivity Check (scVI embedding)</h3>')
-            html.append(f'<img src="{scvi_umap}" alt="{comp} scVI trajectory">')
+        # (Sensitivity check removed — single scVI embedding per new pipeline)
 
     # RNA velocity
     html.append('<h2>RNA Velocity</h2>')
@@ -678,7 +673,7 @@ def validate():
 
     checks = []
 
-    for comp in ['NP', 'AF']:
+    for comp in ['NP', 'AF', 'CEP']:
         pt_path = RESULTS_DIR / f"pseudotime_{comp}.tsv"
         if pt_path.exists():
             pt = pd.read_csv(pt_path, sep='\t')
@@ -734,7 +729,7 @@ def main():
     compartments_run = []
     velocity_available = {}
 
-    for compartment in ['NP', 'AF']:
+    for compartment in ['NP', 'AF', 'CEP']:
         print(f"\n{'=' * 60}")
         print(f"Processing {compartment}")
         print('=' * 60)
@@ -746,28 +741,18 @@ def main():
         # Check velocity data
         velocity_available[compartment] = check_velocity_data(adata, compartment)
 
-        # Primary trajectory (scANVI)
-        adata_traj = run_trajectory(adata, compartment, PRIMARY_EMBEDDING, 'scANVI')
+        # Primary trajectory (scVI mesenchymal)
+        adata_traj = run_trajectory(adata, compartment, PRIMARY_EMBEDDING, 'scVI_mesenchymal')
         if adata_traj is not None:
-            plot_trajectory(adata_traj, compartment, 'scANVI')
-            pseudotime_condition_correlation(adata_traj, compartment, 'scANVI')
-            traj_genes = find_trajectory_genes(adata_traj, compartment, 'scANVI')
-            plot_trajectory_genes(adata_traj, traj_genes, compartment, 'scANVI')
-            cross_reference_de(traj_genes, compartment, 'scANVI')
+            plot_trajectory(adata_traj, compartment, 'scVI_mesenchymal')
+            pseudotime_condition_correlation(adata_traj, compartment, 'scVI_mesenchymal')
+            traj_genes = find_trajectory_genes(adata_traj, compartment, 'scVI_mesenchymal')
+            plot_trajectory_genes(adata_traj, traj_genes, compartment, 'scVI_mesenchymal')
+            cross_reference_de(traj_genes, compartment, 'scVI_mesenchymal')
             compartments_run.append(compartment)
 
         del adata_traj
         gc.collect()
-
-        # Sensitivity check (scVI) — skip AF due to memory
-        if compartment == 'NP' and SENSITIVITY_EMBEDDING in adata.obsm:
-            print(f"\n  --- Sensitivity check: scVI ---")
-            adata_scvi = run_trajectory(adata, compartment, SENSITIVITY_EMBEDDING, 'scVI')
-            if adata_scvi is not None:
-                plot_trajectory(adata_scvi, compartment, 'scVI')
-                pseudotime_condition_correlation(adata_scvi, compartment, 'scVI')
-                del adata_scvi
-                gc.collect()
 
         del adata
         gc.collect()

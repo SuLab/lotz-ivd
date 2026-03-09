@@ -34,7 +34,6 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 # ── Paths ────────────────────────────────────────────────────────────────────
 BASE = Path(__file__).resolve().parent.parent
 INT_DIR = BASE / "data" / "integrated"
-PROC_DIR = BASE / "data" / "processed"
 META_PATH = BASE / "metadata" / "sample_metadata.tsv"
 RESULTS_DIR = BASE / "results" / "communication"
 PLOT_DIR = RESULTS_DIR / "interaction_plots"
@@ -71,102 +70,87 @@ PAIN_RECEPTORS = ['NTRK1', 'NTRK2', 'NTRK3', 'NGFR', 'KDR', 'FLT1', 'NRP1',
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_data_for_communication():
-    """Load and combine resident + non-resident cells per study for CCC analysis.
+    """Load integrated compartment objects for CCC analysis.
 
-    For CCC we need multiple cell types in the same dataset. We'll use per-dataset
-    processed files which contain all cell types.
+    Uses the integrated NP/AF/CEP objects which contain cell_type annotations
+    from Module 05 de novo annotation.
     """
     meta = pd.read_csv(META_PATH, sep='\t')
 
-    # Find per-dataset processed files
-    processed_files = sorted(PROC_DIR.glob("*.h5ad"))
-    print(f"  Found {len(processed_files)} processed datasets")
+    # Load integrated objects
+    all_adatas = []
+    for fname in ["NP.h5ad", "AF.h5ad", "CEP.h5ad"]:
+        path = INT_DIR / fname
+        if not path.exists():
+            print(f"  WARNING: {path} not found, skipping")
+            continue
+        print(f"  Loading {fname}...")
+        adata = sc.read_h5ad(path)
+        adata.obs['compartment'] = fname.replace('.h5ad', '')
 
-    # Load and label by condition
+        # Ensure condition mapping from metadata
+        if 'condition_harmonized' not in adata.obs.columns:
+            sample_cond = meta.set_index('sample_id')['condition_harmonized'].to_dict()
+            adata.obs['condition_harmonized'] = adata.obs['sample_id'].map(sample_cond)
+
+        all_adatas.append(adata)
+        print(f"    {adata.n_obs:,} cells, {adata.obs['cell_type'].nunique()} cell types")
+
+    if not all_adatas:
+        return {}
+
+    # Combine all compartments
+    combined = ad.concat(all_adatas, join='inner')
+    print(f"  Combined: {combined.n_obs:,} cells, {combined.n_vars} genes")
+
+    # Split by condition
     healthy_adatas = []
     degen_adatas = []
 
-    for f in processed_files:
-        acc = f.stem
-        # Get condition for this dataset's samples
-        dataset_meta = meta[meta['study_accession'] == acc]
-        if dataset_meta.empty:
+    for group_name, group_conds in CONDITIONS.items():
+        mask = combined.obs['condition_harmonized'].isin(group_conds)
+        if mask.sum() < MIN_CELLS_PER_TYPE:
             continue
 
-        conditions = dataset_meta['condition_harmonized'].unique()
-        has_healthy = any(c in CONDITIONS['healthy'] for c in conditions)
-        has_degen = any(c in CONDITIONS['degenerated'] for c in conditions)
-
-        if not (has_healthy or has_degen):
+        sub = combined[mask].copy()
+        ct_counts = sub.obs['cell_type'].value_counts()
+        valid_cts = ct_counts[ct_counts >= MIN_CELLS_PER_TYPE].index
+        if len(valid_cts) < 2:
+            print(f"  {group_name}: only {len(valid_cts)} cell type(s) with >={MIN_CELLS_PER_TYPE} cells, skipping")
             continue
 
-        print(f"  Loading {acc}...")
-        try:
-            adata = sc.read_h5ad(f)
-        except Exception as e:
-            print(f"    ERROR loading {acc}: {e}")
-            continue
+        sub = sub[sub.obs['cell_type'].isin(valid_cts)].copy()
+        print(f"  {group_name}: {sub.n_obs:,} cells, {len(valid_cts)} cell types")
 
-        # Must have cell_type_final annotation
-        if 'cell_type_final' not in adata.obs.columns:
-            print(f"    Skipping {acc}: no cell_type_final")
-            continue
+        if group_name == 'healthy':
+            healthy_adatas.append(sub)
+        else:
+            degen_adatas.append(sub)
 
-        # Must have sample_id to link to conditions
-        if 'sample_id' not in adata.obs.columns:
-            print(f"    Skipping {acc}: no sample_id")
-            continue
+    del combined
+    gc.collect()
 
-        # Tag with condition from metadata
-        sample_cond = dataset_meta.set_index('sample_id')['condition_harmonized'].to_dict()
-        adata.obs['condition_harmonized'] = adata.obs['sample_id'].map(sample_cond)
-        adata.obs['study_id'] = acc
-
-        # Split into healthy and degenerated
-        for group_name, group_conds in CONDITIONS.items():
-            mask = adata.obs['condition_harmonized'].isin(group_conds)
-            if mask.sum() < MIN_CELLS_PER_TYPE:
-                continue
-
-            sub = adata[mask].copy()
-            ct_counts = sub.obs['cell_type_final'].value_counts()
-            valid_cts = ct_counts[ct_counts >= MIN_CELLS_PER_TYPE].index
-            if len(valid_cts) < 2:
-                print(f"    {acc} {group_name}: only {len(valid_cts)} cell type(s) with >={MIN_CELLS_PER_TYPE} cells, skipping")
-                continue
-
-            sub = sub[sub.obs['cell_type_final'].isin(valid_cts)].copy()
-            print(f"    {acc} {group_name}: {sub.n_obs:,} cells, {len(valid_cts)} cell types")
-
-            if group_name == 'healthy':
-                healthy_adatas.append(sub)
-            else:
-                degen_adatas.append(sub)
-
-        del adata
-        gc.collect()
-
-    # Concatenate
+    # Build result
     result = {}
     for name, adatas in [('healthy', healthy_adatas), ('degenerated', degen_adatas)]:
         if not adatas:
-            print(f"  WARNING: No {name} datasets suitable for CCC")
+            print(f"  WARNING: No {name} data suitable for CCC")
             continue
 
-        combined = ad.concat(adatas, join='inner')
-        print(f"  {name}: {combined.n_obs:,} cells, {combined.n_vars} genes, "
-              f"{combined.obs['cell_type_final'].nunique()} cell types")
+        cond_data = ad.concat(adatas, join='inner') if len(adatas) > 1 else adatas[0]
+        print(f"  {name}: {cond_data.n_obs:,} cells, {cond_data.n_vars} genes, "
+              f"{cond_data.obs['cell_type'].nunique()} cell types")
 
         # Downsample if too large
-        if combined.n_obs > MAX_CELLS_PER_CONDITION:
+        if cond_data.n_obs > MAX_CELLS_PER_CONDITION:
             print(f"    Downsampling to {MAX_CELLS_PER_CONDITION:,}")
-            sc.pp.subsample(combined, n_obs=MAX_CELLS_PER_CONDITION, random_state=42)
+            sc.pp.subsample(cond_data, n_obs=MAX_CELLS_PER_CONDITION, random_state=42)
 
         # Ensure normalized for LIANA
-        sc.pp.normalize_total(combined, target_sum=1e4)
-        sc.pp.log1p(combined)
+        sc.pp.normalize_total(cond_data, target_sum=1e4)
+        sc.pp.log1p(cond_data)
 
-        result[name] = combined
+        result[name] = cond_data
 
     return result
 
@@ -181,8 +165,8 @@ def run_liana(adata, condition_name):
 
     print(f"\n  Running LIANA for {condition_name} ({adata.n_obs:,} cells)...")
 
-    # Set cell type column
-    adata.obs['cell_type'] = adata.obs['cell_type_final'].astype(str)
+    # Ensure cell type column is string type
+    adata.obs['cell_type'] = adata.obs['cell_type'].astype(str)
 
     try:
         li.mt.rank_aggregate(
