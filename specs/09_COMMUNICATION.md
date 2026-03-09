@@ -6,7 +6,7 @@ Infer ligand-receptor interactions between IVD cell populations and determine ho
 
 ## Inputs
 
-- Annotated AnnData objects with final cell type labels
+- Integrated AnnData objects from Module 05: `data/integrated/NP.h5ad`, `data/integrated/AF.h5ad`, `data/integrated/CEP.h5ad`, `data/integrated/all_cells.h5ad` — with de novo cell type labels (`obs['cell_type']`)
 - DE results from Module 06
 
 ## Outputs

@@ -10,9 +10,11 @@ Two complementary questions: (1) Do the proportions of cell types/states change 
 
 ## Inputs
 
-- Integrated or per-dataset annotated AnnData objects (depending on Module 05 outcome)
+- Integrated AnnData objects from Module 05: `data/integrated/NP.h5ad`, `data/integrated/AF.h5ad`, `data/integrated/CEP.h5ad`, `data/integrated/all_cells.h5ad`
 - `metadata/sample_metadata.tsv`
-- Final cell type labels
+- Cell type labels from post-integration de novo annotation (`obs['cell_type']` assigned in Module 05)
+
+**Note:** GSE233666 (herniated-only) is excluded from all analysis. Neonatal samples from GSE189916 are excluded. See Module 05 spec for full study/sample assignments per object.
 
 ## Outputs
 
@@ -53,7 +55,7 @@ Run the following comparisons (adjust based on available samples after metadata 
 4. **Mild vs. severe degeneration**
 5. **Young/healthy vs. aged** (using the developmental/aging axis where degeneration grade is controlled or absent)
 
-Each comparison should be run per compartment where possible (NP, AF). CEP may lack sufficient samples.
+Each comparison should be run per object (NP, AF, CEP, all-cells) where sample counts allow. CEP is likely underpowered. The all-cells object enables cross-compartment comparisons.
 
 ### Method
 
@@ -64,7 +66,7 @@ Use a method that properly accounts for the compositional nature of cell type pr
 **Do NOT use:** Simple proportion tests (chi-squared, Fisher's) on pooled cells — these ignore sample-level variation and dramatically inflate false positives.
 
 **Steps:**
-1. Compute cell type proportions per sample (using `cell_type_final` labels)
+1. Compute cell type proportions per sample (using `cell_type` labels from Module 05 de novo annotation)
 2. Build a design matrix with condition as the primary variable, adjusting for study as a covariate
 3. Test for differential abundance of each cell type
 4. Report effect sizes (log fold change in proportion) and significance (FDR-corrected)
@@ -107,8 +109,8 @@ Same comparison list as composition analysis, crossed with cell types:
 
 ### For the continuum populations
 
-If the resident IVD cells were not discretely classified (i.e., continuous scores were used instead of hard labels), DE can still be done by:
-- Binning cells by continuous score into quantiles and running pseudobulk within bins
+If some mesenchymal clusters exist on a continuum rather than as discrete types (as indicated by Module 05 annotation), DE can also be done by:
+- Binning cells by continuous score (e.g., `score_degenerative`) into quantiles and running pseudobulk within bins
 - Using the continuous score as a covariate in the DE model (interaction term: condition × cell state score)
 - Document the approach used
 

@@ -10,7 +10,8 @@ The chondrocyte-fibroblast continuum in IVD is a key feature of the biology. Rat
 
 ## Inputs
 
-- Annotated AnnData objects (integrated or per-dataset, depending on Module 05 outcome)
+- Integrated AnnData objects from Module 05: `data/integrated/NP.h5ad`, `data/integrated/AF.h5ad`
+- Cell type labels from post-integration de novo annotation (`obs['cell_type']`)
 - Raw count matrices (needed for RNA velocity)
 
 ## Outputs
@@ -48,7 +49,7 @@ Produced after trajectory and velocity analyses. Contains:
 
 ### Scope
 
-Run trajectory analysis on resident IVD cells only (not immune/endothelial — those are discrete populations, not a continuum). Run separately for NP and AF.
+Run trajectory analysis on mesenchymal IVD cells only (not immune/endothelial — those are discrete populations, not a continuum). The integrated mesenchymal objects from Module 05 (NP and AF separately) are already the correct input — no further subsetting needed beyond the Module 05 annotation.
 
 ### Methods
 
@@ -61,7 +62,8 @@ Run trajectory analysis on resident IVD cells only (not immune/endothelial — t
 2. Recompute HVGs, PCA, and neighbor graph on the subset
 3. Run PAGA to identify cluster connectivity
 4. Select root cell(s) — options:
-   - If neonatal/healthy cells are present, use the cluster with highest notochordal or healthy chondrocyte score
+   - If neonatal/healthy cells are present, use the cluster annotated as notochordal-like (NP) or inner AF (AF) from Module 05 de novo annotation
+   - Alternatively, use the cluster with highest `score_notochordal` or highest proportion of healthy/neonatal cells
    - If no clear developmental root, test multiple roots and compare
 5. Compute DPT from root
 6. Identify genes that correlate with pseudotime (Spearman correlation, FDR correction)

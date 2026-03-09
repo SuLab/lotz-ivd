@@ -30,8 +30,8 @@ Each module is defined in its own spec file. Modules execute in order but the pl
 | Dataset discovery & acquisition | 01_DATASET_DISCOVERY.md | Mostly | Yes — approve final dataset list |
 | Metadata harmonization | 02_METADATA.md | Mostly | Yes — approve condition mappings |
 | Per-dataset preprocessing | 03_PREPROCESSING.md | Yes | Yes — review QC reports |
-| Per-dataset annotation | 04_ANNOTATION.md | Partially | Yes — approve cell type labels |
-| Integration strategy | 05_INTEGRATION.md | Partially | Yes — evaluate integration quality, decide approach |
+| Coarse cell classification | 04_ANNOTATION.md | Yes | Yes — approve mesenchymal vs. non-mesenchymal split |
+| Integration, clustering & annotation | 05_INTEGRATION.md | Partially | Yes — evaluate integration, approve cell type atlas |
 | Differential analysis | 06_DIFFERENTIAL.md | Mostly | Yes — review DE results |
 | Biological interpretation | 07_INTERPRETATION.md | Partially | Yes — evaluate biological claims |
 | Trajectory & dynamics | 08_TRAJECTORY.md | Partially | Yes — evaluate trajectory validity |
@@ -158,8 +158,8 @@ Each notebook corresponds to one or more manuscript figures and tables. This map
 | 01_datasets.ipynb | Methods: Data sources | Table 1: Dataset characteristics |
 | 02_metadata.ipynb | Methods: Study design | Table 1 (continued): Sample metadata summary |
 | 03_qc.ipynb | Supplementary | Fig S1: QC metrics per dataset |
-| 04_annotation.ipynb | Results: IVD cell atlas | Fig 1: UMAP atlas, marker dot plots; Fig S2: per-dataset annotations |
-| 05_integration.ipynb | Methods: Integration; Supplementary | Fig S3: Integration benchmark; Methods text |
+| 04_classification.ipynb | Supplementary | Fig S2: Mesenchymal vs. non-mesenchymal classification QC |
+| 05_integration.ipynb | Results: IVD cell atlas; Methods: Integration | Fig 1: UMAP atlas, marker dot plots; Fig S3: Integration benchmark, resolution optimization |
 | 06_differential.ipynb | Results: Disease-associated changes | Fig 2: Composition changes; Fig 3: DE volcano/heatmaps; Table 2: Top DE genes |
 | 07_interpretation.ipynb | Results: Pathways & regulation; Discussion: Pain | Fig 4: Pathway enrichment; Fig 5: Pain-associated genes; Fig S4: GRN regulons |
 | 08_trajectory.ipynb | Results: Cell state transitions | Fig 6: Pseudotime trajectory, gene dynamics |

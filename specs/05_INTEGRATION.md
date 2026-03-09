@@ -1,170 +1,355 @@
-# Module 05: Integration Strategy
+# Module 05: Integration, Clustering, and De Novo Annotation
 
 ## Objective
 
-Combine cells across studies into a shared representation that preserves biological variation (cell types, cell states, disease effects) while removing unwanted technical variation (batch effects). The approach must be tailored to the known challenge that IVD resident cell populations exist on a continuum and are vulnerable to overcorrection.
+Integrate cells across studies into shared representations, cluster the integrated objects, and annotate cell types de novo. This module produces the final cell atlas — cell type identities emerge from the integrated data rather than being imposed beforehand.
+
+Four integrated objects are produced, each clustered and annotated independently:
+1. **NP** — nucleus pulposus cells from studies with clearly separated NP tissue
+2. **AF** — annulus fibrosus cells from studies with clearly separated AF tissue
+3. **CEP** — cartilaginous endplate cells
+4. **All-cells** — all IVD cells together, including studies where compartments were not separated
+
+The all-cells object serves as a whole IVD atlas. IVD subcompartments (NP, AF, CEP) are related tissues with overlapping cell compositions — not distinct organs — so a combined analysis is biologically meaningful for understanding the full IVD cellular landscape and cross-compartment relationships.
 
 ## Rationale
 
-This is the crux of the project's technical challenge. Previous attempts using scVI with batch correction by sample ID produced a "blob" for resident IVD cells. This module defines a tiered integration strategy that treats different cell populations differently, rather than applying one-size-fits-all integration.
+Previous modules assigned only a coarse mesenchymal vs. non-mesenchymal classification. This module integrates datasets, clusters the result, and discovers cell types from the integrated data. This avoids circular logic where per-dataset annotations influence integration, which in turn shapes downstream analysis.
+
+Within each object, mesenchymal and non-mesenchymal cells are integrated separately (tiered integration) because they have fundamentally different transcriptomic profiles. Integrating them together would force the model to spend latent capacity on that major axis of variation rather than on subtler differences within each group.
+
+## Study and Sample Assignments
+
+### Excluded from all objects
+
+- **GSE233666 (Guo 2023):** Excluded — contains only herniated discs, which is not the focus of this project (degeneration).
+- **GSE189916 neonatal samples (Jiang 2022):** Excluded — neonatal disc biology is fundamentally different from adult. Only the adult samples from GSE189916 are retained.
+
+### Object 1: NP-only
+
+Studies where NP tissue was clearly defined and surgically separated:
+
+| Study | Accession | NP Samples | Conditions | Notes |
+|-------|-----------|------------|------------|-------|
+| Gan 2021 | GSE160756 | NP portion | Healthy young/adult | 3-compartment atlas; NP surgically separated |
+| Tu 2022 | GSE165722 | 8 | Pfirrmann II-V | BD Rhapsody platform |
+| Cherif 2022 | GSE199866 | NP portion | Paired degen/non-degen | Same-patient paired design |
+| Li 2022 | GSE205535 | 2 | Normal vs degenerative | BD Rhapsody; corrigenda exist |
+| Chen 2024 | GSE244889 | 7 | Mild vs severe | Serglycin/fibrotic NP |
+| Jia 2024 | GSE251686 | 5 (of 6) | Mild vs severe | NP3 excluded (corrupt matrix) |
+| Swahn 2024 | GSE230809 | NP portion | Healthy vs diseased | Largest study; NP surgically separated |
+| Han 2022 | CNP0002664 | 6 | Normal/mild/severe | Singleron platform |
+
+**Not included in NP-only:** GSE189916 (whole IVD, compartments not separated — adult samples go to all-cells object only).
+
+### Object 2: AF-only
+
+Studies where AF tissue was clearly defined and surgically separated:
+
+| Study | Accession | AF Samples | Conditions | Notes |
+|-------|-----------|------------|------------|-------|
+| Gan 2021 | GSE160756 | AF portion | Healthy young/adult | 3-compartment atlas |
+| Cherif 2022 | GSE199866 | Inner AF portion | Paired degen/non-degen | Inner AF only |
+| Swahn 2024 | GSE230809 | AF portion | Healthy vs diseased | AF surgically separated |
+
+**Note:** AF coverage is limited to 3 studies. Clustering resolution and annotation granularity should be adjusted accordingly.
+
+### Object 3: CEP-only
+
+| Study | Accession | CEP Samples | Conditions | Notes |
+|-------|-----------|-------------|------------|-------|
+| Gan 2021 | GSE160756 | CEP portion | Healthy young/adult | 3-compartment atlas |
+| Shi 2024 | GSE255768 | 2 | Degenerative endplate | No healthy control |
+| Kuchynsky 2024 | GSE242443 | 2 | Non-degen vs degen | **Culture-expanded cells** |
+
+**Note:** CEP coverage is sparse and includes culture-expanded cells (GSE242443). Results require strong caveats.
+
+### Object 4: All-cells
+
+All studies and samples from Objects 1-3, plus:
+
+| Study | Accession | Samples | Conditions | Notes |
+|-------|-----------|---------|------------|-------|
+| Jiang 2022 | GSE189916 | Adult only (3) | Adult whole IVD | Compartments not separated; neonatal excluded |
+
+This object contains all cells across all compartments for a unified IVD atlas view.
+
+### Sample-level exclusions (across all objects)
+
+- **GSE251686 NP3:** Corrupt matrix file on GEO (verified on re-download)
+- **GSE205535 NNP:** Included in integration but excluded from DE analysis (Module 06) — 11yo spinal cord injury is a trauma confound
+
+## Required Output: Inclusion Summary Table
+
+Generate `results/integration/inclusion_summary.tsv` containing, for each object × study combination:
+- Object name (NP, AF, CEP, all_cells)
+- Study accession
+- First author and year
+- Number of samples included
+- Number of cells included (post-QC)
+- Compartment
+- Conditions represented
+- Platform
+
+Also generate `results/integration/inclusion_summary.html` with a formatted version suitable for a manuscript supplementary table.
+
+## Required Output: Study Caveats Table
+
+Generate `results/integration/study_caveats.tsv` documenting per-study caveats for the manuscript supplement:
+
+| Study | Caveat | Impact | Mitigation |
+|-------|--------|--------|------------|
+| GSE165722 (Tu 2022) | BD Rhapsody platform (not 10x) | Different capture efficiency, gene detection | Platform-aware batch correction via scVI study-level batch key |
+| GSE205535 (Li 2022) | BD Rhapsody platform; published corrigenda | See above; potential data quality issues | Monitor for outlier behavior in integration |
+| CNP0002664 (Han 2022) | Singleron Matrix platform (not 10x) | Different capture efficiency | Same as above |
+| GSE242443 (Kuchynsky 2024) | Culture-expanded CEP cells | Culture alters cell states; may not reflect in vivo biology | Caveat in all CEP results; compare with non-expanded CEP from GSE160756 |
+| GSE255768 (Shi 2024) | Degenerative endplate only; no healthy control | Cannot do healthy vs. degenerated comparison for this study alone | Healthy CEP baseline from GSE160756 |
+| GSE230809 (Swahn 2024) | All-male donors; age-disease confounded | Cannot separate age from degeneration effects | Note in interpretation; sex-specific effects cannot be assessed |
+| GSE205535 NNP sample | 11yo spinal cord injury, classified as "healthy" | Trauma confound | Excluded from DE comparisons |
+| GSE189916 (Jiang 2022) | Whole IVD (compartments not separated) | Cannot assign cells to NP/AF/CEP | Included only in all-cells object |
 
 ## Inputs
 
-- Processed and annotated AnnData objects from `data/processed/{accession}.h5ad`
+- Processed AnnData objects from `data/processed/{accession}.h5ad` with `cell_class` labels from Module 04
 - `metadata/sample_metadata.tsv`
-- Results from per-dataset annotation (Module 04) — especially the cell type labels and continuous scores
 
 ## Outputs
 
-- `data/integrated/tier1_nonresident.h5ad` — integrated non-resident cells (immune, endothelial, pericyte)
-- `data/integrated/tier2_resident_{compartment}.h5ad` — integrated resident cells, per compartment
+- `data/integrated/NP.h5ad` — integrated NP cells
+- `data/integrated/AF.h5ad` — integrated AF cells
+- `data/integrated/CEP.h5ad` — integrated CEP cells
+- `data/integrated/all_cells.h5ad` — integrated all IVD cells
 - `data/integrated/integration_metrics.tsv` — quantitative integration assessment
-- `results/integration_report.html` — visualization of integration results
-- Updated `analysis_plan.md` with the chosen strategy
+- `results/integration/inclusion_summary.tsv` — study × object inclusion table
+- `results/integration/inclusion_summary.html` — formatted version for manuscript supplement
+- `results/integration/study_caveats.tsv` — per-study caveats for supplement
+- `results/integration/clustering_resolution_optimization/` — resolution selection diagnostics per object
+- `results/integration/cluster_markers/` — DE markers per cluster per object
+- `results/integration/annotation_dotplots/` — canonical marker expression per cluster per object
+- `results/integration_report.html` — visualization of integration, clustering, and annotation results
+- Updated `analysis_plan.md` with chosen parameters and cell type definitions
 
 ### Notebook: `notebooks/05_integration.ipynb`
 
-Produced after all integration approaches have been run. This is the key decision-support notebook. Contains:
-- Side-by-side UMAP panels for each integration approach (A-F), colored by: study, cell type, condition, compartment
-- Integration metrics table (kBET, LISI, ASW) for all approaches, with visual comparison (radar plot or grouped bar chart)
-- Continuum preservation check: distribution of continuous cell state scores before vs. after integration, per approach
-- Cluster count comparison: number of clusters at resolution 0.5 per approach
-- Condition classifier accuracy: can we still distinguish healthy from degenerated after integration?
-- Recommendation summary (to be confirmed at human checkpoint)
+Contains:
+- Inclusion summary table (studies × objects)
+- UMAP panels per object, colored by: study, cluster, cell type (annotated), condition, compartment
+- Integration quality metrics (batch mixing, biological conservation)
+- Clustering resolution optimization plots (silhouette, modularity, clustree) per object
+- Dot plots of canonical markers per cluster per object (for annotation support)
+- Cluster DE marker heatmaps per object
+- Final cell type definitions table per object
+- Study caveats table
 
-**Manuscript mapping:** Supplementary Figure S3: Integration benchmarking. Methods section on integration strategy and rationale for chosen approach.
+**Manuscript mapping:** Figure 1: IVD cell atlas (UMAP, dot plot, proportions). Supplementary Table S1: Study inclusion and caveats. Supplementary Figure S3: Integration benchmarking and resolution optimization. Methods section on integration, clustering, and annotation.
 
-## Strategy: Tiered Integration
+## Part 1: Tiered Integration
 
-### Tier 1: Non-resident cell populations
+For each of the four objects (NP, AF, CEP, all-cells), perform tiered integration:
 
-**Goal:** Integrate immune, endothelial, and pericyte cells across all studies.
+### Tier A: Mesenchymal cells
 
-**Approach:** Standard scVI or Harmony integration. These populations have strong, discrete transcriptomic identities that survive batch correction. Overcorrection is not a concern here.
+**Method:** scVI with conservative batch correction
+
+**Parameters:**
+- `batch_key='study'` (coarser than sample ID — less aggressive correction)
+- `n_latent=20` (conservative; reduces overcorrection risk)
+- `max_epochs=200`
+- `n_top_genes=3000`
 
 **Steps:**
-1. Subset all cells labeled as immune, endothelial, or pericyte from all datasets
-2. Concatenate into a single AnnData
+1. Subset mesenchymal cells (`cell_class == 'mesenchymal'`) for the relevant studies/samples
+2. Concatenate across datasets
 3. Re-identify HVGs on the concatenated object
-4. Integrate using scVI with `batch_key='study'` (not sample — too many batches for a small number of cells)
-5. Cluster and re-annotate at higher resolution (immune subtypes: M1/M2 macrophages, T cell subtypes, etc.)
-6. Assess integration quality (see metrics below)
+4. Run scVI integration
+5. Compute neighbors and UMAP on scVI embedding
+6. Proceed to clustering (Part 2) and annotation (Part 3)
 
-**This tier is relatively straightforward and should succeed.**
+### Tier B: Non-mesenchymal cells
 
-### Tier 2: Resident IVD cell populations
+**Method:** scVI with `batch_key='study'`
 
-**Goal:** Create a cross-study representation of chondrocyte-like and fibroblast-like cells that preserves cell state variation.
+Same parameters as Tier A. These populations have strong, discrete transcriptomic identities that survive batch correction.
 
-**This is the hard part.** Multiple approaches should be tested and compared. The agent should run all of the following and generate comparison visualizations for human review.
+### Merging tiers
 
-#### Approach A: scVI with conservative batch correction
+After independent integration, clustering, and annotation of each tier, merge them back into a single AnnData per object for downstream analysis. Store tier-specific embeddings in `obsm` (e.g., `X_scvi_mesenchymal`, `X_scvi_non_mesenchymal`).
 
-- Use `batch_key='study'` (coarser than sample ID — less aggressive correction)
-- Reduce the number of latent dimensions (e.g., 20 instead of default 30)
-- Consider using `categorical_covariate_keys=['compartment']` and `continuous_covariate_keys=['pct_counts_mt']` to model known covariates explicitly rather than lumping them into batch
+### Integration Quality Metrics
 
-#### Approach B: scANVI (semi-supervised)
+For each integrated object/tier, compute:
 
-- Use the per-dataset cell type annotations as seed labels
-- scANVI leverages label information during integration, which should help preserve annotated cell states
-- Use only high-confidence labels; leave ambiguous cells unlabeled for scANVI to assign
+1. **Batch mixing:**
+   - iLISI (integration LISI) — higher is better mixing
+   - Batch-ASW — should be near 0
 
-#### Approach C: Harmony with controlled parameters
+2. **Biological conservation:**
+   - Condition-ASW — conditions should remain distinguishable
+   - Condition classifier accuracy — can we still distinguish healthy from degenerated?
 
-- Test with `theta` parameter reduced (less aggressive correction) — try theta = 0.5, 1.0, 2.0
-- Use study as the batch variable
-- This is faster than scVI and may be sufficient if the batch effects are not severe for resident cells
+3. **Continuum preservation (mesenchymal only):**
+   - Compare cluster count at resolution 0.5 before and after integration (large reduction suggests overcorrection)
+   - Verify that the integrated object does not collapse into a single blob
 
-#### Approach D: BBKNN (batch-balanced k-nearest neighbors)
+## Part 2: Clustering with Resolution Optimization
 
-- Does not produce a corrected expression matrix — operates on the neighbor graph
-- Less likely to overcorrect because it only adjusts connectivity, not gene expression
-- May preserve the continuum better than methods that transform the expression space
+After integration, cluster each tier within each object independently.
 
-#### Approach E: No integration — metacell aggregation
+### Method
 
-- Instead of integrating at the single-cell level, compute metacells (using SEACells or MC2) within each dataset
-- Compare metacell transcriptomic profiles across studies using correlation or classification
-- This avoids the overcorrection problem entirely but sacrifices single-cell resolution
-- Particularly useful if the continuum makes single-cell integration fundamentally unreliable
+Leiden clustering on the scVI neighbor graph, with resolution selected by multi-metric optimization.
 
-#### Approach F: Label transfer without forced integration
+### Resolution optimization
 
-- Use a reference dataset (the largest or highest-quality study) to train an scANVI or CellTypist model
-- Transfer labels to other datasets without embedding them in a shared space
-- Each dataset retains its own UMAP; comparisons are done via label proportions and DE within shared labels
-- This is the most conservative approach and is a fallback if integration consistently fails
+Test resolutions from 0.1 to 2.0 in steps of 0.1, and compute:
 
-### Compartment-specific integration
+1. **Silhouette score** (on the scVI embedding): measures how well-separated clusters are. Higher is better, but will decrease at very high resolutions as clusters become too granular.
 
-For Tier 2, integrate NP cells and AF cells separately (not all resident cells together). Rationale:
-- NP and AF have genuinely different transcriptomic profiles
-- Forcing them into one space adds unnecessary variation that competes with cell state variation
-- CEP cells may be too few for independent integration; if so, include them with NP (closer biology) or analyze only within the two studies that have endplate data
+2. **Modularity score**: measures the quality of the graph partition. Computed by the Leiden algorithm itself.
 
-### Integration parameter choices
+3. **Clustree stability analysis**: visualize how clusters split/merge across resolutions using `clustree` (R package) or a Python equivalent. Identify the resolution where clusters are stable (cells don't constantly reshuffle between clusters). Resolutions above which clusters fragment into noise should be avoided.
 
-For each approach, record all parameters used. Common parameters to vary:
-- Batch variable: `study` vs. `sample_id` vs. `donor_id`
-- Number of HVGs: 2000, 3000, 5000
-- Number of latent dimensions (scVI/scANVI): 10, 20, 30
-- Neighbor graph parameters: n_neighbors = 15 (default), 30
+### Resolution selection logic
 
-The agent should NOT exhaustively grid-search all combinations. Run each approach with reasonable defaults first, then adjust based on metrics.
+1. Plot silhouette score vs. resolution — look for a peak or plateau
+2. Plot modularity vs. resolution — look for the knee point (modularity drops off)
+3. Examine clustree — identify the resolution above which clusters start fragmenting
+4. Select the resolution that balances all three: good silhouette, high modularity, stable clusters
+5. If metrics disagree, prefer the resolution that gives biologically interpretable clusters (assessed in Part 3)
 
-## Integration Quality Metrics
+Store clustering results at the selected resolution in `obs['leiden']`, and also store results at 2-3 other resolutions for comparison (e.g., `obs['leiden_0.5']`, `obs['leiden_1.0']`).
 
-For each integration result, compute:
+### Expectations per object
 
-1. **Batch mixing metrics:**
-   - kBET (k-nearest neighbor batch effect test) — measures whether local neighborhoods contain proportional representation of batches
-   - iLISI (integration local inverse Simpson's Index) — higher is better mixing
-   - Batch-ASW (average silhouette width by batch) — should be near 0 (no batch separation)
+- **NP:** Multiple chondrocyte-like clusters varying along the notochordal → mature → stressed/degenerative continuum
+- **AF:** Clusters along the inner (chondrocyte-like) → outer (fibroblast-like) gradient, plus mechanical stress states
+- **CEP:** Hyaline cartilage-like and potentially ossifying chondrocytes (limited data — expect fewer clusters)
+- **All-cells:** Should recover all of the above plus cross-compartment structure; some clusters may contain cells from multiple compartments (reflecting shared biology)
+- **Non-mesenchymal (all objects):** Discrete immune subtypes (macrophages, T cells, B cells, etc.) + endothelial + pericyte
 
-2. **Biological conservation metrics:**
-   - cLISI (cell-type local inverse Simpson's Index) — higher means cell types are less mixed (good)
-   - Cell-type-ASW — should be positive (cell types should separate)
-   - Isolated label F1 — checks whether rare cell types are preserved
+## Part 3: De Novo Cell Type Annotation
 
-3. **Continuum-specific metrics (custom):**
-   - For resident IVD cells, compute the variance of continuous cell state scores (e.g., degenerative_score, notochordal_score) in the integrated space. If integration squashes this variance compared to per-dataset analysis, it's overcorrecting.
-   - Compare the number of distinct clusters at resolution 0.5 before and after integration. A large reduction suggests overcorrection.
-   - Check whether condition-associated variation (healthy vs. degenerated) is preserved by running a simple classifier on the integrated space.
+Annotate the clusters from Part 2 using two complementary approaches. Do NOT rely on the original manuscript annotations or Module 04 labels (which were coarse classification only).
 
-4. **Scree metrics:**
-   - scIB (single-cell integration benchmarking) aggregate score if implementable
+### Approach 1: Cluster DE markers
+
+For each cluster, compute differentially expressed genes vs. all other clusters:
+
+1. Use `sc.tl.rank_genes_groups()` (Wilcoxon rank-sum test) to find marker genes per cluster
+2. For each cluster, extract the top 20-50 marker genes (by log fold change and adjusted p-value)
+3. Use these markers to identify the cluster's identity by comparison with known cell type markers from literature
+
+### Approach 2: Canonical marker gene expression
+
+Overlay known IVD marker genes onto the clusters. This is critical because in a tissue dominated by related mesenchymal cell types, defining markers (e.g., COL2A1 for chondrocytes, COL1A1 for fibroblasts) may be broadly expressed across multiple clusters at varying levels rather than being DE between clusters.
+
+**Canonical marker panels:**
+
+*NP subtypes:*
+- Notochordal-like: T/TBXT, SHH, NOG, CD24, KRT8, KRT18, KRT19
+- Mature chondrocyte: ACAN, COL2A1, SOX9, COMP, PRG4
+- Stressed/degenerative: MMP13, ADAMTS5, IL1B, TNF, VEGFA, HIF1A
+- Fibrocartilaginous: COL1A1 + COL2A1 co-expression, VCAN
+
+*AF subtypes:*
+- Inner AF (chondrocyte-like): COL2A1, ACAN, SOX9
+- Outer AF (fibroblast-like): COL1A1, COL1A2, THY1, DCN, LUM
+- Mechanical stress: COMP, CILP, THBS1
+
+*Endplate:*
+- Hyaline cartilage: COL2A1, COL10A1, SOX9
+- Ossification: RUNX2, SP7/OSX, BGLAP
+
+*Non-mesenchymal:*
+- Macrophage: CD68, CD14, CSF1R, CD163 (M2), CD86 (M1)
+- T cell: CD3D, CD3E, CD4, CD8A
+- B cell: CD79A, MS4A1
+- NK cell: NKG7, GNLY
+- Mast cell: KIT, TPSAB1
+- Endothelial: PECAM1, VWF, CDH5
+- Pericyte/SMC: ACTA2, RGS5, PDGFRB
+
+**Visualizations:**
+- Dot plots: canonical markers × clusters (fraction expressing + mean expression)
+- Feature plots (UMAPs): key markers overlaid on clusters
+- Heatmap: top DE markers per cluster
+
+### Annotation procedure
+
+For each cluster:
+1. Review the top DE markers from Approach 1
+2. Check expression levels of canonical markers from Approach 2
+3. Assign a cell type label based on the combination
+4. If a cluster's identity is ambiguous, check whether it splits at a higher clustering resolution into identifiable subtypes
+5. If multiple clusters have the same cell type, consider whether they represent genuine subtypes (different marker profiles) or should be merged (same markers, split by batch)
+
+Store annotations in `obs['cell_type']` with a human-readable label (e.g., "NP_chondrocyte", "Macrophage_M2", "AF_outer_fibroblast").
+
+### Annotation confidence
+
+For each cluster annotation, record:
+- `cell_type` — assigned label
+- `cell_type_confidence` — high (clear markers), medium (consistent but not definitive), low (ambiguous)
+- `annotation_evidence` — brief note on which markers/DE genes support the label
+
+### Continuous scores
+
+For mesenchymal clusters that exist on a continuum (e.g., notochordal → mature → degenerative in NP), also compute continuous gene signature scores using `sc.tl.score_genes()`:
+- `score_notochordal`, `score_degenerative`, `score_fibrotic`, etc.
+These complement the discrete labels and preserve continuum information for downstream trajectory analysis.
 
 ## Automated Validation
 
-- [ ] All integration approaches listed above have been executed (or explicitly skipped with documented reason)
-- [ ] `integration_metrics.tsv` contains metrics for all approaches
-- [ ] For each approach, UMAP visualizations are generated colored by: study, cell type, condition, compartment
-- [ ] No approach produces a result where all resident cells form a single cluster at resolution 0.5 (the blob check — if this happens, flag it)
-- [ ] No approach produces a result where study identity perfectly predicts cluster identity (failed integration)
-- [ ] Integration report HTML is generated
+### Integration
+- [ ] All four integrated objects are saved (NP, AF, CEP, all_cells)
+- [ ] Inclusion summary table is generated
+- [ ] Study caveats table is generated
+- [ ] No integration result collapses all cells into a single cluster at resolution 0.5 (blob check)
+- [ ] No integration result has study identity perfectly predicting cluster identity (ARI < 1.0)
+- [ ] Integration metrics are recorded per object
+
+### Clustering
+- [ ] Resolution optimization plots are generated per object (silhouette, modularity, clustree)
+- [ ] Selected resolution is documented with rationale per object
+- [ ] Clustering results are stored at the selected resolution and 2-3 comparison resolutions
+
+### Annotation
+- [ ] All clusters have a cell type label (including "unassigned" if ambiguous)
+- [ ] Proportion of "unassigned" cells is < 10% per object
+- [ ] Cluster DE marker tables are generated per object
+- [ ] Canonical marker dot plots are generated per object
+- [ ] For non-mesenchymal: PTPRC expressed predominantly in immune clusters, PECAM1 in endothelial
+- [ ] For mesenchymal: expected compartment markers are expressed in the corresponding clusters
+- [ ] Annotation evidence is recorded for each cluster
 
 ## Human Checkpoint
 
-This is the most critical decision point in the entire pipeline.
+This is the most critical decision point in the entire pipeline — it defines the cell atlas.
 
 ### Review materials
-- Integration report with side-by-side UMAPs for all approaches
-- Integration metrics table
-- Comparison of cell state score distributions (integrated vs. per-dataset)
-- Cluster counts at multiple resolutions for each approach
+- Inclusion summary table (which studies/samples in which objects)
+- Study caveats table
+- UMAP per object colored by cluster and annotated cell type
+- Integration quality metrics per object
+- Resolution optimization plots per object
+- Cluster DE marker heatmaps per object
+- Canonical marker dot plots per object
+- Cell type proportions per dataset within each object (to check for study-specific artifacts)
+- Annotation confidence table per object
 
 ### Questions for the reviewer
-1. Which integration approach (A-F) best preserves cell state variation while adequately removing batch effects?
-2. Is any approach clearly superior, or is a combination needed (e.g., scANVI for NP, Harmony for AF)?
-3. Does the "blob" problem recur with any approach? If so, is Approach E or F the appropriate fallback?
-4. Should the analysis proceed with integrated data, per-dataset data, or both in parallel?
-5. Are there any study-specific effects that persist after integration and need to be addressed as covariates in downstream DE analysis?
-6. Does the integration reveal any new cell states not visible in per-dataset analysis?
+1. Does the clustering resolution capture biologically meaningful groups without over-splitting?
+2. Do the cell type annotations make biological sense?
+3. Are any clusters clearly batch-driven rather than biology-driven?
+4. For the mesenchymal continuum: are discrete labels appropriate, or should some clusters be merged?
+5. Are there unexpected cell types or missing expected types?
+6. Is the all-cells object consistent with the compartment-specific objects? Do the same cell types appear?
+7. Are the study caveats adequately documented for the supplement?
+8. Should any annotations be revised before proceeding to differential analysis?
 
 ### Potential plan revisions
-- **If no integration approach preserves the continuum:** Switch to Approach F (label transfer) or Approach E (metacells) as the primary strategy. Downstream DE analysis would use pseudobulk per sample within shared labels rather than integrated single-cell data.
-- **If integration works for some compartments but not others:** Use different strategies per compartment and document the rationale.
-- **If condition-associated variation is lost after integration:** Add condition as a covariate in the integration model or abandon integration for condition-related analyses.
-- **If integration reveals that tissue-vs-cells is a dominant confounder:** Consider restricting the analysis to tissue-only studies for the primary results, using cell-derived studies only for validation.
-- **This checkpoint may result in a substantial rewrite of Modules 06-09.** That is expected and acceptable.
+- If the optimal resolution differs substantially between metrics, test both downstream and report sensitivity
+- If batch effects dominate certain clusters, consider excluding those clusters or adjusting integration parameters
+- If the mesenchymal continuum resists discrete clustering, rely more heavily on continuous scores for downstream analysis
+- If CEP results are unreliable due to culture expansion artifacts, note this prominently and consider excluding CEP from primary analyses
+- Annotation decisions here directly affect Modules 06-09 — any changes require careful propagation

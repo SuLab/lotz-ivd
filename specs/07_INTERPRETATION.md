@@ -7,7 +7,7 @@ Translate differential expression results into biological insight: what pathways
 ## Inputs
 
 - DE results from `results/differential/`
-- Annotated AnnData objects
+- Integrated and annotated AnnData objects from Module 05 (with `obs['cell_type']` from de novo annotation)
 - Curated gene sets (see below)
 
 ## Outputs

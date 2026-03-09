@@ -1,147 +1,107 @@
-# Module 04: Per-Dataset Cell Type Annotation
+# Module 04: Coarse Cell Classification (Mesenchymal vs. Non-Mesenchymal)
 
 ## Objective
 
-Assign robust cell type and cell state labels to each cell in each dataset, using multiple complementary annotation strategies. This is done per-dataset before integration to avoid batch-correction artifacts influencing annotations.
+Classify cells into two broad categories — mesenchymal (chondrocytes, fibroblasts) and non-mesenchymal (immune, endothelial) — using unambiguous marker genes. This coarse classification enables tiered integration in Module 05. Fine-grained cell type annotation happens *after* integration (in Module 05), not here.
 
 ## Rationale
 
-The preliminary labels from Module 03 are coarse (based on a few markers per type). This module applies more rigorous annotation to resolve the chondrocyte/fibroblast continuum into meaningful subtypes and cell states. Multiple methods are used because no single approach is reliable for IVD tissue, where the dominant cell populations lack the sharp transcriptomic boundaries seen in, e.g., blood.
+The goal of this project is to build a de novo IVD cell atlas from integrated data, without relying on original manuscript annotations. Fine annotation before integration risks circular logic: labels shape integration, which shapes downstream analysis. Instead, we perform only the minimal classification needed to separate mesenchymal from non-mesenchymal cells (which have fundamentally different transcriptomic profiles and require separate integration to avoid one group dominating the latent space).
+
+This coarse split is reliable because the markers distinguishing mesenchymal from non-mesenchymal cells are unambiguous — PTPRC/CD45 marks immune cells, PECAM1 marks endothelial cells, and these are well-separated from COL2A1/ACAN-expressing mesenchymal cells.
+
+Note: we use "mesenchymal" (chondrocytes, fibroblasts) vs. "non-mesenchymal" (immune, endothelial) rather than "resident" vs. "non-resident," because endothelial cells can be resident in vascularized IVD regions (outer AF, endplates).
 
 ## Inputs
 
 - Processed AnnData objects from `data/processed/{accession}.h5ad`
-- Canonical marker gene lists (defined below)
-- Reference datasets/atlases (if suitable ones exist)
+- **Excluded from all analysis:** GSE233666 (Guo 2023) — herniated discs only, not the focus of this project
+- **Excluded samples:** Neonatal samples from GSE189916 (Jiang 2022) — neonatal disc biology is fundamentally different from adult; only adult samples are retained
 
 ## Outputs
 
 Per dataset:
-- Updated `.obs` in the h5ad file with annotation columns (see below)
-- `results/annotations/{accession}_annotation_report.html`
-- `results/annotations/{accession}_marker_dotplot.pdf`
+- Updated `.obs` in the h5ad file with `cell_class` column ("mesenchymal" or "non_mesenchymal")
+- `results/annotations/{accession}_classification_report.html`
 
 Aggregate:
-- `results/annotations/annotation_comparison.tsv` — cross-dataset comparison of cell type proportions
-- `results/annotations/annotation_summary.html`
+- `results/annotations/classification_summary.tsv` — cell class proportions per dataset
 
-### Notebook: `notebooks/04_annotation.ipynb`
+### Notebook: `notebooks/04_classification.ipynb`
 
-Produced after all datasets are annotated. This is likely the most important notebook — it defines the cell atlas. Contains:
-- Combined UMAP of all cells (per-dataset, not integrated) colored by cell type, tiled by study
-- Dot plot of canonical markers × cell types (aggregated across studies)
-- Stacked bar plot: cell type proportions per dataset
-- Heatmap: agreement between annotation strategies (marker-based vs. reference vs. CellTypist)
-- For the continuum populations: density plots of continuous scores (notochordal, degenerative, fibrotic) per dataset and condition
-- Sankey or alluvial diagram: mapping original study annotations to harmonized labels
+Contains:
+- Per-dataset UMAPs colored by cell_class
+- Dot plot of classification markers (PTPRC, CD3D, CD68, PECAM1, COL2A1, ACAN, etc.) by cell_class
+- Bar plot: mesenchymal vs. non-mesenchymal proportions per dataset
+- Validation: marker expression distributions confirming clean separation
 
-**Manuscript mapping:** Figure 1: IVD cell atlas overview (UMAP, dot plot, proportions). Supplementary Figure S2: per-dataset annotation details, strategy comparison.
+## Classification Method
 
-## Annotation Strategies
+### Marker genes for classification
 
-Apply all three strategies. Final labels are assigned by consensus or human judgment at the checkpoint.
+**Non-mesenchymal markers** (any of these expressed → non-mesenchymal candidate):
 
-### Strategy 1: Marker-based scoring
+*Immune:*
+- Pan-immune: PTPRC (CD45)
+- T cells: CD3D, CD3E
+- Macrophage/monocyte: CD68, CD14, CSF1R
+- B cells: CD79A, MS4A1
+- Mast cells: KIT, TPSAB1
+- NK cells: NKG7, GNLY
 
-Use `sc.tl.score_genes()` or `decoupler` to score each cell for curated gene signatures. This extends the preliminary annotation with finer resolution.
+*Endothelial:*
+- PECAM1 (CD31), VWF, CDH5
 
-**Gene signature sets:**
+*Pericyte/SMC:*
+- ACTA2, RGS5, PDGFRB
 
-These should be compiled from IVD literature. Below is a starting framework — the agent should search PubMed for recent IVD scRNA-seq papers to refine these lists before applying them.
+**Mesenchymal markers** (expected in IVD disc cells):
+- COL2A1, COL1A1, ACAN, SOX9, DCN, LUM, VCAN
 
-*NP subtypes:*
-- Notochordal-like NP: T/TBXT, SHH, NOG, CD24, KRT8, KRT18, KRT19
-- Mature NP chondrocyte: ACAN, COL2A1, SOX9, COMP, PRG4
-- Stressed/degenerative NP: MMP13, ADAMTS5, IL1B, TNF, VEGFA, HIF1A
-- Fibrocartilaginous NP: COL1A1 co-expressed with COL2A1, VCAN
+### Classification logic
 
-*AF subtypes:*
-- Inner AF: COL2A1, ACAN, SOX9 (chondrocyte-like)
-- Outer AF: COL1A1, COL1A2, THY1, DCN, LUM (fibroblast-like)
-- Mechanical stress AF: COMP, CILP, THBS1
+For each cell, compute a simple score:
+1. Score each cell for non-mesenchymal markers (fraction of non-mesenchymal markers detected above background)
+2. Score each cell for mesenchymal markers (fraction of mesenchymal markers detected above background)
+3. Assign cell_class based on which score is higher
+4. Cells where both scores are near zero or tied → "ambiguous" (these should be rare; flag if >5%)
 
-*Endplate:*
-- Hyaline cartilage: COL2A1, COL10A1, SOX9
-- Ossification markers: RUNX2, SP7/OSX, BGLAP
+This can be implemented via `sc.tl.score_genes()` for each marker set, or simply by checking expression of key markers (PTPRC > 0 is a strong immune indicator).
 
-*Non-resident:*
-- Use the same marker sets from Module 03 for immune, endothelial, pericyte
+### Cluster-level assignment
 
-### Strategy 2: Reference-based label transfer
+To reduce noise from individual cell-level scoring:
+1. Compute Leiden clusters per dataset (resolution 0.5-1.0)
+2. For each cluster, compute the majority cell_class
+3. Assign the majority class to all cells in the cluster
+4. Log any clusters where the majority is <70% (potential mixed clusters or doublets)
 
-If a suitable reference atlas exists (check CellxGene, published IVD atlases, or musculoskeletal references), use label transfer to annotate query cells.
+### Known caveats
 
-Tools: `scvi-tools` (scANVI), `celltypist`, or `scanpy.tl.ingest()`
-
-**Important caveats:**
-- IVD-specific reference atlases may not exist or may be from a single study (circular if that study is in our dataset)
-- Musculoskeletal or cartilage references may be more broadly available but less specific
-- If no suitable reference exists, skip this strategy and note the gap
-
-### Strategy 3: Automated annotation tools
-
-Run `CellTypist` with the built-in human models (Immune_All_Low, Immune_All_High, and any available tissue-specific models). This is primarily useful for annotating the non-resident cell populations (immune subtypes, endothelial) with more precision.
-
-For the resident IVD cells, automated tools trained on other tissues are unlikely to perform well. Log their predictions but do not rely on them for resident cell labels.
-
-## Consensus Labeling
-
-For each cell, produce a final label following this hierarchy:
-
-1. **Non-resident cells (immune, endothelial, pericyte):** Use CellTypist or reference-based labels if available; fall back to marker scoring. These are typically well-resolved.
-
-2. **Resident IVD cells:** Use marker-based scoring as the primary method. If substructure is evident in the clustering and supported by differential marker expression, assign subtype labels. If cells fall on a continuum without clear boundaries, assign a broad label (e.g., "NP_chondrocyte") and add continuous scores for relevant programs (e.g., "notochordal_score", "degenerative_score", "fibrotic_score") rather than forcing discrete categories.
-
-3. **Ambiguous cells:** Label as "unassigned" rather than guessing. Record which strategies disagreed.
-
-Store in `.obs`:
-- `cell_type_final` — consensus label (discrete)
-- `cell_type_confidence` — high / medium / low
-- `cell_type_marker_based` — label from Strategy 1
-- `cell_type_reference_based` — label from Strategy 2 (if applied)
-- `cell_type_celltypist` — label from Strategy 3
-- Continuous scores as applicable (e.g., `score_notochordal`, `score_degenerative`, etc.)
-
-## Annotation Coherence Checks
-
-After assigning labels, verify internal consistency:
-
-- Cells labeled as immune should cluster together and separately from resident cells
-- Cells labeled as NP chondrocyte should express NP markers and NOT express AF-specific markers (and vice versa), unless they are in a transitional state (in which case, both scores should be moderate)
-- Within a single study, the proportion of immune cells should be consistent across samples from the same condition (large variation may indicate technical issues)
-- Endothelial cells should be absent or very rare in studies that used cell sorting/selection for NP cells
+- **CD68 in IVD cells:** CD68 is expressed at low levels in stressed disc cells in some datasets. Do NOT rely on CD68 alone — require co-expression with other immune markers (PTPRC, CD14) for immune classification.
+- **ACTA2 in myofibroblasts:** Some degenerated disc cells may express ACTA2. Classify as mesenchymal unless they also express pericyte markers (RGS5, PDGFRB).
 
 ## Automated Validation
 
-Per dataset:
-- [ ] All cells have a `cell_type_final` label (including "unassigned")
-- [ ] Proportion of "unassigned" cells is < 20% (flag if higher)
-- [ ] Immune cell markers (CD68, CD3D, CD79A) are expressed predominantly in cells labeled as immune, not in resident cell clusters
-- [ ] At least 80% of cells labeled as endothelial express PECAM1
-- [ ] Annotation report HTML is generated
-- [ ] Marker dot plot is generated
-
-Cross-dataset:
-- [ ] `annotation_comparison.tsv` is generated
-- [ ] Cell type proportions are plausible (e.g., NP-only studies shouldn't have >50% AF-labeled cells)
+- [ ] All cells have a `cell_class` label ("mesenchymal", "non_mesenchymal", or "ambiguous")
+- [ ] Proportion of "ambiguous" cells is < 5% per dataset
+- [ ] PTPRC expression is enriched in non_mesenchymal cells vs. mesenchymal (>10-fold)
+- [ ] COL2A1 or COL1A1 expression is enriched in mesenchymal cells vs. non_mesenchymal
+- [ ] Classification report is generated per dataset
+- [ ] Summary TSV is generated
 
 ## Human Checkpoint
 
 ### Review materials
-- Annotation reports per dataset (UMAPs colored by cell type, dot plots)
-- `annotation_comparison.tsv` — do the same cell types appear across studies?
-- Continuous score distributions for the resident cell continuum
+- Per-dataset UMAPs colored by cell_class
+- Marker dot plots confirming clean separation
+- Classification summary table
 
 ### Questions for the reviewer
-1. Do the cell type labels make biological sense for each dataset?
-2. For the chondrocyte/fibroblast continuum: are the discrete labels meaningful, or should we rely on continuous scores for downstream analysis?
-3. Are there cell populations that appear in some studies but not others? Is this biology (different compartments, conditions) or technical artifact?
-4. Should any gene signatures be revised based on what the data shows?
-5. Is the annotation granularity appropriate — too coarse or too fine?
-6. Do the original study annotations (if provided) agree with ours? Where they disagree, which is more credible?
+1. Is the mesenchymal vs. non-mesenchymal split clean? Any datasets with suspicious proportions?
+2. Are there clusters flagged as mixed that need manual review?
+3. Are the ambiguous cells a concern, or can they be excluded?
 
 ### Potential plan revisions
-- If the continuum is genuinely continuous within most datasets, the integration module should preserve this structure rather than trying to cluster it
-- If certain cell states only appear in degenerated samples, this is a key finding that should inform the DE analysis design
-- If annotation quality is poor for certain datasets (high unassigned rate, inconsistent markers), consider excluding them or downweighting in integration
-- If notochordal cells are found only in neonatal samples, this confirms a developmental trajectory that the trajectory module should explore
+- If any dataset has >20% ambiguous cells, investigate and potentially re-threshold
+- If CD68 is causing misclassification, tighten the immune classification to require PTPRC co-expression
