@@ -100,11 +100,11 @@ The total cell count is unchanged; the compartment-level shifts reflect the anno
 
 ### NP Integration (scVI)
 
-![NP integration UMAP](integration/umap_tier2_NP_by_approach.png)
+![NP integration UMAP](integration/umap_NP.png)
 
 ### AF Integration (scVI)
 
-![AF integration UMAP](integration/umap_tier2_AF_by_approach.png)
+![AF integration UMAP](integration/umap_AF.png)
 
 ---
 

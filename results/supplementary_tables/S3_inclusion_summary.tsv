@@ -1,0 +1,26 @@
+object	accession	first_author	year	n_samples	n_cells	compartment	conditions	platform
+NP	CNP0002664	Han S	2022	6	29609	NP	healthy, degenerated_severe, degenerated_mild	other
+NP	GSE160756	Gan Y	2021	3	35853	NP, CEP, AF	healthy	10x_3prime_v3
+NP	GSE165722	Tu J	2022	8	37978	NP	degenerated_mild, degenerated_severe	other
+NP	GSE199866	Cherif H	2022	2	7571	AF, NP	healthy, degenerated_severe	10x_3prime_v2
+NP	GSE205535	Li Z	2022	2	10121	NP	healthy, degenerated_ungraded	other
+NP	GSE230809	Swahn H	2024	11	53901	AF, NP	healthy, degenerated_severe, degenerated_mild	10x_3prime_v3
+NP	GSE244889	Chen F	2024	7	51519	NP	healthy, degenerated_mild, degenerated_severe	10x_3prime_v3
+NP	GSE251686	Jia S	2024	5	36415	NP	herniated	other
+AF	GSE160756	Gan Y	2021	2	26390	NP, CEP, AF	healthy	10x_3prime_v3
+AF	GSE199866	Cherif H	2022	2	6323	AF, NP	healthy, degenerated_severe	10x_3prime_v2
+AF	GSE230809	Swahn H	2024	13	51897	AF, NP	healthy, degenerated_severe, degenerated_mild	10x_3prime_v3
+CEP	GSE160756	Gan Y	2021	2	26958	NP, CEP, AF	healthy	10x_3prime_v3
+CEP	GSE242443	Kuchynsky K	2024	2	14938	CEP	healthy, degenerated_severe	10x_3prime_v3
+CEP	GSE255768	Shi C	2024	2	8818	CEP	degenerated_ungraded	10x_3prime_v3
+all_cells	CNP0002664	Han S	2022	6	29609	NP	healthy, degenerated_severe, degenerated_mild	other
+all_cells	GSE160756	Gan Y	2021	7	89283	NP, CEP, AF	healthy	10x_3prime_v3
+all_cells	GSE165722	Tu J	2022	8	37978	NP	degenerated_mild, degenerated_severe	other
+all_cells	GSE189916	Jiang W	2022	3	12310	IVD_mixed	neonatal, aged_ungraded	10x_3prime_v2
+all_cells	GSE199866	Cherif H	2022	4	13896	AF, NP	healthy, degenerated_severe	10x_3prime_v2
+all_cells	GSE205535	Li Z	2022	2	10121	NP	healthy, degenerated_ungraded	other
+all_cells	GSE230809	Swahn H	2024	24	105804	AF, NP	healthy, degenerated_severe, degenerated_mild	10x_3prime_v3
+all_cells	GSE242443	Kuchynsky K	2024	2	14938	CEP	healthy, degenerated_severe	10x_3prime_v3
+all_cells	GSE244889	Chen F	2024	7	51519	NP	healthy, degenerated_mild, degenerated_severe	10x_3prime_v3
+all_cells	GSE251686	Jia S	2024	5	36415	NP	herniated	other
+all_cells	GSE255768	Shi C	2024	2	8886	CEP	degenerated_ungraded	10x_3prime_v3

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cross-Dataset QC Overview</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }
+  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+  th { background-color: #3498db; color: white; text-align: left; }
+  td:first-child { text-align: left; font-weight: bold; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+  .warning { color: #e74c3c; font-weight: bold; }
+  img { max-width: 100%; margin: 10px 0; }
+</style>
+</head>
+<body>
+<h1>Cross-Dataset QC Overview &mdash; IVD scRNA-seq Atlas</h1>
+<p>Generated: 2026-03-03 17:06</p>
+<p>Datasets processed: 12</p>
+
+<h2>Summary Table</h2>
+<table>
+  <tr>
+    <th>Dataset</th><th>Samples</th><th>Cells (raw)</th><th>Cells (QC)</th>
+    <th>Retention %</th><th>Genes</th><th>HVGs</th><th>PCs</th><th>Clusters</th>
+  </tr>
+  
+  <tr>
+    <td>GSE160756</td>
+    <td>7</td>
+    <td>89283</td>
+    <td>89283</td>
+    <td>100.0%</td>
+    <td>26416</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>18</td>
+  </tr>
+  
+  <tr>
+    <td>GSE165722</td>
+    <td>8</td>
+    <td>37978</td>
+    <td>37978</td>
+    <td>100.0%</td>
+    <td>13900</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>18</td>
+  </tr>
+  
+  <tr>
+    <td>GSE189916</td>
+    <td>6</td>
+    <td>22009</td>
+    <td>19658</td>
+    <td>89.3%</td>
+    <td>27516</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>12</td>
+  </tr>
+  
+  <tr>
+    <td>GSE199866</td>
+    <td>4</td>
+    <td>14001</td>
+    <td>13896</td>
+    <td>99.3%</td>
+    <td>21167</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>8</td>
+  </tr>
+  
+  <tr>
+    <td>GSE205535</td>
+    <td>2</td>
+    <td>10173</td>
+    <td>10121</td>
+    <td>99.5%</td>
+    <td>15902</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>12</td>
+  </tr>
+  
+  <tr>
+    <td>CNP0002664</td>
+    <td>6</td>
+    <td>31103</td>
+    <td>29609</td>
+    <td>95.2%</td>
+    <td>16274</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>11</td>
+  </tr>
+  
+  <tr>
+    <td>GSE233666</td>
+    <td>4</td>
+    <td>18864</td>
+    <td>18451</td>
+    <td>97.8%</td>
+    <td>26694</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>13</td>
+  </tr>
+  
+  <tr>
+    <td>GSE244889</td>
+    <td>7</td>
+    <td>51519</td>
+    <td>51519</td>
+    <td>100.0%</td>
+    <td>28183</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>20</td>
+  </tr>
+  
+  <tr>
+    <td>GSE251686</td>
+    <td>5</td>
+    <td>36962</td>
+    <td>36415</td>
+    <td>98.5%</td>
+    <td>19503</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>14</td>
+  </tr>
+  
+  <tr>
+    <td>GSE255768</td>
+    <td>2</td>
+    <td>9051</td>
+    <td>8886</td>
+    <td>98.2%</td>
+    <td>19181</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>11</td>
+  </tr>
+  
+  <tr>
+    <td>GSE230809</td>
+    <td>24</td>
+    <td>110556</td>
+    <td>105804</td>
+    <td>95.7%</td>
+    <td>28043</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>21</td>
+  </tr>
+  
+  <tr>
+    <td>GSE242443</td>
+    <td>2</td>
+    <td>14938</td>
+    <td>14938</td>
+    <td>100.0%</td>
+    <td>27080</td>
+    <td>3000</td>
+    <td>50</td>
+    <td>8</td>
+  </tr>
+  
+</table>
+
+<h2>Cross-Dataset Comparison</h2>
+<img src="overview_cells_comparison.png" alt="Cell count comparison">
+<img src="overview_qc_comparison.png" alt="QC metrics comparison">
+
+</body>
+</html>

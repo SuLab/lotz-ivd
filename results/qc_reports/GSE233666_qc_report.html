@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>QC Report: GSE233666</title>
+<style>
+  body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+  h2 { color: #34495e; margin-top: 30px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+  th { background-color: #3498db; color: white; }
+  tr:nth-child(even) { background-color: #f2f2f2; }
+  img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+  .stat-box { background: #ecf0f1; padding: 15px; border-radius: 5px; }
+  .stat-box h3 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 12px; }
+  .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
+  .warning { color: #e74c3c; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>QC Report: GSE233666</h1>
+<p>Generated: 2026-03-03 17:04</p>
+
+<div class="stats-grid">
+  <div class="stat-box"><h3>Cells (raw)</h3><p>18864</p></div>
+  <div class="stat-box"><h3>Cells (after QC)</h3><p>18451</p></div>
+  <div class="stat-box"><h3>Retention</h3><p>97.8%</p></div>
+  <div class="stat-box"><h3>Genes (after QC)</h3><p>26694</p></div>
+  <div class="stat-box"><h3>HVGs</h3><p>3000</p></div>
+  <div class="stat-box"><h3>PCs used</h3><p>50</p></div>
+  <div class="stat-box"><h3>Clusters (res=0.5)</h3><p>13</p></div>
+</div>
+
+<h2>Per-Sample Cell Counts</h2>
+<table>
+  <tr><th>Sample</th><th>Raw</th><th>After QC</th><th>After Doublet</th><th>Retention %</th></tr>
+  
+  <tr>
+    <td>GSE233666_Patient_1</td>
+    <td>4400</td>
+    <td>4345</td>
+    <td>4345</td>
+    <td>
+      
+        98.8%
+        
+      
+    </td>
+  </tr>
+  
+  <tr>
+    <td>GSE233666_Patient_2</td>
+    <td>2239</td>
+    <td>2239</td>
+    <td>2239</td>
+    <td>
+      
+        100.0%
+        
+      
+    </td>
+  </tr>
+  
+  <tr>
+    <td>GSE233666_Patient_3</td>
+    <td>4759</td>
+    <td>4714</td>
+    <td>4714</td>
+    <td>
+      
+        99.1%
+        
+      
+    </td>
+  </tr>
+  
+  <tr>
+    <td>GSE233666_Patient_4</td>
+    <td>7466</td>
+    <td>7153</td>
+    <td>7153</td>
+    <td>
+      
+        95.8%
+        
+      
+    </td>
+  </tr>
+  
+</table>
+
+<h2>QC Metric Distributions</h2>
+<img src="GSE233666_qc_violins.png" alt="QC violin plots">
+
+<h2>UMAP Embeddings</h2>
+<img src="GSE233666_umap_sample.png" alt="UMAP by sample">
+<img src="GSE233666_umap_clusters.png" alt="UMAP by clusters">
+<img src="GSE233666_umap_celltype.png" alt="UMAP by cell type">
+<img src="GSE233666_umap_qc.png" alt="UMAP QC metrics">
+
+<h2>Marker Expression</h2>
+<img src="GSE233666_dotplot_markers.png" alt="Marker dot plot">
+
+<h2>Top 10 Markers per Cluster</h2>
+<img src="GSE233666_top_markers.png" alt="Top markers heatmap">
+
+<h2>Cell Type Distribution</h2>
+<table>
+  <tr><th>Cell Type</th><th>Count</th><th>Percentage</th></tr>
+  
+  <tr>
+    <td>Chondrocyte_NP</td>
+    <td>9718</td>
+    <td>52.7%</td>
+  </tr>
+  
+  <tr>
+    <td>Fibroblast_AF</td>
+    <td>3727</td>
+    <td>20.2%</td>
+  </tr>
+  
+  <tr>
+    <td>Progenitor</td>
+    <td>2971</td>
+    <td>16.1%</td>
+  </tr>
+  
+  <tr>
+    <td>Macrophage</td>
+    <td>1049</td>
+    <td>5.7%</td>
+  </tr>
+  
+  <tr>
+    <td>Endothelial</td>
+    <td>329</td>
+    <td>1.8%</td>
+  </tr>
+  
+  <tr>
+    <td>Pericyte_SMC</td>
+    <td>245</td>
+    <td>1.3%</td>
+  </tr>
+  
+  <tr>
+    <td>B_cell</td>
+    <td>185</td>
+    <td>1.0%</td>
+  </tr>
+  
+  <tr>
+    <td>T_cell</td>
+    <td>130</td>
+    <td>0.7%</td>
+  </tr>
+  
+  <tr>
+    <td>Mast_cell</td>
+    <td>66</td>
+    <td>0.4%</td>
+  </tr>
+  
+  <tr>
+    <td>Notochordal</td>
+    <td>31</td>
+    <td>0.2%</td>
+  </tr>
+  
+</table>
+
+</body>
+</html>
