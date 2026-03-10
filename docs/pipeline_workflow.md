@@ -2,7 +2,9 @@
 
 ## Overview
 
-Human-gated agentic bioinformatics pipeline analyzing 11 scRNA-seq datasets (410K cells, 71 samples, 57 donors) of human intervertebral disc tissue. Each module produces results that are reviewed at a human checkpoint before the pipeline advances.
+Human-gated agentic bioinformatics pipeline analyzing 11 scRNA-seq datasets (410,759 cells, 71 samples, ~50 donors) of human intervertebral disc tissue. Each module produces results that are reviewed at a human checkpoint before the pipeline advances.
+
+**Pipeline version:** v3 (annotation fix: non-mesenchymal evidence gate, ACAN/SOX9 rescue, 85% cluster voting threshold). See `results/THREE_VERSION_SUMMARY.md` for version history.
 
 **How to read this diagram:** Blue boxes are computational modules (agent-executed). Orange hexagons are human checkpoints where the pipeline pauses. Yellow notes show the key decisions made. Full questions and rationale for each checkpoint are in the [Checkpoint Details](#checkpoint-details) section below.
 
@@ -51,11 +53,11 @@ flowchart TD
     CP03 --> M04
 
     %% ── Module 04 ──
-    M04["Module 04: Cell Classification<br/>Binary mesenchymal vs non-mesenchymal<br/>Marker-based scoring"]:::module
+    M04["Module 04: Cell Classification<br/>Binary mesenchymal vs non-mesenchymal<br/>v3: non-mes evidence gate + ACAN/SOX9 rescue + 85% voting"]:::module
     M04 --> CP04
 
     CP04{{"HUMAN CHECKPOINT<br/>Annotation Review (retroactive)"}}:::checkpoint
-    N04["Details: see #04 below<br/>- Binary classification: mesenchymal vs non-mesenchymal<br/>- 0% ambiguous across 11 datasets<br/>- Marker-based scoring"]:::decision
+    N04["Details: see #04 below<br/>- Binary classification: mesenchymal vs non-mesenchymal<br/>- v3: evidence gate + ACAN/SOX9 rescue + 85% voting<br/>- Fixed 17K misrouted stressed NP cells"]:::decision
     CP04 -.- N04
     CP04 --> M05
 
@@ -69,20 +71,20 @@ flowchart TD
     CP05 --> M06
 
     %% ── Module 06 ──
-    M06["Module 06: Differential Analysis<br/>Composition: Mann-Whitney U<br/>Pseudobulk DE: pyDESeq2, 21 powered comparisons<br/>949 unique significant genes, herniated excluded"]:::module
+    M06["Module 06: Differential Analysis<br/>Composition: Mann-Whitney U<br/>Pseudobulk DE: pyDESeq2, 18 powered comparisons<br/>1,156 unique significant genes, herniated excluded"]:::module
     M06 --> CP06
 
     CP06{{"HUMAN CHECKPOINT<br/>DE Results Review"}}:::checkpoint
-    N06["Details: see #06 below<br/>- 21 powered comparisons, herniated excluded<br/>- NP_fibrocartilaginous and EP_hyaline as new cell types<br/>- 949 unique significant genes<br/>- No systematic batch domination"]:::decision
+    N06["Details: see #06 below<br/>- 18 powered comparisons, herniated excluded<br/>- NP_fibrocartilaginous and EP_hyaline as new cell types<br/>- 1,156 unique significant genes<br/>- No systematic batch domination"]:::decision
     CP06 -.- N06
     CP06 --> M07
 
     %% ── Module 07 ──
-    M07["Module 07: Biological Interpretation<br/>ORA: 1,577 enrichments (GO/KEGG/Reactome/MSigDB)<br/>GSEA: 1,576 significant terms<br/>TF activity: 290 significant TFs<br/>Pain gene analysis: 10 significant hits"]:::module
+    M07["Module 07: Biological Interpretation<br/>ORA: 1,043 enrichments (GO/KEGG/Reactome/MSigDB)<br/>GSEA: 1,943 significant terms<br/>TF activity: 399 significant TFs<br/>Pain gene analysis: 10 significant hits"]:::module
     M07 --> CP07
 
     CP07{{"HUMAN CHECKPOINT<br/>Interpretation Review"}}:::checkpoint
-    N07["Details: see #07 below<br/>- 1,577 ORA enrichments, 290 significant TFs<br/>- 10 pain gene hits<br/>- Novel TF findings to highlight<br/>- No contradictions found"]:::decision
+    N07["Details: see #07 below<br/>- 1,043 ORA enrichments, 399 significant TFs<br/>- 10 pain gene hits<br/>- Novel TF findings to highlight<br/>- No contradictions found"]:::decision
     CP07 -.- N07
     CP07 --> M08
 
@@ -91,21 +93,21 @@ flowchart TD
     M08 --> CP08
 
     CP08{{"HUMAN CHECKPOINT<br/>Trajectory Review"}}:::checkpoint
-    N08["Details: see #08 below<br/>- NP/AF/CEP trajectories<br/>- NP rho=-0.258, AF rho=+0.341 (reversed), CEP rho=-0.163<br/>- AF reversal flagged for investigation<br/>- Pseudotime-condition correlations computed"]:::decision
+    N08["Details: see #08 below<br/>- NP/AF/CEP trajectories<br/>- NP rho=-0.151, AF rho=+0.325, CEP rho=+0.135<br/>- AF/CEP sign changes flagged for investigation<br/>- Pseudotime-condition correlations computed"]:::decision
     CP08 -.- N08
     CP08 --> M09
 
     %% ── Module 09 ──
-    M09["Module 09: Cell-Cell Communication<br/>LIANA (5 methods consensus)<br/>Healthy: 28.9K interactions | Degenerated: 27K<br/>Pain-relevant interactions flagged"]:::module
+    M09["Module 09: Cell-Cell Communication<br/>LIANA (5 methods consensus)<br/>Healthy: 40.2K interactions | Degenerated: 40.9K<br/>Pain-relevant interactions flagged"]:::module
     M09 --> CP09
 
     CP09{{"HUMAN CHECKPOINT<br/>Communication Review"}}:::checkpoint
-    N09["Details: see #09 below<br/>- Interactions biologically plausible<br/>- Pain-relevant: neurotrophin + VEGF pathways<br/>- Reversed CCC pattern: fewer interactions in degeneration (27K vs 28.9K)<br/>- Collagen-integrin positive controls confirmed"]:::decision
+    N09["Details: see #09 below<br/>- Interactions biologically plausible<br/>- Pain-relevant: neurotrophin + VEGF pathways<br/>- Similar interaction counts: 40.2K healthy vs 40.9K degenerated<br/>- Collagen-integrin positive controls confirmed"]:::decision
     CP09 -.- N09
     CP09 --> M10
 
     %% ── Module 10 ──
-    M10["Module 10: Final Reporting<br/>12-section report, 19 supplementary tables<br/>All validation checks PASS"]:::module
+    M10["Module 10: Final Reporting<br/>12-section report, 27 supplementary tables<br/>All validation checks PASS"]:::module
     M10 --> CP10
 
     CP10{{"HUMAN CHECKPOINT<br/>Final Review"}}:::checkpoint
@@ -117,7 +119,7 @@ flowchart TD
     D2[("data/processed/<br/>per-dataset .h5ad")]:::data
     D3[("data/integrated/<br/>NP, AF, CEP, all_cells")]:::data
     D4[("results/<br/>DE, enrichments, trajectory, CCC")]:::data
-    D5[("results/final_report.html")]:::data
+    D5[("results/FINAL_REPORT.md<br/>+ MANUSCRIPT.md")]:::data
 
     D1 -.-> M03
     M03 -.-> D2
@@ -222,11 +224,11 @@ flowchart TD
 5. Is the annotation granularity appropriate — too coarse or too fine?
 6. Do the original study annotations agree with ours? Where they disagree, which is more credible?
 
-**Decisions (retroactive review):**
+**Decisions (retroactive review, updated for v3):**
 - Binary classification: mesenchymal vs non-mesenchymal
-- 0% ambiguous across 11 datasets — clean separation
-- Marker-based scoring sufficient for binary gate
-- No blocking issues identified
+- v3 annotation fix applied: **non-mesenchymal evidence gate** (requires PTPRC/PECAM1/CD68 expression), **ACAN/SOX9 rescue** (cells expressing IVD markers rescued to mesenchymal), **85% cluster voting** (entire cluster assigned if >85% agree)
+- Fixed 17K stressed NP cells that were misrouted to non-mesenchymal in v2
+- Marker-based scoring with evidence-gated classification
 
 ---
 
@@ -260,11 +262,11 @@ flowchart TD
 5. Are there comparisons that should be added, removed, or redefined?
 6. Should any DE results feed back into annotation (e.g., subclusters with very different DE profiles)?
 
-**Key results presented:** 21 powered DE comparisons. 949 unique significant genes. Herniated excluded from comparisons. NP_fibrocartilaginous and EP_hyaline identified as new cell types.
+**Key results presented:** 18 powered DE comparisons. 1,156 unique significant genes (1,447 gene-comparison pairs). Herniated excluded from comparisons. NP_fibrocartilaginous and EP_hyaline identified as new cell types.
 
 **Decisions:**
 - **Herniated excluded** from DE comparisons — condition mapping revisited before rerun
-- **21 powered comparisons** across NP, AF, CEP compartments
+- **18 powered comparisons** across NP, AF, CEP compartments
 - **NP_fibrocartilaginous and EP_hyaline** accepted as new cell types with distinct DE profiles
 - No systematic batch domination in degeneration comparisons
 
@@ -279,7 +281,7 @@ flowchart TD
 4. Are there actionable targets (e.g., druggable genes) among the top hits?
 5. Are there findings that contradict established IVD biology — artifacts or genuinely novel?
 
-**Key results presented:** 1,577 ORA enrichments. 1,576 GSEA significant terms. ECM, inflammatory, collagen, immune pathways confirmed. 290 significant TFs. 10 significant pain gene hits.
+**Key results presented:** 1,043 ORA enrichments. 1,943 GSEA significant terms. ECM, inflammatory, collagen, immune pathways confirmed. 399 significant TFs. 10 significant pain gene hits.
 
 **Decisions:**
 - Pathways **consistent with known IVD biology** — ECM degradation, inflammatory signaling, cellular senescence all enriched in degeneration
@@ -299,14 +301,14 @@ flowchart TD
 5. Are there branch points suggesting divergent cell fates?
 6. Should trajectory findings feed back into cell type annotation?
 
-**Key results presented:** PAGA + DPT for NP, AF, and CEP compartments. Pseudotime-condition correlations: NP rho=-0.258, AF rho=+0.341 (reversed direction), CEP rho=-0.163. 500 trajectory genes per compartment.
+**Key results presented:** PAGA + DPT for NP, AF, and CEP compartments. Pseudotime-condition correlations: NP rho=-0.151, AF rho=+0.325, CEP rho=+0.135. 500 trajectory genes per compartment.
 
 **Decisions:**
-- **NP trajectory biologically sensible:** pseudotime correlates with degeneration (rho=-0.258)
-- **AF trajectory reversed:** rho=+0.341 indicates healthy cells at later pseudotime — flagged for investigation, may reflect AF-specific biology or integration artifact
-- **CEP trajectory:** modest correlation (rho=-0.163) with degeneration
+- **NP trajectory:** modest pseudotime-degeneration correlation (rho=-0.151)
+- **AF trajectory:** rho=+0.325 indicates healthy cells at later pseudotime — flagged for investigation, may reflect AF-specific biology or root cell choice
+- **CEP trajectory:** rho=+0.135, sign flipped from v2 (was -0.163) — sensitive to annotation changes
 - **RNA velocity unavailable** (no spliced/unspliced layers in input data) — documented and acceptable
-- AF reversal requires cautious interpretation in manuscript
+- Trajectory instability across pipeline versions requires cautious interpretation in manuscript
 
 ---
 
@@ -318,12 +320,12 @@ flowchart TD
 3. Are there pain-relevant interactions that could be therapeutic targets?
 4. Are any interactions likely artifacts of ambient RNA or doublets?
 
-**Key results presented:** LIANA consensus (5-method: CellPhoneDB + NATMI + Connectome + SingleCellSignalR + logFC). Healthy: 28.9K interactions. Degenerated: 27K interactions. Pain-relevant interactions flagged.
+**Key results presented:** LIANA consensus (5-method: CellPhoneDB + NATMI + Connectome + SingleCellSignalR + logFC). Healthy: 40.2K interactions. Degenerated: 40.9K interactions. Pain-relevant interactions flagged.
 
 **Decisions:**
 - Interactions **biologically plausible** — collagen-integrin positive controls confirmed
 - Pain-relevant interactions include **neurotrophin and VEGF pathways**
-- **Reversed CCC pattern:** fewer interactions in degeneration (27K vs 28.9K) — opposite of v1 finding; may reflect loss of tissue organization in degenerated discs
+- **Near-equal interaction counts** between conditions (40.2K vs 40.9K) — prior versions showed larger directional differences, suggesting sensitivity to annotation choices
 - No artifact concerns flagged
 
 ---
