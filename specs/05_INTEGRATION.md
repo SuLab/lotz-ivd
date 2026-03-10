@@ -14,7 +14,7 @@ The all-cells object serves as a whole IVD atlas. IVD subcompartments (NP, AF, C
 
 ## Rationale
 
-Previous modules assigned only a coarse mesenchymal vs. non-mesenchymal classification. This module integrates datasets, clusters the result, and discovers cell types from the integrated data. This avoids circular logic where per-dataset annotations influence integration, which in turn shapes downstream analysis.
+Module 04 assigns coarse anchor labels (5 categories + Unknown) that are reliable across datasets but deliberately avoid fine-grained distinctions. This module uses those anchors for semi-supervised integration (scANVI), then clusters the result and discovers fine cell types from the integrated data. The coarse labels guide integration without imposing the final atlas identity.
 
 Within each object, mesenchymal and non-mesenchymal cells are integrated separately (tiered integration) because they have fundamentally different transcriptomic profiles. Integrating them together would force the model to spend latent capacity on that major axis of variation rather than on subtler differences within each group.
 
@@ -110,7 +110,7 @@ Generate `results/integration/study_caveats.tsv` documenting per-study caveats f
 
 ## Inputs
 
-- Processed AnnData objects from `data/processed/{accession}.h5ad` with `cell_class` labels from Module 04
+- Processed AnnData objects from `data/processed/{accession}.h5ad` with `coarse_label` and `cell_class` from Module 04
 - `metadata/sample_metadata.tsv`
 
 ## Outputs
@@ -143,37 +143,51 @@ Contains:
 
 **Manuscript mapping:** Figure 1: IVD cell atlas (UMAP, dot plot, proportions). Supplementary Table S1: Study inclusion and caveats. Supplementary Figure S3: Integration benchmarking and resolution optimization. Methods section on integration, clustering, and annotation.
 
-## Part 1: Tiered Integration
+## Part 1: Tiered Integration with scANVI
 
-For each of the four objects (NP, AF, CEP, all-cells), perform tiered integration:
+For each of the four objects (NP, AF, CEP, all-cells), perform tiered integration using scANVI with the coarse anchor labels from Module 04.
+
+### Integration method: scANVI (semi-supervised)
+
+scANVI uses labeled cells as anchors to align similar cells across studies while leaving "Unknown" cells free to be positioned by transcriptomic similarity. This produces better batch correction than unsupervised scVI, especially across platforms (10x, BD Rhapsody, Singleron).
+
+**Workflow per tier:**
+1. Train scVI first (unsupervised) to learn a base latent representation
+2. Initialize scANVI from the trained scVI model
+3. Feed `coarse_label` as `labels_key`, with "Unknown" as `unlabeled_category`
+4. scANVI refines the latent space using the anchor labels
+
+**Parameters:**
+- `batch_key='study'`
+- `n_latent=20`
+- scVI: `max_epochs=200`
+- scANVI: `max_epochs=50`, `early_stopping=True`, `early_stopping_patience=5`
+- `n_top_genes=3000`
 
 ### Tier A: Mesenchymal cells
 
-**Method:** scVI with conservative batch correction
-
-**Parameters:**
-- `batch_key='study'` (coarser than sample ID — less aggressive correction)
-- `n_latent=20` (conservative; reduces overcorrection risk)
-- `max_epochs=200`
-- `n_top_genes=3000`
+**Anchor labels used:** Chondrocyte_like, Fibroblast_like, Unknown
+**scANVI unlabeled_category:** "Unknown"
 
 **Steps:**
-1. Subset mesenchymal cells (`cell_class == 'mesenchymal'`) for the relevant studies/samples
+1. Subset cells with `cell_class == 'mesenchymal'` or `cell_class == 'unknown'` for the relevant studies/samples (include Unknown-class cells that may be fibrochondrocytes or other transitional mesenchymal types)
 2. Concatenate across datasets
-3. Re-identify HVGs on the concatenated object
-4. Run scVI integration
-5. Compute neighbors and UMAP on scVI embedding
-6. Proceed to clustering (Part 2) and annotation (Part 3)
+3. Re-identify HVGs on the concatenated object (n_top_genes=3000)
+4. Train scVI → initialize scANVI with coarse_label anchors
+5. Extract scANVI latent representation
+6. Compute neighbors and UMAP on scANVI embedding
+7. Proceed to clustering (Part 2) and annotation (Part 3)
 
 ### Tier B: Non-mesenchymal cells
 
-**Method:** scVI with `batch_key='study'`
+**Anchor labels used:** Immune, Endothelial, Pericyte_SMC
+**scANVI unlabeled_category:** "Unknown" (should be very few in this tier)
 
-Same parameters as Tier A. These populations have strong, discrete transcriptomic identities that survive batch correction.
+Same workflow as Tier A. These populations have strong, discrete transcriptomic identities — scANVI should integrate them cleanly.
 
 ### Merging tiers
 
-After independent integration, clustering, and annotation of each tier, merge them back into a single AnnData per object for downstream analysis. Store tier-specific embeddings in `obsm` (e.g., `X_scvi_mesenchymal`, `X_scvi_non_mesenchymal`).
+After independent integration, clustering, and annotation of each tier, merge them back into a single AnnData per object for downstream analysis. Store tier-specific embeddings in `obsm` (e.g., `X_scanvi_mesenchymal`, `X_scanvi_non_mesenchymal`).
 
 ### Integration Quality Metrics
 
@@ -197,13 +211,13 @@ After integration, cluster each tier within each object independently.
 
 ### Method
 
-Leiden clustering on the scVI neighbor graph, with resolution selected by multi-metric optimization.
+Leiden clustering on the scANVI neighbor graph, with resolution selected by multi-metric optimization.
 
 ### Resolution optimization
 
 Test resolutions from 0.1 to 2.0 in steps of 0.1, and compute:
 
-1. **Silhouette score** (on the scVI embedding): measures how well-separated clusters are. Higher is better, but will decrease at very high resolutions as clusters become too granular.
+1. **Silhouette score** (on the scANVI embedding): measures how well-separated clusters are. Higher is better, but will decrease at very high resolutions as clusters become too granular.
 
 2. **Modularity score**: measures the quality of the graph partition. Computed by the Leiden algorithm itself.
 
@@ -227,63 +241,93 @@ Store clustering results at the selected resolution in `obs['leiden']`, and also
 - **All-cells:** Should recover all of the above plus cross-compartment structure; some clusters may contain cells from multiple compartments (reflecting shared biology)
 - **Non-mesenchymal (all objects):** Discrete immune subtypes (macrophages, T cells, B cells, etc.) + endothelial + pericyte
 
-## Part 3: De Novo Cell Type Annotation
+## Part 3: Two-Stage De Novo Cell Type Annotation
 
-Annotate the clusters from Part 2 using two complementary approaches. Do NOT rely on the original manuscript annotations or Module 04 labels (which were coarse classification only).
+Annotate clusters in two stages: first assign a coarse identity, then refine within each coarse group. Do NOT rely on the original manuscript annotations. The Module 04 coarse labels served integration only — annotation here is driven by the integrated data.
 
-### Approach 1: Cluster DE markers
+### Stage 1: Coarse annotation via canonical markers
 
-For each cluster, compute differentially expressed genes vs. all other clusters:
+For each cluster, check expression of canonical marker genes to assign a coarse identity. This determines *what* the cell is.
 
-1. Use `sc.tl.rank_genes_groups()` (Wilcoxon rank-sum test) to find marker genes per cluster
-2. For each cluster, extract the top 20-50 marker genes (by log fold change and adjusted p-value)
-3. Use these markers to identify the cluster's identity by comparison with known cell type markers from literature
+**Canonical marker panels for coarse assignment:**
 
-### Approach 2: Canonical marker gene expression
+*Mesenchymal — Chondrocyte-like:*
+- COL2A1, ACAN, SOX9, COMP, PRG4
 
-Overlay known IVD marker genes onto the clusters. This is critical because in a tissue dominated by related mesenchymal cell types, defining markers (e.g., COL2A1 for chondrocytes, COL1A1 for fibroblasts) may be broadly expressed across multiple clusters at varying levels rather than being DE between clusters.
+*Mesenchymal — Fibroblast-like:*
+- COL1A1, COL1A2, DCN, LUM, THY1
 
-**Canonical marker panels:**
+*Mesenchymal — Fibrochondrocyte-like:*
+- Co-expression of both chondrocyte markers (COL2A1, ACAN) and fibroblast markers (COL1A1, DCN) at moderate levels
 
-*NP subtypes:*
-- Notochordal-like: T/TBXT, SHH, NOG, CD24, KRT8, KRT18, KRT19
-- Mature chondrocyte: ACAN, COL2A1, SOX9, COMP, PRG4
-- Stressed/degenerative: MMP13, ADAMTS5, IL1B, TNF, VEGFA, HIF1A
-- Fibrocartilaginous: COL1A1 + COL2A1 co-expression, VCAN
-
-*AF subtypes:*
-- Inner AF (chondrocyte-like): COL2A1, ACAN, SOX9
-- Outer AF (fibroblast-like): COL1A1, COL1A2, THY1, DCN, LUM
-- Mechanical stress: COMP, CILP, THBS1
-
-*Endplate:*
-- Hyaline cartilage: COL2A1, COL10A1, SOX9
-- Ossification: RUNX2, SP7/OSX, BGLAP
-
-*Non-mesenchymal:*
+*Non-mesenchymal — Immune:*
 - Macrophage: CD68, CD14, CSF1R, CD163 (M2), CD86 (M1)
 - T cell: CD3D, CD3E, CD4, CD8A
 - B cell: CD79A, MS4A1
 - NK cell: NKG7, GNLY
 - Mast cell: KIT, TPSAB1
-- Endothelial: PECAM1, VWF, CDH5
-- Pericyte/SMC: ACTA2, RGS5, PDGFRB
 
-**Visualizations:**
+*Non-mesenchymal — Endothelial:*
+- PECAM1, VWF, CDH5
+
+*Non-mesenchymal — Pericyte/SMC:*
+- ACTA2, RGS5, PDGFRB
+
+**Visualizations for Stage 1:**
 - Dot plots: canonical markers × clusters (fraction expressing + mean expression)
 - Feature plots (UMAPs): key markers overlaid on clusters
-- Heatmap: top DE markers per cluster
+
+Each cluster receives a `coarse_cell_type` label (e.g., "Chondrocyte-like", "Fibroblast-like", "Fibrochondrocyte-like", "Macrophage", "T_cell", "Endothelial", etc.).
+
+### Stage 2: Fine annotation via DE markers within coarse groups
+
+Within each coarse category, compute DE genes between the clusters of that category to find what distinguishes them. This determines *what state or subtype* the cell is in.
+
+For example, if there are 5 chondrocyte-like clusters:
+1. Run `sc.tl.rank_genes_groups()` comparing only those 5 clusters against each other
+2. Extract the top 20-50 DE markers per cluster
+3. Use these to assign subtype/state labels
+
+**Expected fine distinctions within coarse groups:**
+
+*Within Chondrocyte-like (NP):*
+- Notochordal-like (T/TBXT, SHH, NOG, CD24, KRT8, KRT18, KRT19)
+- Mature chondrocyte (high ACAN, COL2A1, COMP)
+- Stressed/degenerative (MMP13, ADAMTS5, IL1B, TNF, VEGFA, HIF1A)
+- Hypertrophic (COL10A1, RUNX2)
+
+*Within Fibroblast-like (AF):*
+- Inner AF (more chondrocyte-adjacent: SOX9+)
+- Outer AF (classic fibroblast: high COL1A1, COL1A2)
+- Mechanical stress (COMP, CILP, THBS1)
+
+*Within Fibrochondrocyte-like:*
+- May subdivide by the ratio of chondrocyte-to-fibroblast markers, or by stress/degenerative markers
+
+*Within Immune:*
+- M1 vs. M2 macrophage, CD4 vs. CD8 T cells, etc.
+
+*Within Endplate chondrocytes:*
+- Hyaline cartilage (COL2A1, COL10A1, SOX9)
+- Ossification (RUNX2, SP7/OSX, BGLAP)
+
+**Visualizations for Stage 2:**
+- Heatmap: top DE markers per cluster within each coarse group
+- Dot plots: fine markers within coarse groups
+
+### Final labels
+
+Store annotations in `obs`:
+- `coarse_cell_type` — from Stage 1 (e.g., "Chondrocyte-like", "Macrophage")
+- `cell_type` — from Stage 2, combining coarse identity and fine distinction (e.g., "NP_notochordal", "NP_mature_chondrocyte", "NP_stressed", "AF_outer_fibroblast", "Macrophage_M2")
 
 ### Annotation procedure
 
 For each cluster:
-1. Review the top DE markers from Approach 1
-2. Check expression levels of canonical markers from Approach 2
-3. Assign a cell type label based on the combination
-4. If a cluster's identity is ambiguous, check whether it splits at a higher clustering resolution into identifiable subtypes
-5. If multiple clusters have the same cell type, consider whether they represent genuine subtypes (different marker profiles) or should be merged (same markers, split by batch)
-
-Store annotations in `obs['cell_type']` with a human-readable label (e.g., "NP_chondrocyte", "Macrophage_M2", "AF_outer_fibroblast").
+1. Check canonical marker expression (Stage 1) → assign coarse_cell_type
+2. Within each coarse group, review DE markers between clusters (Stage 2) → assign cell_type
+3. If a cluster's fine identity is ambiguous, check whether it splits at a higher clustering resolution into identifiable subtypes
+4. If multiple clusters have the same cell_type, consider whether they represent genuine subtypes (different marker profiles) or should be merged (same markers, split by batch)
 
 ### Annotation confidence
 
