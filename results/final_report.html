@@ -31,7 +31,7 @@
 
 <h1>Human Intervertebral Disc Single-Cell Atlas</h1>
 <p><strong>A comprehensive scRNA-seq meta-analysis of IVD degeneration</strong></p>
-<p>Report generated: 2026-03-05 21:39 | Pipeline version: 1.0</p>
+<p>Report generated: 2026-03-10 06:03 | Pipeline version: 1.0</p>
 
 
 <div class="stats-grid">
@@ -99,35 +99,51 @@
 
 
 <h2 id="integration">3. Integration Strategy</h2>
-<p><strong>Tiered approach:</strong> Non-resident cells (immune, endothelial, 14,566 cells) integrated with standard scVI. Resident cells integrated with 4 approaches (scVI, scANVI, Harmony, BBKNN) for NP (138,937 cells) and AF (282,736 cells).</p>
-<p><strong>Primary: scANVI</strong> — best overall score (0.615) and cell type separation (ASW 0.511-0.521). Semi-supervised approach leverages marker-based annotations.</p>
-<p><strong>Sensitivity: scVI</strong> — perfectly preserves cell state continuum (score variance ratio = 1.0) for trajectory analysis.</p>
+<p><strong>Compartment-specific scVI integration:</strong> Four objects (NP, AF, CEP, all-cells) integrated separately with scVI (n_latent=20, max_epochs=200). Tiered within each object: mesenchymal and non-mesenchymal cells integrated in separate scVI runs to prevent one population from dominating the latent space.</p>
+<p><strong>De novo annotation:</strong> Cell types discovered post-integration from Leiden clustering, cluster DE markers, and canonical marker panels. CellTypist validation for immune subtypes.</p>
 
-<img src="integration/umap_tier2_NP_by_approach.png" alt="umap_tier2_NP_by_approach.png">
-<img src="integration/umap_tier2_AF_by_approach.png" alt="umap_tier2_AF_by_approach.png">
-<img src="integration/metrics_comparison_AF.png" alt="metrics_comparison_AF.png">
+
+<h3>CellTypist Validation Disagreements</h3>
+<p>The following non-mesenchymal clusters had disagreements between de novo annotation (based on cluster DE markers and canonical marker panels) and CellTypist (Immune_All_Low model). These are flagged for human review; de novo labels are retained as primary annotation. See Supplementary Tables S17-S19 for full concordance data.</p>
+<table>
+  <tr><th>Object</th><th>Cluster</th><th>Cells</th><th>De Novo Label</th><th>CellTypist Label</th><th>CellTypist Agreement %</th></tr>
+
+  <tr><td>NP</td><td>3</td><td>3970</td><td>Pericyte_SMC</td><td>Fibroblasts</td><td>98.4%</td></tr>
+  <tr><td>NP</td><td>1</td><td>4612</td><td>Macrophage</td><td>Endothelial cells</td><td>99.8%</td></tr>
+  <tr><td>NP</td><td>4</td><td>3658</td><td>unassigned</td><td>Classical monocytes</td><td>99.9%</td></tr>
+  <tr><td>NP</td><td>6</td><td>3004</td><td>T_cell</td><td>Classical monocytes</td><td>48.1%</td></tr>
+  <tr><td>NP</td><td>8</td><td>1832</td><td>T_cell</td><td>Macrophages</td><td>59.6%</td></tr>
+  <tr><td>NP</td><td>9</td><td>1521</td><td>B_cell</td><td>Double-positive thymocytes</td><td>46.7%</td></tr>
+  <tr><td>NP</td><td>0</td><td>8989</td><td>unassigned</td><td>Classical monocytes</td><td>99.9%</td></tr>
+  <tr><td>NP</td><td>2</td><td>4484</td><td>unassigned</td><td>Classical monocytes</td><td>90.9%</td></tr>
+  <tr><td>AF</td><td>0</td><td>257</td><td>Pericyte_SMC</td><td>Fibroblasts</td><td>49.0%</td></tr>
+  <tr><td>CEP</td><td>2</td><td>58</td><td>B_cell</td><td>Tcm/Naive helper T cells</td><td>43.1%</td></tr>
+  <tr><td>CEP</td><td>4</td><td>40</td><td>Pericyte_SMC</td><td>Endothelial cells</td><td>60.0%</td></tr>
+  <tr><td>CEP</td><td>3</td><td>53</td><td>NK_cell</td><td>Tcm/Naive helper T cells</td><td>50.9%</td></tr>
+</table>
 
 <h2 id="de">4. Differential Expression</h2>
 <p>Pseudobulk DE analysis using pyDESeq2. 17 powered comparisons, 128 skipped (underpowered). |log2FC| > 0.5, padj < 0.05.</p>
 
 <table><tr><th>Cell Type</th><th>Comparison</th><th>Up</th><th>Down</th><th>Total</th></tr>
-<tr><td>AF_inner</td><td>mild_vs_severe</td><td>12</td><td>1</td><td>13</td></tr>
-<tr><td>AF_outer</td><td>healthy_vs_degenerated_all</td><td>35</td><td>22</td><td>57</td></tr>
-<tr><td>AF_outer</td><td>healthy_vs_degenerated_mild</td><td>2</td><td>11</td><td>13</td></tr>
-<tr><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>106</td><td>97</td><td>203</td></tr>
-<tr><td>AF_outer</td><td>mild_vs_severe</td><td>82</td><td>51</td><td>133</td></tr>
-<tr><td>Endothelial cells</td><td>healthy_vs_degenerated_all</td><td>26</td><td>13</td><td>39</td></tr>
-<tr><td>Endothelial cells</td><td>healthy_vs_degenerated_severe</td><td>21</td><td>14</td><td>35</td></tr>
-<tr><td>Endothelial cells</td><td>healthy_vs_herniated</td><td>137</td><td>277</td><td>414</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_all</td><td>2</td><td>0</td><td>2</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_mild</td><td>2</td><td>1</td><td>3</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_severe</td><td>43</td><td>3</td><td>46</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_herniated</td><td>1915</td><td>2401</td><td>4316</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>mild_vs_severe</td><td>19</td><td>4</td><td>23</td></tr>
-<tr><td>NP_notochordal</td><td>mild_vs_severe</td><td>3</td><td>2</td><td>5</td></tr>
-<tr><td>NP_stressed_degenerative</td><td>mild_vs_severe</td><td>17</td><td>3</td><td>20</td></tr>
-<tr><td>Tcm/Naive helper T cells</td><td>mild_vs_severe</td><td>2</td><td>1</td><td>3</td></tr>
-<tr><td>Tem/Trm cytotoxic T cells</td><td>mild_vs_severe</td><td>1</td><td>2</td><td>3</td></tr>
+<tr><td>AF_inner</td><td>healthy_vs_degenerated_all</td><td>26</td><td>11</td><td>37</td></tr>
+<tr><td>AF_inner</td><td>healthy_vs_degenerated_severe</td><td>33</td><td>14</td><td>47</td></tr>
+<tr><td>AF_outer</td><td>healthy_vs_degenerated_all</td><td>8</td><td>4</td><td>12</td></tr>
+<tr><td>AF_outer</td><td>healthy_vs_degenerated_mild</td><td>3</td><td>8</td><td>11</td></tr>
+<tr><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>49</td><td>48</td><td>97</td></tr>
+<tr><td>AF_outer</td><td>mild_vs_severe</td><td>27</td><td>13</td><td>40</td></tr>
+<tr><td>B_cell</td><td>mild_vs_severe</td><td>1</td><td>2</td><td>3</td></tr>
+<tr><td>EP_hyaline</td><td>healthy_vs_degenerated_all</td><td>0</td><td>84</td><td>84</td></tr>
+<tr><td>Macrophage</td><td>mild_vs_severe</td><td>0</td><td>5</td><td>5</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_all</td><td>18</td><td>5</td><td>23</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_mild</td><td>0</td><td>1</td><td>1</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_severe</td><td>83</td><td>44</td><td>127</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>mild_vs_severe</td><td>99</td><td>104</td><td>203</td></tr>
+<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_all</td><td>2</td><td>3</td><td>5</td></tr>
+<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_severe</td><td>94</td><td>78</td><td>172</td></tr>
+<tr><td>NP_mature_chondrocyte</td><td>mild_vs_severe</td><td>183</td><td>132</td><td>315</td></tr>
+<tr><td>T_cell</td><td>mild_vs_severe</td><td>35</td><td>13</td><td>48</td></tr>
+<tr><td>unassigned</td><td>mild_vs_severe</td><td>1</td><td>0</td><td>1</td></tr>
 </table>
 
 <div class="finding">
@@ -141,7 +157,7 @@
 <img src="differential/volcano_plots/volcano_AF_outer_healthy_vs_degenerated_severe.png">
 
 <div class="caveat">
-<strong>Caution:</strong> NP_mature_chondrocyte healthy_vs_herniated (4,316 DE genes) is flagged as likely study-confounded. Top genes include ribosomal proteins (RPL17, RPL36A), a batch artifact signature. Excluded from primary interpretation.
+<strong>Note:</strong> Herniated comparisons excluded from this analysis — after GSE233666 removal, only GSE251686 contributes herniated samples, making any healthy_vs_herniated comparison fully confounded with study.
 </div>
 
 
@@ -163,7 +179,7 @@
 
 
 <h2 id="trajectory">7. Cell State Trajectories</h2>
-<p>PAGA + diffusion pseudotime (DPT) on scANVI embeddings. NP: rooted at notochordal cells. AF: rooted at AF_inner.</p>
+<p>PAGA + diffusion pseudotime (DPT) on scVI mesenchymal embeddings. NP: rooted at notochordal cells. AF: rooted at AF_inner. CEP included.</p>
 
 <img src="trajectories/umap_trajectory_NP.png">
 <img src="trajectories/pseudotime_by_condition_NP.png">
@@ -206,7 +222,7 @@
 <h2 id="limitations">10. Limitations</h2>
 <div class="caveat">
 <ul>
-  <li><strong>Cross-study confounding:</strong> Condition and study are partially confounded, especially for herniated samples (only 2 studies). Within-study comparisons where possible.</li>
+  <li><strong>Cross-study confounding:</strong> Condition and study are partially confounded. Herniated comparisons excluded entirely (single-study confound after GSE233666 removal). Within-study comparisons where possible for remaining conditions.</li>
   <li><strong>Underpowered comparisons:</strong> 128/145 cell type x comparison combinations skipped due to insufficient samples. CEP compartment entirely underpowered for DE.</li>
   <li><strong>No RNA velocity:</strong> Spliced/unspliced counts not available in public datasets. Would require reprocessing from BAM files.</li>
   <li><strong>Age-disease confound:</strong> In GSE230809, healthy donors are 21-27y and diseased are 37-73y. Cannot fully separate age from disease effects.</li>
@@ -227,11 +243,11 @@
 <h3>Quality control and preprocessing</h3>
 <p>Per-dataset QC: min 200 genes, max 6000 genes, min 500 counts, max 20% mitochondrial reads. Doublet detection with Scrublet (expected rate 5%). Normalization: total-count to 10,000, log1p. HVG selection: top 2000 genes per dataset using Seurat v3 method.</p>
 
-<h3>Cell type annotation</h3>
-<p>Two-pass annotation: (1) marker-based scoring using 16 IVD-specific gene signatures, (2) CellTypist Immune_All_Low model for immune subtypes. Consensus labels in cell_type_final.</p>
+<h3>Cell classification</h3>
+<p>Coarse binary classification: mesenchymal vs non-mesenchymal using marker gene scoring (immune: PTPRC, CD3D, CD68, PECAM1; mesenchymal: COL2A1, COL1A1, ACAN, SOX9). Cluster-level majority voting to reduce noise. Adaptive expression thresholds to handle normalization artifacts.</p>
 
-<h3>Integration</h3>
-<p>Tiered strategy: non-resident cells (immune, endothelial) integrated with scVI (1 layer, 128 dim). Resident cells: 4 approaches tested (scVI, scANVI, Harmony, BBKNN). scANVI selected as primary (best overall scIB score 0.615, celltype ASW 0.511-0.521).</p>
+<h3>Integration and annotation</h3>
+<p>Four compartment-specific objects (NP, AF, CEP, all-cells) integrated with scVI (n_latent=20, max_epochs=200, batch_key=study). De novo cell type annotation from cluster DE markers and canonical marker panels post-integration. CellTypist Immune_All_Low model used for validation of immune subtypes (flags disagreements but does not override). All-cells object treated as secondary with annotations transferred from compartment-specific objects.</p>
 
 <h3>Differential expression</h3>
 <p>Pseudobulk aggregation per sample per cell type. DE with pyDESeq2 (Python DESeq2 implementation). Significance: |log2FC| > 0.5, adjusted p-value < 0.05 (Benjamini-Hochberg). Minimum 3 samples per condition per cell type.</p>
@@ -243,7 +259,7 @@
 <p>CollecTRI regulon network (42,990 interactions, 1,185 TFs). TF activity scored by Fisher's exact test for enrichment of TF targets among DE genes, with concordance scoring for direction.</p>
 
 <h3>Trajectory analysis</h3>
-<p>PAGA + diffusion pseudotime (DPT) on scANVI embeddings. 50,000 cells per compartment. Root cells: NP notochordal, AF inner. Trajectory genes: Spearman correlation with pseudotime, FDR < 0.05, top 500.</p>
+<p>PAGA + diffusion pseudotime (DPT) on scVI mesenchymal embeddings. 50,000 cells per compartment. Root cells: NP notochordal, AF inner. Trajectory genes: Spearman correlation with pseudotime, FDR < 0.05, top 500.</p>
 
 <h3>Cell-cell communication</h3>
 <p>LIANA rank_aggregate with consensus resource. 5 methods: CellPhoneDB, NATMI, Connectome, SingleCellSignalR, log2FC. 100 permutations. 20,000 cells per condition.</p>

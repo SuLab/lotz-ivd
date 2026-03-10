@@ -1,443 +1,732 @@
 gene	cell_type	comparison	log2FC	padj	baseMean	direction	pain_categories	significant
-ANGPT1	Endothelial cells	healthy_vs_degenerated_all	-1.2996368223510957	0.9999454704999576	9.02340714634463	DOWN	Neovascularization	False
-ANGPT2	Endothelial cells	healthy_vs_degenerated_all	-1.8116617009001896	0.2617099674418552	32.708564672604744	DOWN	Neovascularization	False
-ASIC3	Endothelial cells	healthy_vs_degenerated_all	0.5179601082224061		0.0701858663545572	UP	Nociception_ion_channels	False
-BDKRB2	Endothelial cells	healthy_vs_degenerated_all	0.9502521567728988	0.9999454704999576	12.351099506463198	UP	Inflammatory_pain	False
-BDNF	Endothelial cells	healthy_vs_degenerated_all	-1.274636347432538		0.4119666037122039	DOWN	Neuropeptides; Neurotrophin_signaling	False
-CCL2	Endothelial cells	healthy_vs_degenerated_all	0.3134141879643648	0.9999454704999576	230.3435001893756	UP	Inflammatory_pain	False
-CXCL8	Endothelial cells	healthy_vs_degenerated_all	0.065750293313355	0.9999454704999576	36.71953663715573	UP	Inflammatory_pain	False
-FGF2	Endothelial cells	healthy_vs_degenerated_all	-0.6386200399910188	0.9999454704999576	20.405674004959383	DOWN	Neovascularization	False
-FLT1	Endothelial cells	healthy_vs_degenerated_all	0.2647497321819119	0.9999454704999576	313.5479494236118	UP	Neovascularization	False
-GAL	Endothelial cells	healthy_vs_degenerated_all	0.1257926997749676		0.1851202212349339	UP	Neuropeptides	False
-NGF	Endothelial cells	healthy_vs_degenerated_all	-1.7373077834037918		6.806468127859877	DOWN	Neuropeptides; Neurotrophin_signaling	False
-NGFR	Endothelial cells	healthy_vs_degenerated_all	0.8916790882961543		3.752734433865073	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP1	Endothelial cells	healthy_vs_degenerated_all	-0.1962525185581151	0.9999454704999576	165.14267192540146	DOWN	Nerve_guidance	False
-NRP2	Endothelial cells	healthy_vs_degenerated_all	-0.5560863466127449	0.9999454704999576	84.47272033190511	DOWN	Nerve_guidance	False
-NTN1	Endothelial cells	healthy_vs_degenerated_all	0.3594379094545576		0.9051622031467146	UP	Nerve_guidance	False
-NTN4	Endothelial cells	healthy_vs_degenerated_all	0.3623884353440167	0.9999454704999576	28.60323896135153	UP	Nerve_guidance	False
-NTRK2	Endothelial cells	healthy_vs_degenerated_all	0.4161272824913031	0.9999454704999576	31.849697936866846	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	Endothelial cells	healthy_vs_degenerated_all	-1.551023719044326		6.311674943187667	DOWN	Nociception_ion_channels	False
-P2RX7	Endothelial cells	healthy_vs_degenerated_all	0.2631394635221362		3.4511337781640656	UP	Nociception_ion_channels	False
-PDGFA	Endothelial cells	healthy_vs_degenerated_all	-0.6445074155147691	0.9999454704999576	72.25924437855414	DOWN	Neovascularization	False
-PLA2G2A	Endothelial cells	healthy_vs_degenerated_all	-0.5938988829071172	0.9999454704999576	47.08676558753243	DOWN	Inflammatory_pain	False
-PTGES	Endothelial cells	healthy_vs_degenerated_all	0.0500159518308857		0.4478924570835615	UP	Inflammatory_pain	False
-PTGS2	Endothelial cells	healthy_vs_degenerated_all	0.8192079030176991	0.9999454704999576	28.45546637509205	UP	Inflammatory_pain	False
-ROBO1	Endothelial cells	healthy_vs_degenerated_all	0.5887589598145369	0.9999454704999576	12.05004518751556	UP	Nerve_guidance	False
-ROBO2	Endothelial cells	healthy_vs_degenerated_all	0.0006090834581864		0.0749238513297354	UP	Nerve_guidance	False
-SEMA3A	Endothelial cells	healthy_vs_degenerated_all	-0.029682734216993		1.3659315426355054	DOWN	Nerve_guidance	False
-SEMA3E	Endothelial cells	healthy_vs_degenerated_all	-0.9180228560328194		5.917053616066302	DOWN	Nerve_guidance	False
-SLIT3	Endothelial cells	healthy_vs_degenerated_all	1.0593119924134966	0.9999454704999576	40.8667210640154	UP	Nerve_guidance	False
-TNF	Endothelial cells	healthy_vs_degenerated_all	-0.9227571759531402		1.1436896091101894	DOWN	Inflammatory_pain	False
-TRPV1	Endothelial cells	healthy_vs_degenerated_all	0.3071684166788409		1.9799856977823311	UP	Nociception_ion_channels	False
-TRPV4	Endothelial cells	healthy_vs_degenerated_all	-1.234934705035508		3.152603923108678	DOWN	Nociception_ion_channels	False
-UNC5B	Endothelial cells	healthy_vs_degenerated_all	-0.0711987494840198	0.9999454704999576	22.88409580530545	DOWN	Nerve_guidance	False
-VEGFA	Endothelial cells	healthy_vs_degenerated_all	-1.2040547849750407	0.9999454704999576	48.05531207199399	DOWN	Neovascularization	False
-VEGFB	Endothelial cells	healthy_vs_degenerated_all	-0.6411440388012577	0.9999454704999576	26.40280536520129	DOWN	Neovascularization	False
-ANGPT1	Endothelial cells	healthy_vs_degenerated_severe	-1.0495036773169295	0.9993682380772286	14.023517055867748	DOWN	Neovascularization	False
-ANGPT2	Endothelial cells	healthy_vs_degenerated_severe	-1.9929061825271	0.3460307448929701	44.75804564545658	DOWN	Neovascularization	False
-ASIC3	Endothelial cells	healthy_vs_degenerated_severe	0.1991911361923891		0.1093082484719961	UP	Nociception_ion_channels	False
-BDKRB2	Endothelial cells	healthy_vs_degenerated_severe	1.1491982515686667	0.9993682380772286	17.94026236997103	UP	Inflammatory_pain	False
-BDNF	Endothelial cells	healthy_vs_degenerated_severe	-1.6550190434805123		0.6408583038670338	DOWN	Neuropeptides; Neurotrophin_signaling	False
-CCL2	Endothelial cells	healthy_vs_degenerated_severe	0.7091199532042556	0.9993682380772286	353.24012551777884	UP	Inflammatory_pain	False
-CXCL8	Endothelial cells	healthy_vs_degenerated_severe	0.4288768225064731	0.9993682380772286	55.61333619325743	UP	Inflammatory_pain	False
-FGF2	Endothelial cells	healthy_vs_degenerated_severe	-1.2764503416375537	0.9993682380772286	22.11766847954293	DOWN	Neovascularization	False
-FLT1	Endothelial cells	healthy_vs_degenerated_severe	0.2353404335344733	0.9993682380772286	406.2432743263452	UP	Neovascularization	False
-GAL	Endothelial cells	healthy_vs_degenerated_severe	-0.0775042595004332		0.287972130729074	DOWN	Neuropeptides	False
-NGF	Endothelial cells	healthy_vs_degenerated_severe	-1.837242077012985		9.374824267619337	DOWN	Neuropeptides; Neurotrophin_signaling	False
-NGFR	Endothelial cells	healthy_vs_degenerated_severe	-0.1808610101003681		2.256896534174451	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP1	Endothelial cells	healthy_vs_degenerated_severe	-0.3081114598276501	0.9993682380772286	212.9210799266094	DOWN	Nerve_guidance	False
-NRP2	Endothelial cells	healthy_vs_degenerated_severe	-0.3529777457492521	0.9993682380772286	123.58151781521292	DOWN	Nerve_guidance	False
-NTN1	Endothelial cells	healthy_vs_degenerated_severe	0.5561937346219028		1.4107642771269395	UP	Nerve_guidance	False
-NTN4	Endothelial cells	healthy_vs_degenerated_severe	0.3760228450678224	0.9993682380772286	37.30981870021952	UP	Nerve_guidance	False
-NTRK2	Endothelial cells	healthy_vs_degenerated_severe	0.0798439118734501	0.9993682380772286	35.19435111902897	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	Endothelial cells	healthy_vs_degenerated_severe	-1.7250965592611245		8.57456210969297	DOWN	Nociception_ion_channels	False
-P2RX7	Endothelial cells	healthy_vs_degenerated_severe	-0.2343668045148076		2.98283633850755	DOWN	Nociception_ion_channels	False
-PDGFA	Endothelial cells	healthy_vs_degenerated_severe	-0.5951457329433104	0.9993682380772286	100.20160356977247	DOWN	Neovascularization	False
-PLA2G2A	Endothelial cells	healthy_vs_degenerated_severe	-0.1882461240463358	0.9993682380772286	73.29653791337772	DOWN	Inflammatory_pain	False
-PTGES	Endothelial cells	healthy_vs_degenerated_severe	0.0399828894606272		0.6971757852821608	UP	Inflammatory_pain	False
-PTGS2	Endothelial cells	healthy_vs_degenerated_severe	1.0290989231233143	0.9993682380772286	40.69362881186023	UP	Inflammatory_pain	False
-ROBO1	Endothelial cells	healthy_vs_degenerated_severe	-0.1218985907339101	0.9993682380772286	10.356159238799629	DOWN	Nerve_guidance	False
-ROBO2	Endothelial cells	healthy_vs_degenerated_severe	-0.4626076579327547		0.1163001459704564	DOWN	Nerve_guidance	False
-SEMA3A	Endothelial cells	healthy_vs_degenerated_severe	0.1520346804882117		2.1223971827663943	UP	Nerve_guidance	False
-SEMA3E	Endothelial cells	healthy_vs_degenerated_severe	-0.9554574449415254		8.014886367264479	DOWN	Nerve_guidance	False
-SLIT3	Endothelial cells	healthy_vs_degenerated_severe	0.0491705504254602	0.9993682380772286	32.52087792606491	UP	Nerve_guidance	False
-TNF	Endothelial cells	healthy_vs_degenerated_severe	-0.9163281965442728		1.7618929587896983	DOWN	Inflammatory_pain	False
-TRPV1	Endothelial cells	healthy_vs_degenerated_severe	0.5317534984314461		3.0749711853889727	UP	Nociception_ion_channels	False
-TRPV4	Endothelial cells	healthy_vs_degenerated_severe	-1.0446555422987147		4.896506803442761	DOWN	Nociception_ion_channels	False
-UNC5B	Endothelial cells	healthy_vs_degenerated_severe	0.0967025713725314	0.9993682380772286	33.06611802681794	UP	Nerve_guidance	False
-VEGFA	Endothelial cells	healthy_vs_degenerated_severe	-1.2106531816704424	0.9993682380772286	67.25563932484856	DOWN	Neovascularization	False
-VEGFB	Endothelial cells	healthy_vs_degenerated_severe	-0.4218397695614411	0.9993682380772286	39.77917532995523	DOWN	Neovascularization	False
-ANGPT1	Tcm/Naive helper T cells	mild_vs_severe	1.2119447399980978	0.9991246290801534	0.1613299388693621	UP	Neovascularization	False
-ASIC3	Tcm/Naive helper T cells	mild_vs_severe	1.211944739998098	0.9991246290801534	0.1343347051848965	UP	Nociception_ion_channels	False
-BDKRB2	Tcm/Naive helper T cells	mild_vs_severe	1.2119447399980978	0.9991246290801534	0.1613299388693621	UP	Inflammatory_pain	False
-CCL2	Tcm/Naive helper T cells	mild_vs_severe	1.2119447399980978	0.9991246290801534	0.1613299388693621	UP	Inflammatory_pain	False
-CXCL8	Tcm/Naive helper T cells	mild_vs_severe	-1.6316214031331795	0.9991246290801534	40.82381381607495	DOWN	Inflammatory_pain	False
-FGF2	Tcm/Naive helper T cells	mild_vs_severe	2.9906442359230025	0.9991246290801534	1.4775857591314143	UP	Neovascularization	False
-FLT1	Tcm/Naive helper T cells	mild_vs_severe	1.0987807524629971	0.9991246290801534	2.1856664133499977	UP	Neovascularization	False
-NGFR	Tcm/Naive helper T cells	mild_vs_severe	0.6666163171518021	0.9991246290801534	1.5413816525226782	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	Tcm/Naive helper T cells	mild_vs_severe	1.848780254004352	0.9991246290801534	0.2617847892170629	UP	Nerve_guidance	False
-NTN4	Tcm/Naive helper T cells	mild_vs_severe	-2.4031908986153847	0.9991246290801534	0.914072370946996	DOWN	Nerve_guidance	False
-NTRK2	Tcm/Naive helper T cells	mild_vs_severe	-1.353292814142297	0.9991246290801534	1.0069350362810303	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	Tcm/Naive helper T cells	mild_vs_severe	-0.913383716207508	0.9991246290801534	0.8370463015329831	DOWN	Nociception_ion_channels	False
-P2RX7	Tcm/Naive helper T cells	mild_vs_severe	-0.073101293021739	0.9991246290801534	1.6949449750645158	DOWN	Nociception_ion_channels	False
-PDGFA	Tcm/Naive helper T cells	mild_vs_severe	-2.3951522191690717	0.9991246290801534	0.4449136822752946	DOWN	Neovascularization	False
-PLA2G2A	Tcm/Naive helper T cells	mild_vs_severe	3.2655031436763804	0.9991246290801534	1.5585506196945629	UP	Inflammatory_pain	False
-PTGES	Tcm/Naive helper T cells	mild_vs_severe	-0.2018524046546395	0.9991246290801534	0.261452900120695	DOWN	Inflammatory_pain	False
-PTGS2	Tcm/Naive helper T cells	mild_vs_severe	-0.7212920532705739	0.9991246290801534	6.236065695279225	DOWN	Inflammatory_pain	False
-ROBO1	Tcm/Naive helper T cells	mild_vs_severe	1.9341561410860024	0.9991246290801534	0.3616950749968578	UP	Nerve_guidance	False
-SEMA3A	Tcm/Naive helper T cells	mild_vs_severe	2.711537250165406	0.9991246290801534	0.530454199586856	UP	Nerve_guidance	False
-TNF	Tcm/Naive helper T cells	mild_vs_severe	-1.814382696665676	0.9991246290801534	3.5884139264484096	DOWN	Inflammatory_pain	False
-TRPV1	Tcm/Naive helper T cells	mild_vs_severe	2.7184663616165072	0.9991246290801534	0.537338820739586	UP	Nociception_ion_channels	False
-UNC5B	Tcm/Naive helper T cells	mild_vs_severe	0.3192508518179085	0.9991246290801534	0.2248890363372613	UP	Nerve_guidance	False
-VEGFA	Tcm/Naive helper T cells	mild_vs_severe	1.342650698411996	0.9991246290801534	3.378557249822645	UP	Neovascularization	False
-VEGFB	Tcm/Naive helper T cells	mild_vs_severe	0.0080628105338223	0.9991246290801534	6.087573885153485	UP	Neovascularization	False
-ANGPT1	Tem/Trm cytotoxic T cells	mild_vs_severe	0.241059190903669	0.9999750783736896	0.0746076530638674	UP	Neovascularization	False
-ANGPT2	Tem/Trm cytotoxic T cells	mild_vs_severe	-0.1523444369400819	0.9999750783736896	0.8643344066653685	DOWN	Neovascularization	False
-CCL2	Tem/Trm cytotoxic T cells	mild_vs_severe	3.1872533759976767	0.9999750783736896	0.7526061060846571	UP	Inflammatory_pain	False
-CXCL8	Tem/Trm cytotoxic T cells	mild_vs_severe	0.4789021764703957	0.9999750783736896	22.954688581696683	UP	Inflammatory_pain	False
-FGF2	Tem/Trm cytotoxic T cells	mild_vs_severe	2.879922321560521	0.9999750783736896	0.8894060875984958	UP	Neovascularization	False
-FLT1	Tem/Trm cytotoxic T cells	mild_vs_severe	-1.9381294906300368	0.9999750783736896	0.5859534451786292	DOWN	Neovascularization	False
-NGFR	Tem/Trm cytotoxic T cells	mild_vs_severe	-0.7744288851188494	0.9999750783736896	4.163036089975103	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	Tem/Trm cytotoxic T cells	mild_vs_severe	1.962899711199555	0.9999750783736896	0.2267046607695468	UP	Nerve_guidance	False
-P2RX4	Tem/Trm cytotoxic T cells	mild_vs_severe	-1.0469479677996574	0.9999750783736896	0.7916657730755281	DOWN	Nociception_ion_channels	False
-P2RX7	Tem/Trm cytotoxic T cells	mild_vs_severe	1.5634175928429948	0.9999750783736896	1.6585366914988957	UP	Nociception_ion_channels	False
-PDGFA	Tem/Trm cytotoxic T cells	mild_vs_severe	3.273665383197394	0.9999750783736896	2.997070471127875	UP	Neovascularization	False
-PLA2G2A	Tem/Trm cytotoxic T cells	mild_vs_severe	2.0329328790947168	0.9999750783736896	2.013701102004733	UP	Inflammatory_pain	False
-PTGES	Tem/Trm cytotoxic T cells	mild_vs_severe	0.241059190903669	0.9999750783736896	0.0746076530638674	UP	Inflammatory_pain	False
-PTGS2	Tem/Trm cytotoxic T cells	mild_vs_severe	0.4657959160626368	0.9999750783736896	3.285967920985562	UP	Inflammatory_pain	False
-ROBO2	Tem/Trm cytotoxic T cells	mild_vs_severe	0.2799480404339489	0.9999750783736896	0.0551289726494704	UP	Nerve_guidance	False
-SEMA3A	Tem/Trm cytotoxic T cells	mild_vs_severe	2.9600884932978144	0.9999750783736896	0.4534093215390937	UP	Nerve_guidance	False
-SLIT3	Tem/Trm cytotoxic T cells	mild_vs_severe	0.241059190903669	0.9999750783736896	0.0746076530638674	UP	Nerve_guidance	False
-TNF	Tem/Trm cytotoxic T cells	mild_vs_severe	-0.377085841127749	0.9999750783736896	25.58440803795065	DOWN	Inflammatory_pain	False
-TRPV1	Tem/Trm cytotoxic T cells	mild_vs_severe	-1.3722995067649313	0.9999750783736896	0.4518647626055762	DOWN	Nociception_ion_channels	False
-UNC5B	Tem/Trm cytotoxic T cells	mild_vs_severe	-0.9472927326265592	0.9999750783736896	0.3005400343666555	DOWN	Nerve_guidance	False
-VEGFA	Tem/Trm cytotoxic T cells	mild_vs_severe	-0.977992696934797	0.9999750783736896	3.0543079392453154	DOWN	Neovascularization	False
-VEGFB	Tem/Trm cytotoxic T cells	mild_vs_severe	0.8963668987249863	0.9999750783736896	4.801860557206685	UP	Neovascularization	False
-ANGPT1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.5056554058127283	0.9992875552976604	71.06116582632696	UP	Neovascularization	False
-ANGPT2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.3070705405346511	0.9992875552976604	68.6478875395899	UP	Neovascularization	False
-BDKRB2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.7187123348930532	0.9992875552976604	35.58873830183389	UP	Inflammatory_pain	False
-CCL2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.8216322636982639	0.9992875552976604	314.6024189164832	UP	Inflammatory_pain	False
-CXCL8	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.4350187638331034	0.9992875552976604	667.3436890914588	DOWN	Inflammatory_pain	False
-FGF2	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.197213370905704	0.9992875552976604	4415.711967043978	DOWN	Neovascularization	False
-FLT1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.2442265822994624	0.9992875552976604	849.0034717852237	UP	Neovascularization	False
-GAL	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.6739245782042955	0.9992875552976604	17.68967640770415	UP	Neuropeptides	False
-NGF	NP_mature_chondrocyte	healthy_vs_degenerated_all	1.14774014912682	0.9992875552976604	801.2475388874228	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.000635738052043	0.9998983994996536	38.841833784959405	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.5182199405557186	0.9992875552976604	2861.176182355844	UP	Nerve_guidance	False
-NTN1	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.2073906369282311	0.9992875552976604	93.28989039962796	DOWN	Nerve_guidance	False
-NTN4	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.1792801261067692	0.9992875552976604	130.16206652836286	DOWN	Nerve_guidance	False
-NTRK2	NP_mature_chondrocyte	healthy_vs_degenerated_all	-1.2001480079066045	0.9992875552976604	606.178613198962	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.0967272541098833	0.9992875552976604	133.41532563592335	DOWN	Nociception_ion_channels	False
-P2RX7	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.6438694677729541	0.9992875552976604	13.38475093748804	DOWN	Nociception_ion_channels	False
-PDGFA	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.9658103324306508	0.9992875552976604	488.8207267679836	UP	Neovascularization	False
-PLA2G2A	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.2654707742380222	0.9992875552976604	11562.186421052498	DOWN	Inflammatory_pain	False
-PTGES	NP_mature_chondrocyte	healthy_vs_degenerated_all	3.01672574800338	0.9992875552976604	879.115868932666	UP	Inflammatory_pain	False
-PTGS2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.7618022066070057	0.9992875552976604	6530.100094229169	UP	Inflammatory_pain	False
-ROBO1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.4901633586884518	0.9992875552976604	177.59646686517289	UP	Nerve_guidance	False
-ROBO2	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.2027863160576061	0.9992875552976604	66.05619646586307	DOWN	Nerve_guidance	False
-SEMA3A	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.2093043498798441	0.9992875552976604	1431.801254744387	UP	Nerve_guidance	False
-SEMA3E	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.9444440621899406	0.9992875552976604	1051.0444452421225	DOWN	Nerve_guidance	False
-SLIT3	NP_mature_chondrocyte	healthy_vs_degenerated_all	1.4266647562183854	0.9992875552976604	28.51749606455614	UP	Nerve_guidance	False
-TNF	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.1657869336803269	0.9992875552976604	34.46405811695439	UP	Inflammatory_pain	False
-TRPV1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.2795253289527725	0.9992875552976604	36.83139300955143	UP	Nociception_ion_channels	False
-TRPV4	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.3568394151789089	0.9992875552976604	1253.4737974692218	UP	Nociception_ion_channels	False
-UNC5B	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.2251706129988041	0.9992875552976604	436.2696910788074	UP	Nerve_guidance	False
-VEGFA	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.611784662099437	0.9992875552976604	5023.190535026667	UP	Neovascularization	False
-VEGFB	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.499098184990052	0.9992875552976604	910.8378622229382	DOWN	Neovascularization	False
-ANGPT1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.7842999585602665	0.99993150944305	144.17138647864107	UP	Neovascularization	False
-ANGPT2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.08399465226415	0.99993150944305	123.34735266018372	DOWN	Neovascularization	False
-BDKRB2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.9329332558243276	0.99993150944305	63.06395030682548	UP	Inflammatory_pain	False
-CCL2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.7398671159551539	0.99993150944305	612.9795740656101	UP	Inflammatory_pain	False
-CXCL8	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-1.1630725926342615	0.99993150944305	667.6733648699544	DOWN	Inflammatory_pain	False
-FGF2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.3888032420757949	0.99993150944305	6396.376329735816	DOWN	Neovascularization	False
-FLT1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.0677730670353612	0.99993150944305	1080.6971098242968	UP	Neovascularization	False
-GAL	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.6231838194092356	0.99993150944305	24.26549795399477	DOWN	Neuropeptides	False
-NGF	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.4136231535909319	0.99993150944305	710.0582069753699	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.0148713487629099	0.99993150944305	65.13603570361566	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.4791031880038737	0.99993150944305	4048.706096930615	UP	Nerve_guidance	False
-NTN1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.131768292889049	0.99993150944305	117.11797269945608	DOWN	Nerve_guidance	False
-NTN4	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.241268613365563	0.99993150944305	194.5177691930217	DOWN	Nerve_guidance	False
-NTRK2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-1.4197296593492483	0.99993150944305	1031.7857115440809	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.063050621853849	0.99993150944305	246.3007202263105	DOWN	Nociception_ion_channels	False
-P2RX7	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.2362705258444793	0.99993150944305	26.77298173725001	DOWN	Nociception_ion_channels	False
-PDGFA	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.62615567802602	0.99993150944305	662.8455253909273	UP	Neovascularization	False
-PLA2G2A	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-2.371990367289501	0.99993150944305	14977.980076127422	DOWN	Inflammatory_pain	False
-PTGES	NP_mature_chondrocyte	healthy_vs_degenerated_mild	1.9593969261035848	0.99993150944305	262.2239821106224	UP	Inflammatory_pain	False
-PTGS2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.2702969029665613	0.99993150944305	5837.167690150741	UP	Inflammatory_pain	False
-ROBO1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.4734815220605663	0.99993150944305	256.1208143758101	UP	Nerve_guidance	False
-ROBO2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.1837443691127683	0.99993150944305	122.04392244737974	DOWN	Nerve_guidance	False
-SEMA3A	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.1529758309855567	0.99993150944305	1693.3277463026484	UP	Nerve_guidance	False
-SEMA3E	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.6949663251425701	0.99993150944305	1934.127254245206	DOWN	Nerve_guidance	False
-SLIT3	NP_mature_chondrocyte	healthy_vs_degenerated_mild	1.4626003555421023	0.99993150944305	54.13453192837933	UP	Nerve_guidance	False
-TNF	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.9729720963930096	0.99993150944305	36.25289104309047	DOWN	Inflammatory_pain	False
-TRPV1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.0762617865223831	0.99993150944305	53.85405899949925	UP	Nociception_ion_channels	False
-TRPV4	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.2534155666066517	0.99993150944305	1368.406770316052	UP	Nociception_ion_channels	False
-UNC5B	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.3445777967735692	0.99993150944305	629.3037359039744	UP	Nerve_guidance	False
-VEGFA	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.0799546471037315	0.99993150944305	5255.133683001755	UP	Neovascularization	False
-VEGFB	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.8132437852056073	0.99993150944305	1494.4669781455052	DOWN	Neovascularization	False
-ANGPT1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.0435368682102043	0.9999637507915828	79.9565443524856	DOWN	Neovascularization	False
-ANGPT2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.7842345358723364	0.9999637507915828	96.13968214557056	UP	Neovascularization	False
-BDKRB2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.3161157390781342	0.9999637507915828	36.88822668909224	UP	Inflammatory_pain	False
-CCL2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.9610184600607372	0.9999637507915828	422.6174309941022	UP	Inflammatory_pain	False
-CXCL8	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.2475855449566764	0.9999637507915828	791.6755875012358	UP	Inflammatory_pain	False
-FGF2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.0647788882647446	0.9999637507915828	4257.8681793614605	UP	Neovascularization	False
-FLT1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.4943077575939539	0.9999637507915828	772.7927418106732	UP	Neovascularization	False
-GAL	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.7130014766018884	0.9999637507915828	22.30326283612944	UP	Neuropeptides	False
-NGF	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.837214316249853	0.9999637507915828	608.2885907468186	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.0386465277433487	0.9999637507915828	43.75141443775024	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.5970605753669089	0.9999637507915828	2695.8820799401205	UP	Nerve_guidance	False
-NTN1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.3162051516237044	0.9999637507915828	75.96621503649406	DOWN	Nerve_guidance	False
-NTN4	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.0719109262200104	0.9999637507915828	130.63180086193543	DOWN	Nerve_guidance	False
-NTRK2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.8999284912314695	0.9999637507915828	649.103275492556	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.1271536167946629	0.9999637507915828	160.29210128063585	DOWN	Nociception_ion_channels	False
-P2RX7	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-1.7652440088186032	0.9999637507915828	13.938623707981863	DOWN	Nociception_ion_channels	False
-PDGFA	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.3781851219205952	0.9999637507915828	506.7329706329953	UP	Neovascularization	False
-PLA2G2A	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.8423417280081383	0.9999637507915828	13198.096975344388	UP	Inflammatory_pain	False
-PTGES	NP_mature_chondrocyte	healthy_vs_degenerated_severe	3.8579066369906143	0.0583187152501981	291.9098318662428	UP	Inflammatory_pain	False
-PTGS2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.296163820246488	0.9999637507915828	5825.358731416704	UP	Inflammatory_pain	False
-ROBO1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.5397356359018686	0.9999637507915828	167.15479744624275	UP	Nerve_guidance	False
-ROBO2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.2252363447668734	0.9999637507915828	90.51959518191892	DOWN	Nerve_guidance	False
-SEMA3A	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.3115744860797092	0.9999637507915828	980.5884588176864	UP	Nerve_guidance	False
-SEMA3E	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-1.4088629164747093	0.4463151013268567	1081.5939891014405	DOWN	Nerve_guidance	False
-SLIT3	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.376812705201936	0.9999637507915828	37.25854671813138	UP	Nerve_guidance	False
-TNF	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.0581971492264977	0.9999637507915828	46.38252621584012	UP	Inflammatory_pain	False
-TRPV1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.6035234341282966	0.9999637507915828	42.32170719453448	UP	Nociception_ion_channels	False
-TRPV4	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.5213775210951209	0.9999637507915828	888.1748379687273	UP	Nociception_ion_channels	False
-UNC5B	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.0488039252432695	0.9999637507915828	404.70305682684415	UP	Nerve_guidance	False
-VEGFA	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.172955373986443	0.9999637507915828	4168.202143590485	UP	Neovascularization	False
-VEGFB	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.1114490403201188	0.9999637507915828	1156.5398948685922	DOWN	Neovascularization	False
-ANGPT1	NP_mature_chondrocyte	mild_vs_severe	-1.0779348583831017	0.7086722617775268	49.55425435625603	DOWN	Neovascularization	False
-ANGPT2	NP_mature_chondrocyte	mild_vs_severe	0.8381760299505217	0.9252318962907076	36.03070637712106	UP	Neovascularization	False
-BDKRB2	NP_mature_chondrocyte	mild_vs_severe	-0.8607169296780061	0.9991568711835386	24.691753076139708	DOWN	Inflammatory_pain	False
-CCL2	NP_mature_chondrocyte	mild_vs_severe	-0.1510210787749057	0.9991568711835386	181.00518081403655	DOWN	Inflammatory_pain	False
-CXCL8	NP_mature_chondrocyte	mild_vs_severe	1.971735547686282	0.9189166743153658	831.9401910105438	UP	Inflammatory_pain	False
-FGF2	NP_mature_chondrocyte	mild_vs_severe	0.2147705149099443	0.9991568711835386	3190.828170529476	UP	Neovascularization	False
-FLT1	NP_mature_chondrocyte	mild_vs_severe	0.5624674756584437	0.8566438109874512	996.7636248185278	UP	Neovascularization	False
-GAL	NP_mature_chondrocyte	mild_vs_severe	2.112544134961964	0.1841795797225135	12.731079986383453	UP	Neuropeptides	False
-NGF	NP_mature_chondrocyte	mild_vs_severe	0.7981542155084387	0.9991568711835386	898.6599868516183	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	NP_mature_chondrocyte	mild_vs_severe	-0.0973866193446197	0.9991568711835386	15.319623939555497	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	NP_mature_chondrocyte	mild_vs_severe	0.2216281035302302	0.9991568711835386	2652.7525203885134	UP	Nerve_guidance	False
-NTN1	NP_mature_chondrocyte	mild_vs_severe	0.1195134413566279	0.9991568711835386	73.13074205151469	UP	Nerve_guidance	False
-NTN4	NP_mature_chondrocyte	mild_vs_severe	0.0317874752581432	0.9991568711835386	78.73807356169027	UP	Nerve_guidance	False
-NTRK2	NP_mature_chondrocyte	mild_vs_severe	0.2995755077935649	0.9991568711835386	609.0510219428503	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	NP_mature_chondrocyte	mild_vs_severe	-0.1699119276316049	0.9991568711835386	90.7968895236924	DOWN	Nociception_ion_channels	False
-P2RX7	NP_mature_chondrocyte	mild_vs_severe	-1.558170809058088	0.8723325957399637	9.134745531847718	DOWN	Nociception_ion_channels	False
-PDGFA	NP_mature_chondrocyte	mild_vs_severe	0.7028875063482107	0.950619242803714	361.2239056779913	UP	Neovascularization	False
-PLA2G2A	NP_mature_chondrocyte	mild_vs_severe	2.155355964716994	0.6425323289312993	11622.22481407826	UP	Inflammatory_pain	False
-PTGES	NP_mature_chondrocyte	mild_vs_severe	1.0659762233660894	0.9991568711835386	321.08326108933124	UP	Inflammatory_pain	False
-PTGS2	NP_mature_chondrocyte	mild_vs_severe	1.2365216175050389	0.6257618800576831	7880.154664353039	UP	Inflammatory_pain	False
-ROBO1	NP_mature_chondrocyte	mild_vs_severe	0.2217613991753371	0.9991568711835386	192.56011328163012	UP	Nerve_guidance	False
-ROBO2	NP_mature_chondrocyte	mild_vs_severe	0.2545811540027981	0.9991568711835386	38.24854516813805	UP	Nerve_guidance	False
-SEMA3A	NP_mature_chondrocyte	mild_vs_severe	0.0179203443343285	0.9991568711835386	1438.2474180995646	UP	Nerve_guidance	False
-SEMA3E	NP_mature_chondrocyte	mild_vs_severe	-0.7763593307978335	0.6111386702894863	875.6851720357415	DOWN	Nerve_guidance	False
-SLIT3	NP_mature_chondrocyte	mild_vs_severe	-0.0759973617263123	0.9991568711835386	15.71563902195733	DOWN	Nerve_guidance	False
-TNF	NP_mature_chondrocyte	mild_vs_severe	2.447664953725071	0.0428921152089998	34.66588024232753	UP	Inflammatory_pain	True
-TRPV1	NP_mature_chondrocyte	mild_vs_severe	0.5924884425169606	0.9883265831906654	26.840199149841887	UP	Nociception_ion_channels	False
-TRPV4	NP_mature_chondrocyte	mild_vs_severe	-0.1205931040329186	0.9991568711835386	867.3830493978954	DOWN	Nociception_ion_channels	False
-UNC5B	NP_mature_chondrocyte	mild_vs_severe	-0.1530010704184005	0.9991568711835386	307.5898085671024	DOWN	Nerve_guidance	False
-VEGFA	NP_mature_chondrocyte	mild_vs_severe	0.7472680832134522	0.9792117302171768	4127.427394197328	UP	Neovascularization	False
-VEGFB	NP_mature_chondrocyte	mild_vs_severe	0.4507847067050764	0.987659477757459	464.1889670489306	UP	Neovascularization	False
-ANGPT1	NP_stressed_degenerative	mild_vs_severe	-1.049503695227927	0.7818543670470555	15.62452021599327	DOWN	Neovascularization	False
-ANGPT2	NP_stressed_degenerative	mild_vs_severe	0.2972554710677877		1.345734217924176	UP	Neovascularization	False
-BDKRB2	NP_stressed_degenerative	mild_vs_severe	-0.267724453537572		0.2312824181594058	DOWN	Inflammatory_pain	False
-CCL2	NP_stressed_degenerative	mild_vs_severe	2.6747327871557816	0.1614930581998029	300.521109412833	UP	Inflammatory_pain	False
-CXCL8	NP_stressed_degenerative	mild_vs_severe	0.5330292413230631	0.9199551783178218	44199.74975440579	UP	Inflammatory_pain	False
-FGF2	NP_stressed_degenerative	mild_vs_severe	1.2475584252147844		5.374093391336	UP	Neovascularization	False
-FLT1	NP_stressed_degenerative	mild_vs_severe	1.3092300491647535	0.2771107012307804	89.24188515645629	UP	Neovascularization	False
-NGF	NP_stressed_degenerative	mild_vs_severe	1.1582524607880949		1.2943969696538236	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	NP_stressed_degenerative	mild_vs_severe	-1.6575954115130458		0.3742690600946698	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	NP_stressed_degenerative	mild_vs_severe	2.732816196452073	0.0955015329988885	105.70627270084492	UP	Nerve_guidance	False
-NTN1	NP_stressed_degenerative	mild_vs_severe	1.6602442896866807		0.482097191586636	UP	Nerve_guidance	False
-NTN4	NP_stressed_degenerative	mild_vs_severe	1.865384796586434		0.4529767672088177	UP	Nerve_guidance	False
-NTRK2	NP_stressed_degenerative	mild_vs_severe	3.107351251642477		1.3049719749923074	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	NP_stressed_degenerative	mild_vs_severe	0.6055120623131993	0.9436412991514022	22.274139602205867	UP	Nociception_ion_channels	False
-P2RX7	NP_stressed_degenerative	mild_vs_severe	0.8188331545080443	0.6715266473955716	28.75839744721408	UP	Nociception_ion_channels	False
-PDGFA	NP_stressed_degenerative	mild_vs_severe	-0.2473271980368933		6.6926948511809545	DOWN	Neovascularization	False
-PLA2G2A	NP_stressed_degenerative	mild_vs_severe	1.8192261019352736	0.6113223969911646	28.07949994261146	UP	Inflammatory_pain	False
-PTGES	NP_stressed_degenerative	mild_vs_severe	0.906955828485792	0.714178627479904	34.77375743391566	UP	Inflammatory_pain	False
-PTGS2	NP_stressed_degenerative	mild_vs_severe	0.5529321702162283	0.8603920894561461	3278.72718810228	UP	Inflammatory_pain	False
-ROBO1	NP_stressed_degenerative	mild_vs_severe	1.0480360595263425		2.6528574925770143	UP	Nerve_guidance	False
-SEMA3A	NP_stressed_degenerative	mild_vs_severe	2.8106868637665228		2.4409459082576053	UP	Nerve_guidance	False
-SEMA3E	NP_stressed_degenerative	mild_vs_severe	2.332514456725491		2.3830357329997645	UP	Nerve_guidance	False
-SLIT3	NP_stressed_degenerative	mild_vs_severe	-2.0972768945331124		2.061456375967902	DOWN	Nerve_guidance	False
-TNF	NP_stressed_degenerative	mild_vs_severe	2.645879285713154	9.281041151032286e-07	1014.8565173872156	UP	Inflammatory_pain	True
-TRPV1	NP_stressed_degenerative	mild_vs_severe	0.0536050265209283		0.7885928818329128	UP	Nociception_ion_channels	False
-TRPV4	NP_stressed_degenerative	mild_vs_severe	-0.6241171230166999		4.91146798496484	DOWN	Nociception_ion_channels	False
-UNC5B	NP_stressed_degenerative	mild_vs_severe	0.2974479980513114		7.216238023869395	UP	Nerve_guidance	False
-VEGFA	NP_stressed_degenerative	mild_vs_severe	1.021444818220024	0.4046755060164887	506.44267095158153	UP	Neovascularization	False
-VEGFB	NP_stressed_degenerative	mild_vs_severe	0.0079846025338156	0.9996861306029614	23.410783381478623	UP	Neovascularization	False
-ANGPT1	NP_notochordal	mild_vs_severe	-0.9203607004796084	0.9709954380209856	1.2843206880681028	DOWN	Neovascularization	False
-ANGPT2	NP_notochordal	mild_vs_severe	0.1110877599784081	0.9900227052967392	7.041866855648275	UP	Neovascularization	False
-BDKRB2	NP_notochordal	mild_vs_severe	1.032664244077517	0.988131330970032	0.0193677358187426	UP	Inflammatory_pain	False
-CCL2	NP_notochordal	mild_vs_severe	2.2009849639444994	0.9735623750812858	0.2384748188298028	UP	Inflammatory_pain	False
-CXCL8	NP_notochordal	mild_vs_severe	0.2195829887071283	0.988131330970032	1288.597539762954	UP	Inflammatory_pain	False
-FGF2	NP_notochordal	mild_vs_severe	0.8314600337224688	0.9196046020242932	10.075625001497766	UP	Neovascularization	False
-FLT1	NP_notochordal	mild_vs_severe	0.260279699829145	0.9900227052967392	2.055180495929417	UP	Neovascularization	False
-GAL	NP_notochordal	mild_vs_severe	-1.880906394825708	0.942600991368738	4.00345924915622	DOWN	Neuropeptides	False
-NGF	NP_notochordal	mild_vs_severe	1.361946340205722	0.970119075304877	1.5469723207587591	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	NP_notochordal	mild_vs_severe	0.5499196501503455	0.9900227052967392	0.2365798938946003	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	NP_notochordal	mild_vs_severe	2.69825254864602	0.6247216147718107	3.3005184975098363	UP	Nerve_guidance	False
-NTN1	NP_notochordal	mild_vs_severe	-0.9023967845884698	0.988131330970032	0.2844409747708434	DOWN	Nerve_guidance	False
-NTN4	NP_notochordal	mild_vs_severe	3.502337463888342	0.9586026861434128	0.4713711960376615	UP	Nerve_guidance	False
-NTRK2	NP_notochordal	mild_vs_severe	1.5077762194023798	0.9735623750812858	0.478024069444587	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	NP_notochordal	mild_vs_severe	-0.6936345706119244	0.970119075304877	6.811585723918292	DOWN	Nociception_ion_channels	False
-P2RX7	NP_notochordal	mild_vs_severe	1.4459407052128206	0.9486351521388664	1.795899371936973	UP	Nociception_ion_channels	False
-PDGFA	NP_notochordal	mild_vs_severe	1.6962434927626584	0.9359157424517096	2.433072561956261	UP	Neovascularization	False
-PLA2G2A	NP_notochordal	mild_vs_severe	-0.0272398483858281	0.9982123320113044	27.82292916481808	DOWN	Inflammatory_pain	False
-PTGES	NP_notochordal	mild_vs_severe	0.1281859194776093	0.9900227052967392	61.287615572703416	UP	Inflammatory_pain	False
-PTGS2	NP_notochordal	mild_vs_severe	0.3027976429971275	0.98608935007315	302.5719539647286	UP	Inflammatory_pain	False
-ROBO1	NP_notochordal	mild_vs_severe	0.9163754531461346	0.988055081191848	0.4334496493700713	UP	Nerve_guidance	False
-SEMA3A	NP_notochordal	mild_vs_severe	0.0035634890151295	0.9997688069447798	3.1362645085970517	UP	Nerve_guidance	False
-SEMA3E	NP_notochordal	mild_vs_severe	1.234962709529	0.9709954380209856	1.288472355267845	UP	Nerve_guidance	False
-SLIT3	NP_notochordal	mild_vs_severe	-0.7573618592953743	0.9872368414846914	1.2024221989531558	DOWN	Nerve_guidance	False
-TNF	NP_notochordal	mild_vs_severe	2.195200476266228	0.390309069842685	18.456849573173173	UP	Inflammatory_pain	False
-TRPV1	NP_notochordal	mild_vs_severe	-1.626528525979577	0.7748044032786209	5.342506447448848	DOWN	Nociception_ion_channels	False
-TRPV4	NP_notochordal	mild_vs_severe	-1.3532988361759426	0.9735623750812858	1.1539482917220751	DOWN	Nociception_ion_channels	False
-UNC5B	NP_notochordal	mild_vs_severe	0.6244089888593517	0.978108709285464	1.915263531891008	UP	Nerve_guidance	False
-VEGFA	NP_notochordal	mild_vs_severe	0.8333117338074423	0.6656139697584605	239.08828208869963	UP	Neovascularization	False
-VEGFB	NP_notochordal	mild_vs_severe	0.3160859850454389	0.9709954380209856	24.48923647511937	UP	Neovascularization	False
-ANGPT1	AF_outer	healthy_vs_degenerated_all	-0.2382001844831369	0.8261687768021574	338.47874877707653	DOWN	Neovascularization	False
-ANGPT2	AF_outer	healthy_vs_degenerated_all	0.7164266231775739	0.2650014459480014	103.2830941183681	UP	Neovascularization	False
-BDKRB2	AF_outer	healthy_vs_degenerated_all	0.2431685509493577	0.8065864181523943	121.71982179012076	UP	Inflammatory_pain	False
-CCL2	AF_outer	healthy_vs_degenerated_all	-0.7339767752449989	0.4123652642449701	1502.2966229137342	DOWN	Inflammatory_pain	False
-CXCL8	AF_outer	healthy_vs_degenerated_all	-2.191689797858567	0.0319087525708312	2602.919949867452	DOWN	Inflammatory_pain	True
-FGF2	AF_outer	healthy_vs_degenerated_all	0.3736866299842701	0.6464511094723111	2366.5293560410446	UP	Neovascularization	False
-FLT1	AF_outer	healthy_vs_degenerated_all	-0.1393457977514831	0.9341846021091016	264.9677849258417	DOWN	Neovascularization	False
-GAL	AF_outer	healthy_vs_degenerated_all	0.4645464512833635		12.422181683341522	UP	Neuropeptides	False
-NGF	AF_outer	healthy_vs_degenerated_all	0.2200951174137145	0.8236320440568042	293.9727060901212	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	AF_outer	healthy_vs_degenerated_all	0.2323348346578099	0.905175496637915	82.21201844357573	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	AF_outer	healthy_vs_degenerated_all	0.4158541481242803	0.4208155395542108	1985.517105669912	UP	Nerve_guidance	False
-NTN1	AF_outer	healthy_vs_degenerated_all	0.8281443121575071	0.5055994506883268	118.20857596917487	UP	Nerve_guidance	False
-NTN4	AF_outer	healthy_vs_degenerated_all	0.437480551865227	0.5133229232424813	666.7271969787927	UP	Nerve_guidance	False
-NTRK2	AF_outer	healthy_vs_degenerated_all	0.8054673032571827	0.4834535673987834	541.1126804942484	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	AF_outer	healthy_vs_degenerated_all	-0.4598485470061748	0.3561590012404322	240.1856834330599	DOWN	Nociception_ion_channels	False
-P2RX7	AF_outer	healthy_vs_degenerated_all	-0.1714789367779522		34.70016722710062	DOWN	Nociception_ion_channels	False
-PDGFA	AF_outer	healthy_vs_degenerated_all	0.8228935037092397	0.1667286860060614	403.0287123289656	UP	Neovascularization	False
-PTGES	AF_outer	healthy_vs_degenerated_all	0.3420337904429211	0.7559514107229646	456.4121039947375	UP	Inflammatory_pain	False
-PTGS2	AF_outer	healthy_vs_degenerated_all	0.4063935589751993	0.6733306721833995	3046.1051837134314	UP	Inflammatory_pain	False
-ROBO1	AF_outer	healthy_vs_degenerated_all	0.4388464331203481	0.5145205485381746	260.10291217668794	UP	Nerve_guidance	False
-ROBO2	AF_outer	healthy_vs_degenerated_all	-0.5257782546955554	0.5210082191424903	138.13060099039782	DOWN	Nerve_guidance	False
-SEMA3A	AF_outer	healthy_vs_degenerated_all	-0.4050260444857447	0.6638297275168524	1024.899279085778	DOWN	Nerve_guidance	False
-SEMA3E	AF_outer	healthy_vs_degenerated_all	-0.1251160891728221	0.8700589018306636	523.4259257625397	DOWN	Nerve_guidance	False
-SLIT3	AF_outer	healthy_vs_degenerated_all	-0.6197808615210263	0.6445554223426702	163.68925548394836	DOWN	Nerve_guidance	False
-TRPV1	AF_outer	healthy_vs_degenerated_all	0.1043609311599461		23.11039112064361	UP	Nociception_ion_channels	False
-TRPV4	AF_outer	healthy_vs_degenerated_all	-0.0811151269486798	0.9391819935638102	362.3260856001612	DOWN	Nociception_ion_channels	False
-UNC5B	AF_outer	healthy_vs_degenerated_all	0.5164695551870623	0.4019991592236458	374.1613018504932	UP	Nerve_guidance	False
-VEGFA	AF_outer	healthy_vs_degenerated_all	0.334789971720065	0.6062314989492003	3091.239729706625	UP	Neovascularization	False
-VEGFB	AF_outer	healthy_vs_degenerated_all	0.1991803565546176	0.6694092401401285	2515.857149564617	UP	Neovascularization	False
-ANGPT1	AF_outer	healthy_vs_degenerated_mild	-0.5390404254976024	0.8521024194426086	312.94515958390537	DOWN	Neovascularization	False
-ANGPT2	AF_outer	healthy_vs_degenerated_mild	0.3599529063489929	0.8344781738587526	122.40679324683362	UP	Neovascularization	False
-BDKRB2	AF_outer	healthy_vs_degenerated_mild	-0.1916717362494273	0.9555957938278408	90.5988573134247	DOWN	Inflammatory_pain	False
-CCL2	AF_outer	healthy_vs_degenerated_mild	-0.2486101586086989	0.9351188901906596	1501.9951302426812	DOWN	Inflammatory_pain	False
-CXCL8	AF_outer	healthy_vs_degenerated_mild	-2.840058599430366	0.1071947100356293	2122.292541094157	DOWN	Inflammatory_pain	False
-FGF2	AF_outer	healthy_vs_degenerated_mild	0.2477828627956007	0.9401172332275564	2026.1815703339107	UP	Neovascularization	False
-FLT1	AF_outer	healthy_vs_degenerated_mild	-0.4525924111721172	0.8927360844071973	215.86417363777423	DOWN	Neovascularization	False
-GAL	AF_outer	healthy_vs_degenerated_mild	0.2847669421618813	0.9537593003580104	11.776443044923802	UP	Neuropeptides	False
-NGF	AF_outer	healthy_vs_degenerated_mild	-0.1166526244739513	0.9701123992583812	228.32658108170224	DOWN	Neuropeptides; Neurotrophin_signaling	False
-NGFR	AF_outer	healthy_vs_degenerated_mild	-0.509453636846897	0.9348368361049548	100.886846705011	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	AF_outer	healthy_vs_degenerated_mild	0.2538731884609356	0.7560552379845028	1648.242069616932	UP	Nerve_guidance	False
-NTN1	AF_outer	healthy_vs_degenerated_mild	0.6294154911345642	0.8488173870408889	84.94709987955792	UP	Nerve_guidance	False
-NTN4	AF_outer	healthy_vs_degenerated_mild	0.7208081217963053	0.643061940389365	598.4867773879455	UP	Nerve_guidance	False
-NTRK2	AF_outer	healthy_vs_degenerated_mild	0.7596735399353057	0.8177819684365688	414.6879471421571	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	AF_outer	healthy_vs_degenerated_mild	-0.4750169813168559	0.6658149373014556	235.2899526898485	DOWN	Nociception_ion_channels	False
-P2RX7	AF_outer	healthy_vs_degenerated_mild	0.1127722373553183	0.9652594844114044	32.9203065000693	UP	Nociception_ion_channels	False
-PDGFA	AF_outer	healthy_vs_degenerated_mild	0.7391657516771741	0.5329216002143262	298.9878594366139	UP	Neovascularization	False
-PTGES	AF_outer	healthy_vs_degenerated_mild	-0.0321868681443819	0.9924232028557654	263.5658650338388	DOWN	Inflammatory_pain	False
-PTGS2	AF_outer	healthy_vs_degenerated_mild	-0.1721719307454276	0.9527050439393964	1658.1028485293443	DOWN	Inflammatory_pain	False
-ROBO1	AF_outer	healthy_vs_degenerated_mild	0.5137372714397176	0.8000323121492113	223.72281994521688	UP	Nerve_guidance	False
-ROBO2	AF_outer	healthy_vs_degenerated_mild	-0.0156057421935507	0.9955037931557352	152.99559944082267	DOWN	Nerve_guidance	False
-SEMA3A	AF_outer	healthy_vs_degenerated_mild	-0.4887916261889768	0.8183892528418785	932.5065598040746	DOWN	Nerve_guidance	False
-SEMA3E	AF_outer	healthy_vs_degenerated_mild	0.1607830239038633	0.9447913803615744	475.9044367287111	UP	Nerve_guidance	False
-SLIT3	AF_outer	healthy_vs_degenerated_mild	-0.9858328897074746	0.7663197728430803	140.46365180313185	DOWN	Nerve_guidance	False
-TRPV1	AF_outer	healthy_vs_degenerated_mild	-0.1654521108037794	0.9401172332275564	17.772598029135942	DOWN	Nociception_ion_channels	False
-TRPV4	AF_outer	healthy_vs_degenerated_mild	-0.3507540060360956	0.8646817737950836	289.08893431220224	DOWN	Nociception_ion_channels	False
-UNC5B	AF_outer	healthy_vs_degenerated_mild	0.4889907632790335	0.7629667905397567	314.17329711169907	UP	Nerve_guidance	False
-VEGFA	AF_outer	healthy_vs_degenerated_mild	-0.1044280482830672	0.9570051296268464	1759.167838287283	DOWN	Neovascularization	False
-VEGFB	AF_outer	healthy_vs_degenerated_mild	0.2344050466638509	0.8677896477329685	2242.9263240877217	UP	Neovascularization	False
-ANGPT1	AF_outer	healthy_vs_degenerated_severe	-0.001661909786348	0.9984400110675667	442.6991466659871	DOWN	Neovascularization	False
-ANGPT2	AF_outer	healthy_vs_degenerated_severe	0.915665361581074	0.1006090518601453	161.5729992232217	UP	Neovascularization	False
-BDKRB2	AF_outer	healthy_vs_degenerated_severe	0.4769187747790421	0.3707416175795435	155.7053427659904	UP	Inflammatory_pain	False
-CCL2	AF_outer	healthy_vs_degenerated_severe	-0.7671653548649523	0.3241118456892071	1947.04298781897	DOWN	Inflammatory_pain	False
-CXCL8	AF_outer	healthy_vs_degenerated_severe	-1.6951023080615448	0.1074000762089136	2282.453987525631	DOWN	Inflammatory_pain	False
-FGF2	AF_outer	healthy_vs_degenerated_severe	0.5634539177113872	0.4780441056559623	2791.5143960392115	UP	Neovascularization	False
-FLT1	AF_outer	healthy_vs_degenerated_severe	0.0503129451555987	0.9774830235031008	261.75470404240923	UP	Neovascularization	False
-GAL	AF_outer	healthy_vs_degenerated_severe	0.3707266844900214	0.793447574204681	13.91616174992795	UP	Neuropeptides	False
-NGF	AF_outer	healthy_vs_degenerated_severe	0.4351275835915621	0.5517935693169762	312.04200089867646	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	AF_outer	healthy_vs_degenerated_severe	0.4387532179786985	0.7308683058427611	73.70410354608003	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	AF_outer	healthy_vs_degenerated_severe	0.3943962260231926	0.4617386213756538	2201.832076534557	UP	Nerve_guidance	False
-NTN1	AF_outer	healthy_vs_degenerated_severe	0.7832389763348336	0.4738052056847321	127.45695268695636	UP	Nerve_guidance	False
-NTN4	AF_outer	healthy_vs_degenerated_severe	0.3918301676998415	0.5032423113046167	712.6853304661395	UP	Nerve_guidance	False
-NTRK2	AF_outer	healthy_vs_degenerated_severe	0.7965833117374773	0.401014200109379	700.0020454150002	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	AF_outer	healthy_vs_degenerated_severe	-0.4769346981454411	0.1416298277875081	283.8090778827783	DOWN	Nociception_ion_channels	False
-P2RX7	AF_outer	healthy_vs_degenerated_severe	-0.3407893299436922	0.585486927192508	39.17893845042836	DOWN	Nociception_ion_channels	False
-PDGFA	AF_outer	healthy_vs_degenerated_severe	0.8430849796067137	0.1122344716170672	481.7408896475347	UP	Neovascularization	False
-PTGES	AF_outer	healthy_vs_degenerated_severe	0.5959903966653449	0.4685230446861899	502.692232435601	UP	Inflammatory_pain	False
-PTGS2	AF_outer	healthy_vs_degenerated_severe	0.7235180060657873	0.3917264282433302	3148.3243258638154	UP	Inflammatory_pain	False
-ROBO1	AF_outer	healthy_vs_degenerated_severe	0.5127268126326582	0.4037019515041236	301.2828876622238	UP	Nerve_guidance	False
-ROBO2	AF_outer	healthy_vs_degenerated_severe	-0.6744262794400806	0.2284706131806989	189.2356537844233	DOWN	Nerve_guidance	False
-SEMA3A	AF_outer	healthy_vs_degenerated_severe	-0.5280205897064952	0.5292235664093886	1153.3036567939002	DOWN	Nerve_guidance	False
-SEMA3E	AF_outer	healthy_vs_degenerated_severe	-0.1579230139950743	0.8415070469945226	579.4309148834832	DOWN	Nerve_guidance	False
-SLIT3	AF_outer	healthy_vs_degenerated_severe	-0.4052135938027376	0.7720690877677828	192.1243604903888	DOWN	Nerve_guidance	False
-TRPV1	AF_outer	healthy_vs_degenerated_severe	0.2935998004912268	0.6346646068547404	29.32402581255429	UP	Nociception_ion_channels	False
-TRPV4	AF_outer	healthy_vs_degenerated_severe	0.0076693849732594	0.992666327920405	323.6435887258593	UP	Nociception_ion_channels	False
-UNC5B	AF_outer	healthy_vs_degenerated_severe	0.5209810393635369	0.327734566663983	409.2606269966231	UP	Nerve_guidance	False
-VEGFA	AF_outer	healthy_vs_degenerated_severe	0.6090846945480445	0.2898799620414543	3429.879501527274	UP	Neovascularization	False
-VEGFB	AF_outer	healthy_vs_degenerated_severe	0.2059862724159486	0.5752024245862954	2780.999034359916	UP	Neovascularization	False
-ANGPT1	AF_outer	mild_vs_severe	0.4954600354494268	0.3370847030332828	295.38579384247447	UP	Neovascularization	False
-ANGPT2	AF_outer	mild_vs_severe	0.55183226808552	0.2391251436522145	40.03256565428467	UP	Neovascularization	False
-BDKRB2	AF_outer	mild_vs_severe	0.5886708528397813	0.3819911252720963	129.59382407940927	UP	Inflammatory_pain	False
-CCL2	AF_outer	mild_vs_severe	0.5242399947255024	0.3785034507151909	1258.3273157954409	UP	Inflammatory_pain	False
-CXCL8	AF_outer	mild_vs_severe	0.2866936117026341	0.7922136335243535	3689.5883599141193	UP	Inflammatory_pain	False
-FGF2	AF_outer	mild_vs_severe	0.3726526383715463	0.2338190201411379	2333.6798882936264	UP	Neovascularization	False
-FLT1	AF_outer	mild_vs_severe	0.3821597727739692	0.7492045435991808	284.7231070124745	UP	Neovascularization	False
-GAL	AF_outer	mild_vs_severe	0.0184620266129206	0.9917994234674712	9.110621456868207	UP	Neuropeptides	False
-NGF	AF_outer	mild_vs_severe	0.2582766566744874	0.7146021063863326	290.20980519228743	UP	Neuropeptides; Neurotrophin_signaling	False
-NGFR	AF_outer	mild_vs_severe	-0.5825003833459245	0.6789081847234196	75.86213899295345	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	AF_outer	mild_vs_severe	-0.0678043151202225	0.8788612675785731	1951.8212563379016	DOWN	Nerve_guidance	False
-NTN1	AF_outer	mild_vs_severe	0.4425511112846633	0.6316983641477909	139.58750133933648	UP	Nerve_guidance	False
-NTN4	AF_outer	mild_vs_severe	-0.1526832014446363	0.7928882431404407	731.9150156701702	DOWN	Nerve_guidance	False
-NTRK2	AF_outer	mild_vs_severe	0.0506476877206042	0.9652831286849436	582.2559732453855	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	AF_outer	mild_vs_severe	-0.3734483733307837	0.3495162645500896	218.35736926108925	DOWN	Nociception_ion_channels	False
-P2RX7	AF_outer	mild_vs_severe	-0.269756881096553	0.6001827994167847	34.44909174038179	DOWN	Nociception_ion_channels	False
-PDGFA	AF_outer	mild_vs_severe	0.4084582679278999	0.3563947678430956	353.0335657279233	UP	Neovascularization	False
-PTGES	AF_outer	mild_vs_severe	0.2854843747783459	0.7187614231411519	401.73790865146105	UP	Inflammatory_pain	False
-PTGS2	AF_outer	mild_vs_severe	0.4713896287521932	0.3481815287566988	3733.7236341107177	UP	Inflammatory_pain	False
-ROBO1	AF_outer	mild_vs_severe	0.1182637005041566	0.7970014828992065	265.4682981132811	UP	Nerve_guidance	False
-ROBO2	AF_outer	mild_vs_severe	-0.0874820154876329	0.9239151946405346	83.55253770243753	DOWN	Nerve_guidance	False
-SEMA3A	AF_outer	mild_vs_severe	-0.3822647798282104	0.5813830586998519	982.0340453542492	DOWN	Nerve_guidance	False
-SEMA3E	AF_outer	mild_vs_severe	-0.0340704371609547	0.9528711389001776	531.7899855466387	DOWN	Nerve_guidance	False
-SLIT3	AF_outer	mild_vs_severe	0.2340480149788045	0.8100897673166125	176.09259758105506	UP	Nerve_guidance	False
-TRPV1	AF_outer	mild_vs_severe	0.5238945409860538	0.1878737760816438	20.776496944286308	UP	Nociception_ion_channels	False
-TRPV4	AF_outer	mild_vs_severe	-0.3652097659187359	0.5880511188665498	309.6022687404621	DOWN	Nociception_ion_channels	False
-UNC5B	AF_outer	mild_vs_severe	0.149339289420939	0.789031097030569	305.56727458840714	UP	Nerve_guidance	False
-VEGFA	AF_outer	mild_vs_severe	0.5021885852465574	0.1300542774520732	3171.22413736358	UP	Neovascularization	False
-VEGFB	AF_outer	mild_vs_severe	0.0919251608408039	0.8199343410000896	2667.753377215756	UP	Neovascularization	False
-ANGPT1	AF_inner	mild_vs_severe	-0.6668046744378147		30.730900075924627	DOWN	Neovascularization	False
-ANGPT2	AF_inner	mild_vs_severe	0.25580745550931		7.62068183370865	UP	Neovascularization	False
-BDKRB2	AF_inner	mild_vs_severe	-0.3332959186475474		6.558316885774487	DOWN	Inflammatory_pain	False
-CCL2	AF_inner	mild_vs_severe	2.101769806987071		91.75373847576132	UP	Inflammatory_pain	False
-CXCL8	AF_inner	mild_vs_severe	-2.640993841766059	0.9189479106341732	186.75407452159985	DOWN	Inflammatory_pain	False
-FGF2	AF_inner	mild_vs_severe	-0.1506460535078102	0.9971213801006984	1115.919861849422	DOWN	Neovascularization	False
-FLT1	AF_inner	mild_vs_severe	-0.379353125155978	0.9772650304975482	332.68424327765143	DOWN	Neovascularization	False
-GAL	AF_inner	mild_vs_severe	0.4089425255345449		0.6414495283948529	UP	Neuropeptides	False
-NGF	AF_inner	mild_vs_severe	-0.992174871486115	0.9431135201962534	129.82138874954978	DOWN	Neuropeptides; Neurotrophin_signaling	False
-NGFR	AF_inner	mild_vs_severe	-0.2908992237993507		14.172876136272846	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
-NRP2	AF_inner	mild_vs_severe	0.009682755059737	0.9981614242966392	442.4595710765264	UP	Nerve_guidance	False
-NTN1	AF_inner	mild_vs_severe	0.7418901087445519		9.928620804071592	UP	Nerve_guidance	False
-NTN4	AF_inner	mild_vs_severe	0.6053064440574389		44.97607844214821	UP	Nerve_guidance	False
-NTRK2	AF_inner	mild_vs_severe	1.515506884733753	0.5204567623960085	179.99977025084638	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
-P2RX4	AF_inner	mild_vs_severe	-0.3370250455373516		27.250645983819854	DOWN	Nociception_ion_channels	False
-P2RX7	AF_inner	mild_vs_severe	-0.6366233992381515		5.873188304634606	DOWN	Nociception_ion_channels	False
-PDGFA	AF_inner	mild_vs_severe	0.2136489496419152		70.0084523634847	UP	Neovascularization	False
-PTGES	AF_inner	mild_vs_severe	-1.2003846898859862		107.33310773587137	DOWN	Inflammatory_pain	False
-PTGS2	AF_inner	mild_vs_severe	0.0556122059278717	0.9971213801006984	1841.9300110778788	UP	Inflammatory_pain	False
-ROBO1	AF_inner	mild_vs_severe	0.4771221957152091		49.08525936576605	UP	Nerve_guidance	False
-ROBO2	AF_inner	mild_vs_severe	-2.932600120000083		12.0298368535267	DOWN	Nerve_guidance	False
-SEMA3A	AF_inner	mild_vs_severe	-0.2517278963024651	0.9971213801006984	389.7002412760589	DOWN	Nerve_guidance	False
-SEMA3E	AF_inner	mild_vs_severe	-0.244969943428567	0.9971213801006984	213.7535492276685	DOWN	Nerve_guidance	False
-SLIT3	AF_inner	mild_vs_severe	-0.3703528977757114		19.35616031652944	DOWN	Nerve_guidance	False
-TRPV1	AF_inner	mild_vs_severe	0.4183375335511882		8.679307106187647	UP	Nociception_ion_channels	False
-TRPV4	AF_inner	mild_vs_severe	-0.2210239437795134	0.972123065272708	171.31420963527242	DOWN	Nociception_ion_channels	False
-UNC5B	AF_inner	mild_vs_severe	-0.2614004333223489	0.9971213801006984	134.15349208825674	DOWN	Nerve_guidance	False
-VEGFA	AF_inner	mild_vs_severe	0.048671020391403	0.9971213801006984	3115.070784774855	UP	Neovascularization	False
-VEGFB	AF_inner	mild_vs_severe	-0.2396409493727339	0.9971213801006984	288.04702573564185	DOWN	Neovascularization	False
+ANGPT1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.1103503628446638	0.9995846609005914	180.51033858442057	UP	Neovascularization	False
+ANGPT2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.5374179695071183	0.9785269932867336	53.6230779671514	UP	Neovascularization	False
+BDKRB2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.4426803508851348	0.9995846609005914	67.64297539285519	UP	Inflammatory_pain	False
+CCL2	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.6946570166580702	0.9995846609005914	656.2120405067235	UP	Inflammatory_pain	False
+CXCL8	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.0278652123192552	0.9995846609005914	6699.1965239665	DOWN	Inflammatory_pain	False
+FGF2	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.1077909984094614	0.9995846609005914	4936.213512562534	DOWN	Neovascularization	False
+FLT1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.1886249031258137	0.9995846609005914	1082.5485141737302	UP	Neovascularization	False
+GAL	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.5199421351392024	0.9995846609005914	9.951297431694565	UP	Neuropeptides	False
+NGF	NP_mature_chondrocyte	healthy_vs_degenerated_all	1.1964919660672195	0.875345200305274	896.7546915983058	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.226238702889647	0.9995846609005914	41.7505370918556	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_mature_chondrocyte	healthy_vs_degenerated_all	1.0856409603996122	0.7889791010285373	3178.354925651966	UP	Nerve_guidance	False
+NTN1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.6104287533989975	0.9995846609005914	169.42017056263327	UP	Nerve_guidance	False
+NTN4	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.3241260641393941	0.9995846609005914	273.0636119657343	UP	Nerve_guidance	False
+NTRK2	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.8492309958851557	0.93684978705598	891.9448365074697	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.2300399835530814	0.9995846609005914	139.35140757851724	DOWN	Nociception_ion_channels	False
+P2RX7	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.4988270494045914	0.986900781846886	22.235786191316347	DOWN	Nociception_ion_channels	False
+PDGFA	NP_mature_chondrocyte	healthy_vs_degenerated_all	1.4744090386644455	0.8064381075850913	621.3375019789389	UP	Neovascularization	False
+PDGFB	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.2213690177353777	0.9995846609005914	8.409018500177588	DOWN	Neovascularization	False
+PLA2G2A	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.0663334720036352	0.9995846609005914	14503.23794996635	UP	Inflammatory_pain	False
+PTGES	NP_mature_chondrocyte	healthy_vs_degenerated_all	2.793470454072768	0.732784027059702	877.4338588829688	UP	Inflammatory_pain	False
+PTGS2	NP_mature_chondrocyte	healthy_vs_degenerated_all	1.6483435768352943	0.6221601067816185	9495.090897678449	UP	Inflammatory_pain	False
+ROBO1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.2434006759236719	0.9995846609005914	252.70175246801065	UP	Nerve_guidance	False
+ROBO2	NP_mature_chondrocyte	healthy_vs_degenerated_all	-1.1245071864058795	0.8962489885185801	63.477569208605125	DOWN	Nerve_guidance	False
+SEMA3A	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.4339414708404085	0.9995846609005914	1704.551490073295	UP	Nerve_guidance	False
+SEMA3E	NP_mature_chondrocyte	healthy_vs_degenerated_all	-1.0490544495331195	0.5663875992883772	1119.243605335897	DOWN	Nerve_guidance	False
+SLIT3	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.4804626872683099	0.9995846609005914	137.95980658486968	UP	Nerve_guidance	False
+TNF	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.0935897638287973	0.9995846609005914	58.50404894388397	DOWN	Inflammatory_pain	False
+TRPV1	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.0273974792687423	0.9995846609005914	38.18039662489027	UP	Nociception_ion_channels	False
+TRPV4	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.3307852340617926	0.9995846609005914	1113.109928485067	UP	Nociception_ion_channels	False
+UNC5B	NP_mature_chondrocyte	healthy_vs_degenerated_all	0.229067907165118	0.9995846609005914	613.0885040523627	UP	Nerve_guidance	False
+VEGFA	NP_mature_chondrocyte	healthy_vs_degenerated_all	1.0040676651090588	0.8629702615300247	8212.763536087943	UP	Neovascularization	False
+VEGFB	NP_mature_chondrocyte	healthy_vs_degenerated_all	-0.3493340127156044	0.9991323082365858	1157.2557267731352	DOWN	Neovascularization	False
+ANGPT1	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.7097691930456658	0.7336759056686203	117.17215998935126	DOWN	Neovascularization	False
+ANGPT2	NP_fibrocartilaginous	healthy_vs_degenerated_all	1.3862527117864183	0.4064383764478351	21.24427637394857	UP	Neovascularization	False
+BDKRB2	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.1314471127981461	0.9659335456265936	20.19838643611572	DOWN	Inflammatory_pain	False
+CCL2	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.3583474382890672	0.8829793104194918	373.4795993934566	UP	Inflammatory_pain	False
+CXCL8	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.566829769068104	0.8588524899211989	358.81650410816263	DOWN	Inflammatory_pain	False
+FGF2	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.1433368428445723	0.8889690215247115	230.27805990021068	UP	Neovascularization	False
+FLT1	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.1743774742477624	0.9355199775438322	60.75832561065023	DOWN	Neovascularization	False
+GAL	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.3143880313334879		3.3982068601036737	UP	Neuropeptides	False
+NGF	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.2169648357321687	0.9176644483437192	58.94604949761189	DOWN	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.19024616358877	0.9768151045034228	19.532065667417587	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.3836552020272303	0.6299722832206525	567.7208267739662	UP	Nerve_guidance	False
+NTN1	NP_fibrocartilaginous	healthy_vs_degenerated_all	1.502199470700268	0.2794466300917804	29.810933717032825	UP	Nerve_guidance	False
+NTN4	NP_fibrocartilaginous	healthy_vs_degenerated_all	1.2502679797352074	0.1384398380488857	124.03547844662042	UP	Nerve_guidance	False
+NTRK2	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.5375542432121052	0.7615191900387733	131.60431012689443	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.4709171984525205	0.5667844923468194	49.97165975428127	DOWN	Nociception_ion_channels	False
+P2RX7	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.4623094359868376	0.7450986191523357	7.94700089616932	DOWN	Nociception_ion_channels	False
+PDGFA	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.977634863058374	0.1909995641222637	100.33529001468165	UP	Neovascularization	False
+PDGFB	NP_fibrocartilaginous	healthy_vs_degenerated_all	-1.1767671179302084		2.132192549421393	DOWN	Neovascularization	False
+PLA2G2A	NP_fibrocartilaginous	healthy_vs_degenerated_all	3.5943213377074037	0.1274604552639159	1595.868948448837	UP	Inflammatory_pain	False
+PTGES	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.0502569504187261	0.9906140169646868	107.851963549345	DOWN	Inflammatory_pain	False
+PTGS2	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.2149349408001585	0.9069985874584248	466.6727471340578	DOWN	Inflammatory_pain	False
+ROBO1	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.8062677072588722	0.3199125978950318	75.07564126628773	UP	Nerve_guidance	False
+ROBO2	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.1723006842566703	0.948905588231462	14.232486242919364	UP	Nerve_guidance	False
+SEMA3A	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.5056195920022053	0.7739462597384312	167.35074788602614	DOWN	Nerve_guidance	False
+SEMA3E	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.3158161515440651	0.8287892803399296	92.12843428591223	DOWN	Nerve_guidance	False
+SLIT3	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.0225494288352883	0.9958660998465542	51.70698605888472	UP	Nerve_guidance	False
+TNF	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.2882050491938162		5.357304419777133	DOWN	Inflammatory_pain	False
+TRPV1	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.1550192623256337	0.9000978013846944	6.472250884344099	DOWN	Nociception_ion_channels	False
+TRPV4	NP_fibrocartilaginous	healthy_vs_degenerated_all	-0.4694604136320962	0.7726451382610139	62.202618927493695	DOWN	Nociception_ion_channels	False
+UNC5B	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.5954851930830929	0.3875744099548301	95.25823392703174	UP	Nerve_guidance	False
+VEGFA	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.1793712900773744	0.8875600395539126	510.6442585266223	UP	Neovascularization	False
+VEGFB	NP_fibrocartilaginous	healthy_vs_degenerated_all	0.2200103493205966	0.8369059268098995	537.9828090036523	UP	Neovascularization	False
+ANGPT1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.8917910149894813	0.9998504441504652	190.04605451467955	UP	Neovascularization	False
+ANGPT2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.069526164877351	0.9998504441504652	50.98529870598583	UP	Neovascularization	False
+BDKRB2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.2262038232044731	0.9998504441504652	57.00336682493047	UP	Inflammatory_pain	False
+CCL2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.195548289480882	0.9998504441504652	374.3636112335822	DOWN	Inflammatory_pain	False
+CXCL8	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-2.2316131676761555	0.9998504441504652	6349.712934982705	DOWN	Inflammatory_pain	False
+FGF2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.4195832594626894	0.9998504441504652	4661.011589028958	DOWN	Neovascularization	False
+FLT1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.04838355454257	0.9998504441504652	1202.8906645143102	UP	Neovascularization	False
+GAL	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.5397986903913955	0.9998504441504652	5.611413649120798	DOWN	Neuropeptides	False
+NGF	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.5420207495555813	0.9998504441504652	807.8036295856757	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.2302156239004847	0.9998504441504652	43.35203904100216	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.324729092260489	0.9998504441504652	2660.9147987622755	UP	Nerve_guidance	False
+NTN1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.799647178547368	0.9998504441504652	71.89942395705268	DOWN	Nerve_guidance	False
+NTN4	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.8208434980568347	0.9998504441504652	213.87481269648077	DOWN	Nerve_guidance	False
+NTRK2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-1.1653555479484612	0.9998504441504652	980.716029792536	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.1547893043240847	0.9998504441504652	171.05006039645798	DOWN	Nociception_ion_channels	False
+P2RX7	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.0256315799094893	0.9998504441504652	22.198832693365848	UP	Nociception_ion_channels	False
+PDGFA	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.4305596811876937	0.9998504441504652	338.44273822299	UP	Neovascularization	False
+PDGFB	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-1.2124292972167383	0.9998504441504652	8.094220799031856	DOWN	Neovascularization	False
+PLA2G2A	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-1.8641416680358376	0.9998504441504652	11537.590762723266	DOWN	Inflammatory_pain	False
+PTGES	NP_mature_chondrocyte	healthy_vs_degenerated_mild	1.4035772234854034	0.9998504441504652	422.10318332349647	UP	Inflammatory_pain	False
+PTGS2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.4875566068703961	0.9998504441504652	7542.009629160931	UP	Inflammatory_pain	False
+ROBO1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.505085932272883	0.9998504441504652	254.81359715928085	UP	Nerve_guidance	False
+ROBO2	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.7006908127378101	0.9998504441504652	76.10033863910294	DOWN	Nerve_guidance	False
+SEMA3A	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.053575301945737	0.9998504441504652	1842.214455300766	UP	Nerve_guidance	False
+SEMA3E	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.7819001541853747	0.9998504441504652	1348.6655147366753	DOWN	Nerve_guidance	False
+SLIT3	NP_mature_chondrocyte	healthy_vs_degenerated_mild	1.488591385556692	0.9998504441504652	155.2221437277503	UP	Nerve_guidance	False
+TNF	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-1.5270466354876326	0.9998504441504652	45.4043649984806	DOWN	Inflammatory_pain	False
+TRPV1	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.2790450063242929	0.9998504441504652	41.95851034368255	UP	Nociception_ion_channels	False
+TRPV4	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.2405667996260789	0.9998504441504652	1217.1680046424196	UP	Nociception_ion_channels	False
+UNC5B	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.1842055045917152	0.9998504441504652	501.26864051791466	UP	Nerve_guidance	False
+VEGFA	NP_mature_chondrocyte	healthy_vs_degenerated_mild	0.227502809057882	0.9998504441504652	6198.09483126477	UP	Neovascularization	False
+VEGFB	NP_mature_chondrocyte	healthy_vs_degenerated_mild	-0.7252285309617849	0.9998504441504652	1221.939083674984	DOWN	Neovascularization	False
+ANGPT1	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-1.290404157129584	0.7319451278343599	109.69766659954269	DOWN	Neovascularization	False
+ANGPT2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	1.2392565218082976	0.4498191432762053	18.228280324958117	UP	Neovascularization	False
+BDKRB2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-1.4877190093895984	0.4807453285192825	13.491997314736784	DOWN	Inflammatory_pain	False
+CCL2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.1960899083305867	0.9774763719532418	304.8626829498411	UP	Inflammatory_pain	False
+CXCL8	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.3937788709174025	0.9626522140803828	230.6357059036835	DOWN	Inflammatory_pain	False
+FGF2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.2486576164994685	0.8355858348009568	211.25352628518164	UP	Neovascularization	False
+FLT1	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.2196308285548931	0.9525453261240536	67.14316706082366	UP	Neovascularization	False
+GAL	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.9444801524498528	0.8172954701674179	3.737555740178981	DOWN	Neuropeptides	False
+NGF	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.0268651788062518	0.9943234014622192	60.94802075261672	DOWN	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.281519455964005	0.9845859564876898	20.78615578833017	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.4108031136186473	0.6253691927963813	511.6723392435461	UP	Nerve_guidance	False
+NTN1	NP_fibrocartilaginous	healthy_vs_degenerated_mild	1.5348470145642317	0.4498191432762053	20.024471279080785	UP	Nerve_guidance	False
+NTN4	NP_fibrocartilaginous	healthy_vs_degenerated_mild	1.610664877511166	0.2135750375706581	109.40469089392374	UP	Nerve_guidance	False
+NTRK2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.1953616787267884	0.9657119727454584	99.39465472295257	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.4122625835794088	0.834153360620152	52.40649609884592	DOWN	Nociception_ion_channels	False
+P2RX7	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.161101339800031	0.9626706984760948	8.784088746194906	DOWN	Nociception_ion_channels	False
+PDGFA	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.9969354974585044	0.4200291395788831	74.63582850997273	UP	Neovascularization	False
+PDGFB	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.649280753773161	0.942949761076662	2.748950574335318	DOWN	Neovascularization	False
+PLA2G2A	NP_fibrocartilaginous	healthy_vs_degenerated_mild	2.52148643500322	0.5460648301486447	1598.1568304163118	UP	Inflammatory_pain	False
+PTGES	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.8612295488638823	0.7705185060845928	62.89585515772215	DOWN	Inflammatory_pain	False
+PTGS2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.7423000434140947	0.728210380289127	391.8789104454	DOWN	Inflammatory_pain	False
+ROBO1	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.5733900336849007	0.7730883992761357	59.059983472288174	UP	Nerve_guidance	False
+ROBO2	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.513294573248195	0.9002145439954827	15.099242530501709	UP	Nerve_guidance	False
+SEMA3A	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.269684539618096	0.939231390366239	183.38092795738703	DOWN	Nerve_guidance	False
+SEMA3E	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.129240889987916	0.9657126314288392	99.0114885002102	UP	Nerve_guidance	False
+SLIT3	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.6826132675468702	0.8017492801161492	32.535049592267086	DOWN	Nerve_guidance	False
+TNF	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.9553452040445856	0.8961113359121888	3.4328796219029423	DOWN	Inflammatory_pain	False
+TRPV1	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.5441311118652236	0.7128444560645107	5.354548902926992	DOWN	Nociception_ion_channels	False
+TRPV4	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.25633153114257	0.9328822315260884	71.45973042052199	DOWN	Nociception_ion_channels	False
+UNC5B	NP_fibrocartilaginous	healthy_vs_degenerated_mild	0.537795314421655	0.6089406234698689	73.95548735137889	UP	Nerve_guidance	False
+VEGFA	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.1169828298450847	0.9626706984760948	398.5941515009248	DOWN	Neovascularization	False
+VEGFB	NP_fibrocartilaginous	healthy_vs_degenerated_mild	-0.0016589783213221	0.9996092226721086	496.2370920366637	DOWN	Neovascularization	False
+ANGPT1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.2964946028785763	0.9159741536832782	207.17159876261616	DOWN	Neovascularization	False
+ANGPT2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.8338921222624154	0.7489630829874058	74.29879242985788	UP	Neovascularization	False
+BDKRB2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.7225218204798574	0.8105288857609305	82.70772586571069	UP	Inflammatory_pain	False
+CCL2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.3861001710682186	0.4875128988579271	1049.5606870947918	UP	Inflammatory_pain	False
+CXCL8	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.161308282954007	0.8244873574093919	6100.623639637307	UP	Inflammatory_pain	False
+FGF2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.0431397248665638	0.9922710677948964	5310.502039590697	UP	Neovascularization	False
+FLT1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.1519929975837931	0.975804519550641	945.1010141912864	UP	Neovascularization	False
+GAL	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.088310816161587	0.5579187031697308	14.841261445392828	UP	Neuropeptides	False
+NGF	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.6007003051029427	0.3517403957936948	874.9324703951909	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.1154569611032265	0.9860389930400134	40.847800080894416	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.535330203029832	0.0870630588189186	3640.436874010326	UP	Nerve_guidance	False
+NTN1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.5253416268504796	0.3626600917124803	258.7981861310142	UP	Nerve_guidance	False
+NTN4	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.9314609480751576	0.4238004672800134	324.9447256854112	UP	Nerve_guidance	False
+NTRK2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.6903813672467357	0.8471180148758812	1089.075367603644	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.206179145368206	0.9440031192462888	174.19478983280004	DOWN	Nociception_ion_channels	False
+P2RX7	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.9778636425775732	0.5448961324265452	26.05234519620346	DOWN	Nociception_ion_channels	False
+PDGFA	NP_mature_chondrocyte	healthy_vs_degenerated_severe	2.0602885125075763	0.002030155017922	867.1151904609192	UP	Neovascularization	True
+PDGFB	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.371799277595455	0.975701820372471	10.07345237567753	UP	Neovascularization	False
+PLA2G2A	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.84033815759686	0.8281481182040072	19850.30418671387	UP	Inflammatory_pain	False
+PTGES	NP_mature_chondrocyte	healthy_vs_degenerated_severe	3.5110665356272444	0.0568974574022838	962.3274173135516	UP	Inflammatory_pain	False
+PTGS2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	2.495316084458084	0.0211346471772907	10059.537162684035	UP	Inflammatory_pain	True
+ROBO1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.3034858391315747	0.951925654468734	269.23199688799133	UP	Nerve_guidance	False
+ROBO2	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-1.3987786527437631	0.4999725535294667	75.03173649357505	DOWN	Nerve_guidance	False
+SEMA3A	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.4551328010422516	0.9232379015978418	1548.7247353937173	UP	Nerve_guidance	False
+SEMA3E	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-1.266824594588139	0.0593219394327738	1296.9810612014296	DOWN	Nerve_guidance	False
+SLIT3	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.0285558784796948	0.9964492558853576	128.00198693843285	DOWN	Nerve_guidance	False
+TNF	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.7898079749348448	0.8245674061614237	70.56077422822692	UP	Inflammatory_pain	False
+TRPV1	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.1195681115712769	0.9825090635951724	46.58434837049155	DOWN	Nociception_ion_channels	False
+TRPV4	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.2451281191280574	0.951925654468734	1015.1291338181184	UP	Nociception_ion_channels	False
+UNC5B	NP_mature_chondrocyte	healthy_vs_degenerated_severe	0.249107091964626	0.9446774378364192	596.4098108271716	UP	Nerve_guidance	False
+VEGFA	NP_mature_chondrocyte	healthy_vs_degenerated_severe	1.4684809016369114	0.1413258911797292	8928.396921312862	UP	Neovascularization	False
+VEGFB	NP_mature_chondrocyte	healthy_vs_degenerated_severe	-0.0541212865428536	0.9896389958204816	1511.3008098261903	DOWN	Neovascularization	False
+ANGPT1	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.164480475745344	0.9353430631649282	181.349281263834	DOWN	Neovascularization	False
+ANGPT2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.4451078753647708	0.3041502612029087	29.259868806929788	UP	Neovascularization	False
+BDKRB2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.4745698073075397	0.6752260281858574	33.040373016556906	UP	Inflammatory_pain	False
+CCL2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.60779651123701	0.6461429863267816	502.5198811706596	UP	Inflammatory_pain	False
+CXCL8	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.3908074116027327	0.8778282905425541	430.2646415566848	DOWN	Inflammatory_pain	False
+FGF2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.0876555097127856	0.9096078107320944	281.48567493176523	UP	Neovascularization	False
+FLT1	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.7495378057426902	0.5341384987394759	54.18568328669329	DOWN	Neovascularization	False
+GAL	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.5117785213001436	0.8596849248703895	3.283539567353686	UP	Neuropeptides	False
+NGF	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.7601889662319318	0.5368309787102582	62.0869304934428	DOWN	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.0281070873633364	0.9950062990108146	29.733260500363443	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.2625532370004538	0.7378990287895287	639.9907731495306	UP	Nerve_guidance	False
+NTN1	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.704968759383162	0.1285189301917089	33.54080825100939	UP	Nerve_guidance	False
+NTN4	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.1982723094743817	0.1347564413546624	136.41389455913185	UP	Nerve_guidance	False
+NTRK2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.9206426215332992	0.3890939996935825	221.4698469151328	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.4736181944421876	0.4860450051792719	65.16186150558025	DOWN	Nociception_ion_channels	False
+P2RX7	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.8060855545191606	0.4117494309160118	9.901775261985504	DOWN	Nociception_ion_channels	False
+PDGFA	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.0313694850848836	0.1284089467315708	114.65047757004466	UP	Neovascularization	False
+PDGFB	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-1.999179907881704	0.586966262446459	1.840471648967764	DOWN	Neovascularization	False
+PLA2G2A	NP_fibrocartilaginous	healthy_vs_degenerated_severe	3.817512821192892	0.0818493912671171	2599.2943890207644	UP	Inflammatory_pain	False
+PTGES	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.8713810617386799	0.6162705416857153	141.25551454653422	UP	Inflammatory_pain	False
+PTGS2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.1722490123497361	0.9009590171244124	473.0314358617384	UP	Inflammatory_pain	False
+ROBO1	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.0808236436105103	0.1090865343849126	95.53274040058766	UP	Nerve_guidance	False
+ROBO2	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.1769041865544422	0.8979797918469397	14.517280588948102	DOWN	Nerve_guidance	False
+SEMA3A	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-1.1853210080094807	0.3177695825569704	192.5791058581504	DOWN	Nerve_guidance	False
+SEMA3E	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.4777726875193127	0.6951217237809652	113.72601583539348	DOWN	Nerve_guidance	False
+SLIT3	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.636561446066964	0.694666019172023	74.60686363166572	UP	Nerve_guidance	False
+TNF	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.518585499933761	0.8497451623761141	7.509523627735102	UP	Inflammatory_pain	False
+TRPV1	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.0930534896499207	0.913942194114932	10.58048936482862	UP	Nociception_ion_channels	False
+TRPV4	NP_fibrocartilaginous	healthy_vs_degenerated_severe	-0.9303481574572816	0.4190282341301959	60.949363972605134	DOWN	Nociception_ion_channels	False
+UNC5B	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.6227349567064179	0.3419588589233934	110.29136813861554	UP	Nerve_guidance	False
+VEGFA	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.2083341690590854	0.7999335522441143	591.9992187581707	UP	Neovascularization	False
+VEGFB	NP_fibrocartilaginous	healthy_vs_degenerated_severe	0.3984974077751611	0.5210908458565829	665.7399503443125	UP	Neovascularization	False
+ANGPT1	NP_mature_chondrocyte	mild_vs_severe	-0.0936174151154898	0.9354883677530772	158.33827741935366	DOWN	Neovascularization	False
+ANGPT2	NP_mature_chondrocyte	mild_vs_severe	0.2654232818810119	0.7574583289617944	40.16554082226159	UP	Neovascularization	False
+BDKRB2	NP_mature_chondrocyte	mild_vs_severe	0.6316549551929993	0.4908550763261902	62.10137547652128	UP	Inflammatory_pain	False
+CCL2	NP_mature_chondrocyte	mild_vs_severe	2.037134875329684	0.0080492271423603	617.7486211771302	UP	Inflammatory_pain	True
+CXCL8	NP_mature_chondrocyte	mild_vs_severe	0.6082320502301832	0.7122972109499769	7244.097905943537	UP	Inflammatory_pain	False
+FGF2	NP_mature_chondrocyte	mild_vs_severe	0.119589275031242	0.8344769517804588	4519.372008142701	UP	Neovascularization	False
+FLT1	NP_mature_chondrocyte	mild_vs_severe	-0.5378367789618071	0.4836147841618078	1025.7552235407195	DOWN	Neovascularization	False
+GAL	NP_mature_chondrocyte	mild_vs_severe	1.4599536241472528	0.083423042743741	9.511351643543083	UP	Neuropeptides	False
+NGF	NP_mature_chondrocyte	mild_vs_severe	-0.031513522651065	0.9805411268958032	826.1773746914408	DOWN	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_mature_chondrocyte	mild_vs_severe	-0.6716409164016881	0.3932002883787061	38.56838811757183	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_mature_chondrocyte	mild_vs_severe	0.3378777681752295	0.5149823435266111	2856.2126793287	UP	Nerve_guidance	False
+NTN1	NP_mature_chondrocyte	mild_vs_severe	1.83848839346357	0.0569446615255039	159.39248959023337	UP	Nerve_guidance	False
+NTN4	NP_mature_chondrocyte	mild_vs_severe	0.7064142666782134	0.4239440118307956	268.6161346882769	UP	Nerve_guidance	False
+NTRK2	NP_mature_chondrocyte	mild_vs_severe	-0.03734224755798	0.9776383688903804	727.2084562224293	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_mature_chondrocyte	mild_vs_severe	-0.6376731119069122	0.3030022418015194	92.26278282063286	DOWN	Nociception_ion_channels	False
+P2RX7	NP_mature_chondrocyte	mild_vs_severe	-0.330881916593004	0.6937820983507577	17.79463979863491	DOWN	Nociception_ion_channels	False
+PDGFA	NP_mature_chondrocyte	mild_vs_severe	1.551249738501953	0.0080492271423603	592.2372751217657	UP	Neovascularization	True
+PDGFB	NP_mature_chondrocyte	mild_vs_severe	0.3847030122036829	0.8363082062672892	5.529773244939166	UP	Neovascularization	False
+PLA2G2A	NP_mature_chondrocyte	mild_vs_severe	1.0116827276370073	0.2601760019999529	12715.90012569391	UP	Inflammatory_pain	False
+PTGES	NP_mature_chondrocyte	mild_vs_severe	1.0782828442619083	0.4333364001897459	733.8707143531162	UP	Inflammatory_pain	False
+PTGS2	NP_mature_chondrocyte	mild_vs_severe	0.3829033344994503	0.5642940445327475	9228.363536331695	UP	Inflammatory_pain	False
+ROBO1	NP_mature_chondrocyte	mild_vs_severe	0.1232060035379545	0.8875715470739061	233.74878598651085	UP	Nerve_guidance	False
+ROBO2	NP_mature_chondrocyte	mild_vs_severe	-0.2467909845309604	0.8303866948613452	43.46381464152222	DOWN	Nerve_guidance	False
+SEMA3A	NP_mature_chondrocyte	mild_vs_severe	-0.6212464776325964	0.4145220470702951	1563.883263264275	DOWN	Nerve_guidance	False
+SEMA3E	NP_mature_chondrocyte	mild_vs_severe	-0.1365205346451181	0.7937014710259532	829.7220263693272	DOWN	Nerve_guidance	False
+SLIT3	NP_mature_chondrocyte	mild_vs_severe	0.1383688150915855	0.9299081114807196	130.4570036034587	UP	Nerve_guidance	False
+TNF	NP_mature_chondrocyte	mild_vs_severe	1.2333609805020271	0.2175205643270698	57.38527933538765	UP	Inflammatory_pain	False
+TRPV1	NP_mature_chondrocyte	mild_vs_severe	-0.2795437895768317	0.712547342522496	27.91800122247932	DOWN	Nociception_ion_channels	False
+TRPV4	NP_mature_chondrocyte	mild_vs_severe	-1.0673821772483822	0.1184160647383262	811.6470531132311	DOWN	Nociception_ion_channels	False
+UNC5B	NP_mature_chondrocyte	mild_vs_severe	0.2215861114638088	0.703248108393811	476.0551274709105	UP	Nerve_guidance	False
+VEGFA	NP_mature_chondrocyte	mild_vs_severe	0.3550904157648376	0.5656883805060173	6916.367556014898	UP	Neovascularization	False
+VEGFB	NP_mature_chondrocyte	mild_vs_severe	0.4052074659559054	0.4643630009170128	784.9715033182956	UP	Neovascularization	False
+ANGPT1	NP_fibrocartilaginous	mild_vs_severe	0.9777255586648812	0.0920318536336984	91.43148955147662	UP	Neovascularization	False
+ANGPT2	NP_fibrocartilaginous	mild_vs_severe	0.308241505040445	0.8658049620320641	23.074034756671477	UP	Neovascularization	False
+BDKRB2	NP_fibrocartilaginous	mild_vs_severe	1.7978041784408805	0.007459506041021	19.991143636704876	UP	Inflammatory_pain	True
+CCL2	NP_fibrocartilaginous	mild_vs_severe	0.7865041998086009	0.3946340184687167	429.4235669105594	UP	Inflammatory_pain	False
+CXCL8	NP_fibrocartilaginous	mild_vs_severe	0.1423627681711482	0.9513994594071024	512.3569437145914	UP	Inflammatory_pain	False
+FGF2	NP_fibrocartilaginous	mild_vs_severe	-0.0090903260413383	0.9917914870634268	239.40481253317577	DOWN	Neovascularization	False
+FLT1	NP_fibrocartilaginous	mild_vs_severe	-0.8009377426639432	0.3491382689217338	68.34199713969319	DOWN	Neovascularization	False
+GAL	NP_fibrocartilaginous	mild_vs_severe	1.2307933675803928		4.013047684205894	UP	Neuropeptides	False
+NGF	NP_fibrocartilaginous	mild_vs_severe	-0.8044050498463137	0.4174269081686432	51.87437891542388	DOWN	Neuropeptides; Neurotrophin_signaling	False
+NGFR	NP_fibrocartilaginous	mild_vs_severe	0.0751430451051147	0.9830652666686704	14.975861608955231	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	NP_fibrocartilaginous	mild_vs_severe	-0.2043067346514537	0.7360685025365649	624.0109869502893	DOWN	Nerve_guidance	False
+NTN1	NP_fibrocartilaginous	mild_vs_severe	0.4154511477607883	0.7057250841828897	29.69757239483088	UP	Nerve_guidance	False
+NTN4	NP_fibrocartilaginous	mild_vs_severe	-0.1674160559054507	0.8506552813985977	149.08880794985467	DOWN	Nerve_guidance	False
+NTRK2	NP_fibrocartilaginous	mild_vs_severe	0.8517631099754098	0.3646250010504282	124.81418895623226	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	NP_fibrocartilaginous	mild_vs_severe	-0.1092068000370905	0.8649754228643697	47.565279488042144	DOWN	Nociception_ion_channels	False
+P2RX7	NP_fibrocartilaginous	mild_vs_severe	-0.5375227143730551		7.571135567670379	DOWN	Nociception_ion_channels	False
+PDGFA	NP_fibrocartilaginous	mild_vs_severe	0.1873176231759855	0.7984422350057518	110.70769892235651	UP	Neovascularization	False
+PDGFB	NP_fibrocartilaginous	mild_vs_severe	-1.0059943135665328		2.205937170360295	DOWN	Neovascularization	False
+PLA2G2A	NP_fibrocartilaginous	mild_vs_severe	1.3259945572906986	0.5785957793607707	1125.2722325177783	UP	Inflammatory_pain	False
+PTGES	NP_fibrocartilaginous	mild_vs_severe	0.9839838672949652	0.2119407463953643	87.479470840585	UP	Inflammatory_pain	False
+PTGS2	NP_fibrocartilaginous	mild_vs_severe	0.4948552486349011	0.4473015560930313	585.542888577532	UP	Inflammatory_pain	False
+ROBO1	NP_fibrocartilaginous	mild_vs_severe	0.3092635154227867	0.508712039209967	85.31899276963124	UP	Nerve_guidance	False
+ROBO2	NP_fibrocartilaginous	mild_vs_severe	-0.5613440460730281	0.6693386919266008	14.863095578346163	DOWN	Nerve_guidance	False
+SEMA3A	NP_fibrocartilaginous	mild_vs_severe	-1.0018605275736576	0.2076314272290574	169.26643851954952	DOWN	Nerve_guidance	False
+SEMA3E	NP_fibrocartilaginous	mild_vs_severe	-0.0501702158725698	0.9631876818362064	88.98862832883594	DOWN	Nerve_guidance	False
+SLIT3	NP_fibrocartilaginous	mild_vs_severe	0.8945993406322276	0.3227753448523699	64.60117733255635	UP	Nerve_guidance	False
+TNF	NP_fibrocartilaginous	mild_vs_severe	0.8018000318279		6.920907468872043	UP	Inflammatory_pain	False
+TRPV1	NP_fibrocartilaginous	mild_vs_severe	0.623916120009561		5.93152339576911	UP	Nociception_ion_channels	False
+TRPV4	NP_fibrocartilaginous	mild_vs_severe	-0.944444909558824	0.2448708065004164	50.22796481003454	DOWN	Nociception_ion_channels	False
+UNC5B	NP_fibrocartilaginous	mild_vs_severe	0.1288230549112363	0.837631710821625	99.01705863810284	UP	Nerve_guidance	False
+VEGFA	NP_fibrocartilaginous	mild_vs_severe	0.3086503494359995	0.6808142803453384	516.2928952794072	UP	Neovascularization	False
+VEGFB	NP_fibrocartilaginous	mild_vs_severe	0.4489182934735006	0.4022153056409307	569.4167538486685	UP	Neovascularization	False
+ANGPT1	Macrophage	mild_vs_severe	-2.530488633951164	0.9997360970563984	0.975415118965032	DOWN	Neovascularization	False
+ANGPT2	Macrophage	mild_vs_severe	0.040215857379429	0.9997360970563984	4.647768046084493	UP	Neovascularization	False
+BDKRB2	Macrophage	mild_vs_severe	3.0235770819276557	0.9997360970563984	4.5618826510950745	UP	Inflammatory_pain	False
+CCL2	Macrophage	mild_vs_severe	-0.1051950055799206	0.9997360970563984	488.9206875575985	DOWN	Inflammatory_pain	False
+CXCL8	Macrophage	mild_vs_severe	0.1544579058806653	0.9997360970563984	12208.368652651588	UP	Inflammatory_pain	False
+FGF2	Macrophage	mild_vs_severe	-0.0592455482159372	0.9997360970563984	12.84566210460846	DOWN	Neovascularization	False
+FLT1	Macrophage	mild_vs_severe	1.0299919984696375	0.9997360970563984	144.1008725351897	UP	Neovascularization	False
+GAL	Macrophage	mild_vs_severe	1.5623856783041536	0.9997360970563984	0.4318538778565643	UP	Neuropeptides	False
+NGF	Macrophage	mild_vs_severe	-1.019365512627409	0.9997360970563984	1.5112727470114324	DOWN	Neuropeptides; Neurotrophin_signaling	False
+NGFR	Macrophage	mild_vs_severe	-2.653433365561197	0.9997360970563984	1.9245022852844675	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	Macrophage	mild_vs_severe	0.3813030478600839	0.9997360970563984	182.9447605994759	UP	Nerve_guidance	False
+NTN1	Macrophage	mild_vs_severe	1.44003442023902	0.9997360970563984	0.6355673384788815	UP	Nerve_guidance	False
+NTN4	Macrophage	mild_vs_severe	-0.3026983080300211	0.9997360970563984	10.664867273390302	DOWN	Nerve_guidance	False
+NTRK2	Macrophage	mild_vs_severe	-1.1605362018619274	0.9997360970563984	4.247381862688685	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	Macrophage	mild_vs_severe	-0.9434968498826866	0.9997360970563984	25.377781997257685	DOWN	Nociception_ion_channels	False
+P2RX7	Macrophage	mild_vs_severe	-0.549393622177627	0.9997360970563984	41.72304869519272	DOWN	Nociception_ion_channels	False
+PDGFA	Macrophage	mild_vs_severe	0.5255115631297017	0.9997360970563984	23.00919113233765	UP	Neovascularization	False
+PDGFB	Macrophage	mild_vs_severe	-0.0932530331053721	0.9997360970563984	65.40904870370167	DOWN	Neovascularization	False
+PLA2G2A	Macrophage	mild_vs_severe	0.9291153038195806	0.9997360970563984	23.329692498851085	UP	Inflammatory_pain	False
+PTGES	Macrophage	mild_vs_severe	0.9871051393844064	0.9997360970563984	2.2827826783985885	UP	Inflammatory_pain	False
+PTGS2	Macrophage	mild_vs_severe	1.6306139968223798	0.9997360970563984	402.5883559625967	UP	Inflammatory_pain	False
+ROBO1	Macrophage	mild_vs_severe	-0.764029194572202	0.9997360970563984	5.814646809832959	DOWN	Nerve_guidance	False
+ROBO2	Macrophage	mild_vs_severe	0.0107656270069887	0.9997360970563984	0.0113130160595532	UP	Nerve_guidance	False
+SEMA3A	Macrophage	mild_vs_severe	-1.1757706323748447	0.9997360970563984	3.879751266649957	DOWN	Nerve_guidance	False
+SEMA3E	Macrophage	mild_vs_severe	0.6606139533676418	0.9997360970563984	2.4889188097593937	UP	Nerve_guidance	False
+SLIT3	Macrophage	mild_vs_severe	-2.256175043562263	0.9997360970563984	2.8145186232418653	DOWN	Nerve_guidance	False
+TNF	Macrophage	mild_vs_severe	0.3174347227495838	0.9997360970563984	1358.5090076065344	UP	Inflammatory_pain	False
+TRPV1	Macrophage	mild_vs_severe	-0.650964476566312	0.9997360970563984	0.5755511515313757	DOWN	Nociception_ion_channels	False
+TRPV4	Macrophage	mild_vs_severe	-2.054702600025128	0.9997360970563984	2.8877692467513856	DOWN	Nociception_ion_channels	False
+UNC5B	Macrophage	mild_vs_severe	-0.0197799780131714	0.9997360970563984	11.12123535924946	DOWN	Nerve_guidance	False
+VEGFA	Macrophage	mild_vs_severe	0.1845834423422132	0.9997360970563984	114.95862138387844	UP	Neovascularization	False
+VEGFB	Macrophage	mild_vs_severe	0.0075899839928937	0.9997360970563984	48.41921342667096	UP	Neovascularization	False
+ANGPT1	unassigned	mild_vs_severe	-0.4475933161293384	0.99992989486551	12.173553892239092	DOWN	Neovascularization	False
+ANGPT2	unassigned	mild_vs_severe	-1.7452230653163745	0.99992989486551	0.787536248719483	DOWN	Neovascularization	False
+BDKRB2	unassigned	mild_vs_severe	-0.8044814507201717	0.99992989486551	0.0143781775684117	DOWN	Inflammatory_pain	False
+CCL2	unassigned	mild_vs_severe	-0.4277149824486097	0.99992989486551	2.668283252413348	DOWN	Inflammatory_pain	False
+CXCL8	unassigned	mild_vs_severe	0.6834380492041462	0.99992989486551	32592.90171325642	UP	Inflammatory_pain	False
+FGF2	unassigned	mild_vs_severe	0.3822997954046903	0.99992989486551	11.211153184670092	UP	Neovascularization	False
+FLT1	unassigned	mild_vs_severe	1.2764367952133029	0.9320426731635318	40.023541158485294	UP	Neovascularization	False
+NGF	unassigned	mild_vs_severe	1.1712965427468431	0.99992989486551	0.7877126749198341	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	unassigned	mild_vs_severe	0.2078368673376623	0.99992989486551	0.0627148615573862	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	unassigned	mild_vs_severe	-0.6723153990059512	0.99992989486551	3.841640734815001	DOWN	Nerve_guidance	False
+NTN1	unassigned	mild_vs_severe	-0.8044814507201717	0.99992989486551	0.0143781775684117	DOWN	Nerve_guidance	False
+NTN4	unassigned	mild_vs_severe	1.6778931370402956	0.99992989486551	1.7933208886073082	UP	Nerve_guidance	False
+NTRK2	unassigned	mild_vs_severe	1.5949856761455594	0.99992989486551	0.5381191492653863	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	unassigned	mild_vs_severe	0.3936964468470409	0.99992989486551	3.385644760814812	UP	Nociception_ion_channels	False
+P2RX7	unassigned	mild_vs_severe	-1.804207336171709	0.99992989486551	2.0712115221798144	DOWN	Nociception_ion_channels	False
+PDGFA	unassigned	mild_vs_severe	1.9931598838324416	0.9908011103962971	0.852876130519543	UP	Neovascularization	False
+PDGFB	unassigned	mild_vs_severe	0.2314059238633404	0.99992989486551	0.0752345822402037	UP	Neovascularization	False
+PLA2G2A	unassigned	mild_vs_severe	0.3035026053613334	0.99992989486551	24.56809015056621	UP	Inflammatory_pain	False
+PTGES	unassigned	mild_vs_severe	0.7077676056877622	0.9686808109977398	54.55065742041374	UP	Inflammatory_pain	False
+PTGS2	unassigned	mild_vs_severe	0.3300710615034503	0.99992989486551	2853.1916166367373	UP	Inflammatory_pain	False
+ROBO1	unassigned	mild_vs_severe	1.8270079516494484	0.99992989486551	0.4884226088836133	UP	Nerve_guidance	False
+SEMA3A	unassigned	mild_vs_severe	0.6249019053091657	0.99992989486551	3.820906336850723	UP	Nerve_guidance	False
+SEMA3E	unassigned	mild_vs_severe	3.0207692841922515	0.8036260746437927	1.725349847184198	UP	Nerve_guidance	False
+SLIT3	unassigned	mild_vs_severe	-2.51020085436843	0.967136679437295	2.376330060654496	DOWN	Nerve_guidance	False
+TNF	unassigned	mild_vs_severe	1.8454465993192792	0.3188063339018998	57.21311636487782	UP	Inflammatory_pain	False
+TRPV1	unassigned	mild_vs_severe	-0.3129337596247445	0.99992989486551	0.6058795914383135	DOWN	Nociception_ion_channels	False
+TRPV4	unassigned	mild_vs_severe	-2.5405461530740148	0.9602668352675592	2.827556199780211	DOWN	Nociception_ion_channels	False
+UNC5B	unassigned	mild_vs_severe	0.0391158056420814	0.99992989486551	2.578166940525418	UP	Nerve_guidance	False
+VEGFA	unassigned	mild_vs_severe	1.5922557930272856	0.0019646748277865	427.4789830606656	UP	Neovascularization	True
+VEGFB	unassigned	mild_vs_severe	-0.0227116748975672	0.99992989486551	8.412379256746876	DOWN	Neovascularization	False
+ANGPT1	T_cell	mild_vs_severe	0.1847583341411405		0.7857917832326446	UP	Neovascularization	False
+ANGPT2	T_cell	mild_vs_severe	0.3592233770037694	0.9167852680624008	6.70914353708105	UP	Neovascularization	False
+BDKRB2	T_cell	mild_vs_severe	1.327379499176915		0.1267710317943695	UP	Inflammatory_pain	False
+CCL2	T_cell	mild_vs_severe	3.856513470759055	0.0620699054607733	84.55449464613356	UP	Inflammatory_pain	False
+CXCL8	T_cell	mild_vs_severe	1.0708318255426157	0.3368609498541177	9935.59572002256	UP	Inflammatory_pain	False
+FGF2	T_cell	mild_vs_severe	1.93727219894396	0.3735559583697215	8.027024962550733	UP	Neovascularization	False
+FLT1	T_cell	mild_vs_severe	1.3004592698385988	0.0976297491752311	67.55905221955258	UP	Neovascularization	False
+GAL	T_cell	mild_vs_severe	0.9537673789030612		0.2950038424474928	UP	Neuropeptides	False
+NGF	T_cell	mild_vs_severe	1.541252375057926	0.7396370110647991	2.87702462195408	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	T_cell	mild_vs_severe	-0.7472114455530557	0.7597254882121193	10.28526075989734	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	T_cell	mild_vs_severe	4.44414733110795	6.893845557889045e-05	17.401946312523233	UP	Nerve_guidance	True
+NTN1	T_cell	mild_vs_severe	2.180648217094168		0.4707503016614939	UP	Nerve_guidance	False
+NTN4	T_cell	mild_vs_severe	-1.3964760040838875		1.3323646575802368	DOWN	Nerve_guidance	False
+NTRK2	T_cell	mild_vs_severe	1.4865955738078096		2.207716237847369	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	T_cell	mild_vs_severe	-0.3677454249824465	0.9212822010504752	15.317533268493111	DOWN	Nociception_ion_channels	False
+P2RX7	T_cell	mild_vs_severe	0.5654783890728495	0.7258616082528372	22.89511762310092	UP	Nociception_ion_channels	False
+PDGFA	T_cell	mild_vs_severe	0.7016933044971971	0.8126457384555371	6.892004458080937	UP	Neovascularization	False
+PDGFB	T_cell	mild_vs_severe	1.197065529901338	0.4530268842072693	20.09783934955643	UP	Neovascularization	False
+PLA2G2A	T_cell	mild_vs_severe	3.8234996149143226	0.0004591914564279	30.549702457976235	UP	Inflammatory_pain	True
+PTGES	T_cell	mild_vs_severe	0.8261533490230506	0.6834381246400527	26.26860935987727	UP	Inflammatory_pain	False
+PTGS2	T_cell	mild_vs_severe	1.6874601558457696	0.0892294656113142	1104.3304602391097	UP	Inflammatory_pain	False
+ROBO1	T_cell	mild_vs_severe	1.546762013249377		1.52997333698916	UP	Nerve_guidance	False
+ROBO2	T_cell	mild_vs_severe	0.7975453981325672		0.0438621342472769	UP	Nerve_guidance	False
+SEMA3A	T_cell	mild_vs_severe	3.230909222964602	0.3512010659916567	3.2023539751438603	UP	Nerve_guidance	False
+SEMA3E	T_cell	mild_vs_severe	2.0333440017366886		0.3141881644406623	UP	Nerve_guidance	False
+SLIT3	T_cell	mild_vs_severe	1.0202045348627795		0.018735271308677	UP	Nerve_guidance	False
+TNF	T_cell	mild_vs_severe	2.163501479807279	1.3745512030031558e-05	400.7754273142234	UP	Inflammatory_pain	True
+TRPV1	T_cell	mild_vs_severe	-1.336853770495414	0.5636720539900764	4.550821369757267	DOWN	Nociception_ion_channels	False
+TRPV4	T_cell	mild_vs_severe	-0.9545643803401108		0.8845859552301332	DOWN	Nociception_ion_channels	False
+UNC5B	T_cell	mild_vs_severe	0.3482568372157158	0.9541520446117888	2.7812686368409154	UP	Nerve_guidance	False
+VEGFA	T_cell	mild_vs_severe	0.4195255834869349	0.7706342330422227	356.27189627314146	UP	Neovascularization	False
+VEGFB	T_cell	mild_vs_severe	-0.0139068360066574	0.9942992870389205	46.116775172905	DOWN	Neovascularization	False
+ANGPT1	B_cell	mild_vs_severe	-1.801554035325363	0.8450885069305727	13.070026581526497	DOWN	Neovascularization	False
+ANGPT2	B_cell	mild_vs_severe	0.2298624218740764	0.999635764795218	0.7122785122661677	UP	Neovascularization	False
+CCL2	B_cell	mild_vs_severe	1.8089779782857955	0.999635764795218	0.3274036930494322	UP	Inflammatory_pain	False
+CXCL8	B_cell	mild_vs_severe	-1.4211995706060894	0.900849536774168	182.2813977155404	DOWN	Inflammatory_pain	False
+FGF2	B_cell	mild_vs_severe	0.5271339322894747	0.999635764795218	2.319642569624782	UP	Neovascularization	False
+FLT1	B_cell	mild_vs_severe	1.1559292083449983	0.999635764795218	4.519200122488012	UP	Neovascularization	False
+GAL	B_cell	mild_vs_severe	-1.6462608976379045	0.999635764795218	2.2120213110653	DOWN	Neuropeptides	False
+NGF	B_cell	mild_vs_severe	1.7786968143675592	0.999635764795218	0.6478908134053049	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	B_cell	mild_vs_severe	-1.0317220971044383	0.999635764795218	0.3523065980943515	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP2	B_cell	mild_vs_severe	2.21765838445358	0.999635764795218	2.318570209061835	UP	Nerve_guidance	False
+NTN1	B_cell	mild_vs_severe	-0.3804252440235001	0.999635764795218	0.2696839291932989	DOWN	Nerve_guidance	False
+NTRK2	B_cell	mild_vs_severe	2.929388748705552	0.999635764795218	0.6597215650291874	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	B_cell	mild_vs_severe	-0.6311171919951067	0.999635764795218	2.020869259352692	DOWN	Nociception_ion_channels	False
+P2RX7	B_cell	mild_vs_severe	0.0801486391421782	0.999635764795218	1.5688548127989443	UP	Nociception_ion_channels	False
+PDGFA	B_cell	mild_vs_severe	0.2533832894049649	0.999635764795218	5.126486183145065	UP	Neovascularization	False
+PLA2G2A	B_cell	mild_vs_severe	2.1362363537676146	0.999635764795218	3.967407379452792	UP	Inflammatory_pain	False
+PTGES	B_cell	mild_vs_severe	1.530269076040162	0.999635764795218	1.2736399291238245	UP	Inflammatory_pain	False
+PTGS2	B_cell	mild_vs_severe	-0.6085318548531891	0.999635764795218	15.081561731877676	DOWN	Inflammatory_pain	False
+ROBO1	B_cell	mild_vs_severe	2.111860830894832	0.999635764795218	0.2187386901859149	UP	Nerve_guidance	False
+SEMA3A	B_cell	mild_vs_severe	1.1247637385123723	0.999635764795218	0.2296273345330809	UP	Nerve_guidance	False
+SEMA3E	B_cell	mild_vs_severe	1.1339706142959527	0.999635764795218	0.0896790673304025	UP	Nerve_guidance	False
+SLIT3	B_cell	mild_vs_severe	0.962311861129372	0.999635764795218	0.1345186009956038	UP	Nerve_guidance	False
+TNF	B_cell	mild_vs_severe	-1.079851496263549	0.999635764795218	20.02212006200858	DOWN	Inflammatory_pain	False
+TRPV1	B_cell	mild_vs_severe	-1.2195146520154396	0.999635764795218	0.8029224724345843	DOWN	Nociception_ion_channels	False
+TRPV4	B_cell	mild_vs_severe	0.3358610128843743	0.999635764795218	0.3929721104026842	UP	Nociception_ion_channels	False
+UNC5B	B_cell	mild_vs_severe	-1.8474029202265856	0.999635764795218	1.2391978662513816	DOWN	Nerve_guidance	False
+VEGFA	B_cell	mild_vs_severe	0.1810892181956995	0.999635764795218	44.26400853149244	UP	Neovascularization	False
+VEGFB	B_cell	mild_vs_severe	0.4886276114566305	0.999635764795218	16.292751382809335	UP	Neovascularization	False
+ANGPT1	AF_inner	healthy_vs_degenerated_all	0.1668004967512879	0.99996485919527	65.64223630654443	UP	Neovascularization	False
+ANGPT2	AF_inner	healthy_vs_degenerated_all	0.960626228669038	0.99996485919527	57.82915590420595	UP	Neovascularization	False
+ASIC1	AF_inner	healthy_vs_degenerated_all	-1.863796211491712		9.936189494948028	DOWN	Nociception_ion_channels	False
+ASIC3	AF_inner	healthy_vs_degenerated_all	-1.3612897710560938		4.585732447397502	DOWN	Nociception_ion_channels	False
+BDKRB1	AF_inner	healthy_vs_degenerated_all	1.8301251814820607	0.99996485919527	42.43489203089782	UP	Inflammatory_pain	False
+BDKRB2	AF_inner	healthy_vs_degenerated_all	-0.1726882588361274	0.99996485919527	40.43374874791653	DOWN	Inflammatory_pain	False
+BDNF	AF_inner	healthy_vs_degenerated_all	-0.0173428552699981	0.99996485919527	11.753231430209684	DOWN	Neuropeptides; Neurotrophin_signaling	False
+CALCA	AF_inner	healthy_vs_degenerated_all	-0.1913825563561762		9.368788076030736	DOWN	Neuropeptides	False
+CALCB	AF_inner	healthy_vs_degenerated_all	-0.7763448830124821		4.898747060892467	DOWN	Neuropeptides	False
+CCL2	AF_inner	healthy_vs_degenerated_all	-3.849562928698533	0.99996485919527	473.0295791434401	DOWN	Inflammatory_pain	False
+CXCL8	AF_inner	healthy_vs_degenerated_all	0.018964209383011	0.99996485919527	269.15993551219617	UP	Inflammatory_pain	False
+FGF2	AF_inner	healthy_vs_degenerated_all	0.7540173282158882	0.99996485919527	2328.009889455786	UP	Neovascularization	False
+FLT1	AF_inner	healthy_vs_degenerated_all	1.5519883055055914	0.99996485919527	285.9060413842171	UP	Neovascularization	False
+GAL	AF_inner	healthy_vs_degenerated_all	-2.2190321457712425		6.212360877092679	DOWN	Neuropeptides	False
+IL1B	AF_inner	healthy_vs_degenerated_all	2.6661986253283305		0.31898459738308	UP	Inflammatory_pain	False
+IL6	AF_inner	healthy_vs_degenerated_all	1.3391337178008444	0.99996485919527	43.326006547482784	UP	Inflammatory_pain	False
+KLK1	AF_inner	healthy_vs_degenerated_all	1.3704933953194285		5.094291542566545	UP	Inflammatory_pain	False
+NGF	AF_inner	healthy_vs_degenerated_all	1.820305541947288	0.99996485919527	107.8441477323311	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	AF_inner	healthy_vs_degenerated_all	0.855928284541565	0.99996485919527	19.088148365872605	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NPY	AF_inner	healthy_vs_degenerated_all	-4.531200716901586	0.99996485919527	99.39451839230048	DOWN	Neuropeptides	False
+NRP1	AF_inner	healthy_vs_degenerated_all	-0.4826068780174862	0.99996485919527	54.558638423070896	DOWN	Nerve_guidance	False
+NRP2	AF_inner	healthy_vs_degenerated_all	2.34714341363316	0.2613542650141401	1108.069764335059	UP	Nerve_guidance	False
+NTF3	AF_inner	healthy_vs_degenerated_all	3.4068739116157256	0.99996485919527	46.680685505773205	UP	Neurotrophin_signaling	False
+NTN1	AF_inner	healthy_vs_degenerated_all	2.223656877152928	0.99996485919527	23.280254685280205	UP	Nerve_guidance	False
+NTN4	AF_inner	healthy_vs_degenerated_all	-0.6282371008218228	0.99996485919527	98.61586333697176	DOWN	Nerve_guidance	False
+NTRK2	AF_inner	healthy_vs_degenerated_all	0.5040886760148378	0.99996485919527	376.3197192971912	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NTRK3	AF_inner	healthy_vs_degenerated_all	-0.7763290722326531		3.3140309496215736	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+OPRD1	AF_inner	healthy_vs_degenerated_all	-1.098246322424225		1.268019231070438	DOWN	Neurotrophin_receptors	False
+OPRK1	AF_inner	healthy_vs_degenerated_all	-4.540893277915001	0.99996485919527	10.135673243217164	DOWN	Neurotrophin_receptors	False
+P2RX4	AF_inner	healthy_vs_degenerated_all	-0.4128286493291482	0.99996485919527	104.86226532557772	DOWN	Nociception_ion_channels	False
+P2RX7	AF_inner	healthy_vs_degenerated_all	-0.4868269833676765	0.99996485919527	10.749695620024676	DOWN	Nociception_ion_channels	False
+PDGFA	AF_inner	healthy_vs_degenerated_all	2.181840241813385	0.99996485919527	143.5054713597197	UP	Neovascularization	False
+PDGFB	AF_inner	healthy_vs_degenerated_all	-2.361264907802666		1.871335297359623	DOWN	Neovascularization	False
+PENK	AF_inner	healthy_vs_degenerated_all	1.7679642297361262	0.99996485919527	11.068623190694456	UP	Neuropeptides	False
+PLA2G2A	AF_inner	healthy_vs_degenerated_all	2.790807142339131	0.99996485919527	5717.930353723311	UP	Inflammatory_pain	False
+PTGES	AF_inner	healthy_vs_degenerated_all	3.4433373251116604	0.414860201690711	168.0855223975203	UP	Inflammatory_pain	False
+PTGS2	AF_inner	healthy_vs_degenerated_all	5.2553288524981365	2.278177333352377e-06	2246.141551255242	UP	Inflammatory_pain	True
+ROBO1	AF_inner	healthy_vs_degenerated_all	0.5018194447744792	0.99996485919527	99.29459976817964	UP	Nerve_guidance	False
+ROBO2	AF_inner	healthy_vs_degenerated_all	-2.271098303288746	0.99996485919527	31.97113758341657	DOWN	Nerve_guidance	False
+SCN11A	AF_inner	healthy_vs_degenerated_all	-0.8758610934728215		3.128034310872139	DOWN	Nociception_ion_channels	False
+SEMA3A	AF_inner	healthy_vs_degenerated_all	2.215206471190056	0.99996485919527	194.924934295536	UP	Nerve_guidance	False
+SEMA3E	AF_inner	healthy_vs_degenerated_all	-0.6526303327482403	0.99996485919527	443.0100912990024	DOWN	Nerve_guidance	False
+SLIT2	AF_inner	healthy_vs_degenerated_all	-1.58368540297633	0.99996485919527	15.809734108111916	DOWN	Nerve_guidance	False
+SLIT3	AF_inner	healthy_vs_degenerated_all	-0.5132988650502599	0.99996485919527	18.762248260152155	DOWN	Nerve_guidance	False
+TAC1	AF_inner	healthy_vs_degenerated_all	2.6386909663084057	0.99996485919527	83.7394168462696	UP	Neuropeptides	False
+TEK	AF_inner	healthy_vs_degenerated_all	2.666317100107901		4.575276210011209	UP	Neovascularization	False
+TNF	AF_inner	healthy_vs_degenerated_all	0.2236403834889029		3.508907474721717	UP	Inflammatory_pain	False
+TRPV1	AF_inner	healthy_vs_degenerated_all	-0.7398089980706525	0.99996485919527	13.467263888953491	DOWN	Nociception_ion_channels	False
+TRPV4	AF_inner	healthy_vs_degenerated_all	0.766597836977574	0.99996485919527	440.1122071870363	UP	Nociception_ion_channels	False
+UNC5B	AF_inner	healthy_vs_degenerated_all	0.5606981634115014	0.99996485919527	183.14155821985904	UP	Nerve_guidance	False
+VEGFA	AF_inner	healthy_vs_degenerated_all	3.169973171447128	0.0054468089058339	7016.239387864199	UP	Neovascularization	True
+VEGFB	AF_inner	healthy_vs_degenerated_all	-0.1537195156364308	0.99996485919527	828.9959295060472	DOWN	Neovascularization	False
+ANGPT1	AF_outer	healthy_vs_degenerated_all	-0.0052895071431941	0.9999888568659132	984.7367080549687	DOWN	Neovascularization	False
+ANGPT2	AF_outer	healthy_vs_degenerated_all	0.735810172678588	0.9999888568659132	64.30317274417767	UP	Neovascularization	False
+ASIC1	AF_outer	healthy_vs_degenerated_all	-0.4424706501783783	0.9999888568659132	113.6345146887948	DOWN	Nociception_ion_channels	False
+ASIC3	AF_outer	healthy_vs_degenerated_all	0.5771698847028539	0.9999888568659132	7.442610682132556	UP	Nociception_ion_channels	False
+BDKRB1	AF_outer	healthy_vs_degenerated_all	-0.1203745635952391	0.9999888568659132	304.5652218474038	DOWN	Inflammatory_pain	False
+BDKRB2	AF_outer	healthy_vs_degenerated_all	0.5208976463830196	0.9999888568659132	485.6406436301268	UP	Inflammatory_pain	False
+BDNF	AF_outer	healthy_vs_degenerated_all	0.1723531159314285	0.9999888568659132	278.62733945342245	UP	Neuropeptides; Neurotrophin_signaling	False
+CALCA	AF_outer	healthy_vs_degenerated_all	0.9674198351225628	0.9999888568659132	1.991628801226877	UP	Neuropeptides	False
+CALCB	AF_outer	healthy_vs_degenerated_all	1.605688324227625	0.9999888568659132	4.285743694166792	UP	Neuropeptides	False
+CCL2	AF_outer	healthy_vs_degenerated_all	-1.2884172787723047	0.6189691468915173	4934.999941577669	DOWN	Inflammatory_pain	False
+CXCL8	AF_outer	healthy_vs_degenerated_all	-4.154604617469173	0.0758845786820504	162.73995314017728	DOWN	Inflammatory_pain	False
+FGF2	AF_outer	healthy_vs_degenerated_all	0.2702689482606173	0.9999888568659132	3552.59854418264	UP	Neovascularization	False
+FLT1	AF_outer	healthy_vs_degenerated_all	0.0767351748320707	0.9999888568659132	46.80635229632212	UP	Neovascularization	False
+GAL	AF_outer	healthy_vs_degenerated_all	0.5319146506600737	0.9999888568659132	21.471538840661776	UP	Neuropeptides	False
+IL1B	AF_outer	healthy_vs_degenerated_all	-0.8967697841705977	0.9999888568659132	3.5796171676060395	DOWN	Inflammatory_pain	False
+IL6	AF_outer	healthy_vs_degenerated_all	-0.0650434721625193	0.9999888568659132	153.66644775033535	DOWN	Inflammatory_pain	False
+KLK1	AF_outer	healthy_vs_degenerated_all	-1.2656059363978018		1.4054788358226746	DOWN	Inflammatory_pain	False
+NGF	AF_outer	healthy_vs_degenerated_all	0.693210122107651	0.9999888568659132	269.9107734282068	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	AF_outer	healthy_vs_degenerated_all	-0.7517587355554973		0.7957071043947558	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NPY	AF_outer	healthy_vs_degenerated_all	1.73276981281911		1.5496651345761796	UP	Neuropeptides	False
+NRP1	AF_outer	healthy_vs_degenerated_all	0.0504735913499417	0.9999888568659132	2140.2549342466305	UP	Nerve_guidance	False
+NRP2	AF_outer	healthy_vs_degenerated_all	0.1532352452551466	0.9999888568659132	2993.043296557028	UP	Nerve_guidance	False
+NTF3	AF_outer	healthy_vs_degenerated_all	-0.6273345549948914	0.9999888568659132	143.95970480993677	DOWN	Neurotrophin_signaling	False
+NTN1	AF_outer	healthy_vs_degenerated_all	-1.339968529398939	0.9999888568659132	65.09386809379227	DOWN	Nerve_guidance	False
+NTN4	AF_outer	healthy_vs_degenerated_all	-0.1540226520458172	0.9999888568659132	3567.958135466525	DOWN	Nerve_guidance	False
+NTRK2	AF_outer	healthy_vs_degenerated_all	0.7850464818681316	0.9999888568659132	609.900420977532	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NTRK3	AF_outer	healthy_vs_degenerated_all	0.7551308810346935	0.9999888568659132	3.836132367901184	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+OPRD1	AF_outer	healthy_vs_degenerated_all	1.6370458657551643	0.9999888568659132	2.0586114246417	UP	Neurotrophin_receptors	False
+OPRK1	AF_outer	healthy_vs_degenerated_all	3.204951654457531		0.4007362528596787	UP	Neurotrophin_receptors	False
+P2RX4	AF_outer	healthy_vs_degenerated_all	-0.4379831804827599	0.9999888568659132	1178.046469411798	DOWN	Nociception_ion_channels	False
+P2RX7	AF_outer	healthy_vs_degenerated_all	0.2951078308275381	0.9999888568659132	136.39921843988864	UP	Nociception_ion_channels	False
+PDGFA	AF_outer	healthy_vs_degenerated_all	0.4289002415741894	0.9999888568659132	269.8990868615112	UP	Neovascularization	False
+PDGFB	AF_outer	healthy_vs_degenerated_all	0.1049078971886541		0.7327756999315465	UP	Neovascularization	False
+PENK	AF_outer	healthy_vs_degenerated_all	2.0611262113564712	0.9999888568659132	6148.0842606113765	UP	Neuropeptides	False
+PLA2G2A	AF_outer	healthy_vs_degenerated_all	1.981239513714348	0.9999888568659132	9.923069471939977	UP	Inflammatory_pain	False
+PTGES	AF_outer	healthy_vs_degenerated_all	0.5712462492507082	0.9999888568659132	158.7145183511442	UP	Inflammatory_pain	False
+PTGS2	AF_outer	healthy_vs_degenerated_all	0.3931021731628105	0.9999888568659132	229.3665363379413	UP	Inflammatory_pain	False
+ROBO1	AF_outer	healthy_vs_degenerated_all	0.0854182992712592	0.9999888568659132	601.3452315540925	UP	Nerve_guidance	False
+ROBO2	AF_outer	healthy_vs_degenerated_all	-0.0954490866020745	0.9999888568659132	276.3083977881949	DOWN	Nerve_guidance	False
+SCN11A	AF_outer	healthy_vs_degenerated_all	0.4745394986422873	0.9999888568659132	5.365658408891693	UP	Nociception_ion_channels	False
+SEMA3A	AF_outer	healthy_vs_degenerated_all	-1.150089929776628	0.759814286390231	1648.5557037582569	DOWN	Nerve_guidance	False
+SEMA3E	AF_outer	healthy_vs_degenerated_all	-0.0521248280658499	0.9999888568659132	1426.8672357095347	DOWN	Nerve_guidance	False
+SLIT2	AF_outer	healthy_vs_degenerated_all	-0.4952191390896358	0.9999888568659132	73.18038844305737	DOWN	Nerve_guidance	False
+SLIT3	AF_outer	healthy_vs_degenerated_all	-1.3084018642061133	0.9999888568659132	100.66474047154432	DOWN	Nerve_guidance	False
+TAC1	AF_outer	healthy_vs_degenerated_all	-0.0157400220838485	0.9999888568659132	8.946070710127165	DOWN	Neuropeptides	False
+TEK	AF_outer	healthy_vs_degenerated_all	0.4960346536820982	0.9999888568659132	12.008996445710284	UP	Neovascularization	False
+TRPV1	AF_outer	healthy_vs_degenerated_all	0.6947492355171893	0.9999888568659132	47.0007828508491	UP	Nociception_ion_channels	False
+TRPV4	AF_outer	healthy_vs_degenerated_all	0.1289815703876739	0.9999888568659132	165.87144735600148	UP	Nociception_ion_channels	False
+UNC5B	AF_outer	healthy_vs_degenerated_all	0.3357070940098384	0.9999888568659132	634.0994475553421	UP	Nerve_guidance	False
+VEGFA	AF_outer	healthy_vs_degenerated_all	0.1226803526114593	0.9999888568659132	1979.2563569395263	UP	Neovascularization	False
+VEGFB	AF_outer	healthy_vs_degenerated_all	0.1081836931901637	0.9999888568659132	12443.483655813376	UP	Neovascularization	False
+ANGPT1	AF_outer	healthy_vs_degenerated_mild	-0.0452478069881312	0.9998763552908048	1403.0449370269994	DOWN	Neovascularization	False
+ANGPT2	AF_outer	healthy_vs_degenerated_mild	0.2899010778350807		70.42282738925668	UP	Neovascularization	False
+ASIC1	AF_outer	healthy_vs_degenerated_mild	-0.4343573916136695		170.840671507101	DOWN	Nociception_ion_channels	False
+ASIC3	AF_outer	healthy_vs_degenerated_mild	-0.5342038136572973		5.554822697389976	DOWN	Nociception_ion_channels	False
+BDKRB1	AF_outer	healthy_vs_degenerated_mild	-0.4060885973760837		403.4239843908324	DOWN	Inflammatory_pain	False
+BDKRB2	AF_outer	healthy_vs_degenerated_mild	0.1415311153135781	0.9998763552908048	564.7513251089737	UP	Inflammatory_pain	False
+BDNF	AF_outer	healthy_vs_degenerated_mild	-0.0157410338535306		366.218599983561	DOWN	Neuropeptides; Neurotrophin_signaling	False
+CALCA	AF_outer	healthy_vs_degenerated_mild	1.5475653111610506		3.929279786723337	UP	Neuropeptides	False
+CALCB	AF_outer	healthy_vs_degenerated_mild	1.94339295008011		6.4118414158742025	UP	Neuropeptides	False
+CCL2	AF_outer	healthy_vs_degenerated_mild	-0.9842781838163518	0.9998763552908048	8956.004474014708	DOWN	Inflammatory_pain	False
+CXCL8	AF_outer	healthy_vs_degenerated_mild	-4.327839938803171		342.61866765424105	DOWN	Inflammatory_pain	False
+FGF2	AF_outer	healthy_vs_degenerated_mild	0.0650124636716733	0.9998763552908048	4571.762825062465	UP	Neovascularization	False
+FLT1	AF_outer	healthy_vs_degenerated_mild	-0.2557837211642485		56.94464444696592	DOWN	Neovascularization	False
+GAL	AF_outer	healthy_vs_degenerated_mild	1.3300862477900446		44.8947441691866	UP	Neuropeptides	False
+IL1B	AF_outer	healthy_vs_degenerated_mild	-0.5584151131741998		6.639829824371209	DOWN	Inflammatory_pain	False
+IL6	AF_outer	healthy_vs_degenerated_mild	-0.0295023775646142		223.72220329040647	DOWN	Inflammatory_pain	False
+KLK1	AF_outer	healthy_vs_degenerated_mild	-2.002171544747193		1.386103729820689	DOWN	Inflammatory_pain	False
+NGF	AF_outer	healthy_vs_degenerated_mild	0.2124582285013502		292.4330569093397	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	AF_outer	healthy_vs_degenerated_mild	-1.920559873561945		0.8195948841205782	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NPY	AF_outer	healthy_vs_degenerated_mild	2.4801435472882263		3.35932335113202	UP	Neuropeptides	False
+NRP1	AF_outer	healthy_vs_degenerated_mild	0.039716174586585	0.9998763552908048	3060.377785652921	UP	Nerve_guidance	False
+NRP2	AF_outer	healthy_vs_degenerated_mild	0.3106487943843115	0.9998763552908048	4547.766916962414	UP	Nerve_guidance	False
+NTF3	AF_outer	healthy_vs_degenerated_mild	-0.2992344565103219		250.30345181927123	DOWN	Neurotrophin_signaling	False
+NTN1	AF_outer	healthy_vs_degenerated_mild	-0.9480835698711696		121.8232296017603	DOWN	Nerve_guidance	False
+NTN4	AF_outer	healthy_vs_degenerated_mild	-0.1620590337359369	0.9998763552908048	5217.147509163752	DOWN	Nerve_guidance	False
+NTRK2	AF_outer	healthy_vs_degenerated_mild	0.932426370648072	0.9998763552908048	876.6057167513366	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NTRK3	AF_outer	healthy_vs_degenerated_mild	1.2149001636237209		6.160314714308451	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+OPRD1	AF_outer	healthy_vs_degenerated_mild	0.9666481834827816		1.706169509859563	UP	Neurotrophin_receptors	False
+OPRK1	AF_outer	healthy_vs_degenerated_mild	2.8366414706515237		0.4740539982381482	UP	Neurotrophin_receptors	False
+P2RX4	AF_outer	healthy_vs_degenerated_mild	-0.3450926774875911	0.9998763552908048	1846.3543598751287	DOWN	Nociception_ion_channels	False
+P2RX7	AF_outer	healthy_vs_degenerated_mild	0.3285519246840322		191.915406673479	UP	Nociception_ion_channels	False
+PDGFA	AF_outer	healthy_vs_degenerated_mild	0.4786796267927695		381.2258816049592	UP	Neovascularization	False
+PDGFB	AF_outer	healthy_vs_degenerated_mild	-0.3929431997473045		1.0693744032586268	DOWN	Neovascularization	False
+PENK	AF_outer	healthy_vs_degenerated_mild	1.3353417905393743	0.9998763552908048	5027.307205596677	UP	Neuropeptides	False
+PLA2G2A	AF_outer	healthy_vs_degenerated_mild	2.649045834542893		18.616854790752576	UP	Inflammatory_pain	False
+PTGES	AF_outer	healthy_vs_degenerated_mild	0.8984179120604173		253.76590860438856	UP	Inflammatory_pain	False
+PTGS2	AF_outer	healthy_vs_degenerated_mild	0.4595977207756231		325.939865016755	UP	Inflammatory_pain	False
+ROBO1	AF_outer	healthy_vs_degenerated_mild	0.1000818435793936	0.9998763552908048	866.0319282460814	UP	Nerve_guidance	False
+ROBO2	AF_outer	healthy_vs_degenerated_mild	-0.2260562057975006		382.66237987329714	DOWN	Nerve_guidance	False
+SCN11A	AF_outer	healthy_vs_degenerated_mild	-0.2485077208103917		4.768848942842189	DOWN	Nociception_ion_channels	False
+SEMA3A	AF_outer	healthy_vs_degenerated_mild	-0.7344290584164752	0.9998763552908048	3063.1097302259413	DOWN	Nerve_guidance	False
+SEMA3E	AF_outer	healthy_vs_degenerated_mild	-0.0164261069087924	0.9998763552908048	2103.0608792281646	DOWN	Nerve_guidance	False
+SLIT2	AF_outer	healthy_vs_degenerated_mild	-0.4527273305594462		111.38449345117216	DOWN	Nerve_guidance	False
+SLIT3	AF_outer	healthy_vs_degenerated_mild	-0.8018114429949474		195.29288865632847	DOWN	Nerve_guidance	False
+TAC1	AF_outer	healthy_vs_degenerated_mild	0.5492644274386522		16.571891492875487	UP	Neuropeptides	False
+TEK	AF_outer	healthy_vs_degenerated_mild	0.0639685239462623		12.538713123150387	UP	Neovascularization	False
+TNF	AF_outer	healthy_vs_degenerated_mild	0.048168830150495		0.0752240944076508	UP	Inflammatory_pain	False
+TRPV1	AF_outer	healthy_vs_degenerated_mild	0.1788223344272265		49.66912207290616	UP	Nociception_ion_channels	False
+TRPV4	AF_outer	healthy_vs_degenerated_mild	-0.1019400757519089		211.69793257752585	DOWN	Nociception_ion_channels	False
+UNC5B	AF_outer	healthy_vs_degenerated_mild	0.3325549754479894	0.9998763552908048	881.8928453740929	UP	Nerve_guidance	False
+VEGFA	AF_outer	healthy_vs_degenerated_mild	0.1725404548293511	0.9998763552908048	2875.5760185359977	UP	Neovascularization	False
+VEGFB	AF_outer	healthy_vs_degenerated_mild	0.0726616108007068	0.9998763552908048	17511.422962589855	UP	Neovascularization	False
+ANGPT1	AF_inner	healthy_vs_degenerated_severe	0.1841084025906648	0.9999859435274328	101.6304444868993	UP	Neovascularization	False
+ANGPT2	AF_inner	healthy_vs_degenerated_severe	0.9779350674871828	0.9999859435274328	104.53196043111986	UP	Neovascularization	False
+ASIC1	AF_inner	healthy_vs_degenerated_severe	-1.8464882963921505	0.9999859435274328	14.458507536385618	DOWN	Nociception_ion_channels	False
+ASIC3	AF_inner	healthy_vs_degenerated_severe	-1.343982093330239	0.9999859435274328	4.79798030034518	DOWN	Nociception_ion_channels	False
+BDKRB1	AF_inner	healthy_vs_degenerated_severe	1.8474337244588492	0.9999859435274328	77.46378678649454	UP	Inflammatory_pain	False
+BDKRB2	AF_inner	healthy_vs_degenerated_severe	-0.1553799871306257	0.9999859435274328	66.4947345647376	DOWN	Inflammatory_pain	False
+BDNF	AF_inner	healthy_vs_degenerated_severe	-3.479746111053228e-05	0.9999859435274328	14.273088879597443	DOWN	Neuropeptides; Neurotrophin_signaling	False
+CALCA	AF_inner	healthy_vs_degenerated_severe	-0.1740724384418595	0.9999859435274328	16.933755477823045	DOWN	Neuropeptides	False
+CALCB	AF_inner	healthy_vs_degenerated_severe	-0.7590348255494845	0.9999859435274328	8.854698754162168	DOWN	Neuropeptides	False
+CCL2	AF_inner	healthy_vs_degenerated_severe	-3.832250180569447	0.9999859435274328	806.3640312630504	DOWN	Inflammatory_pain	False
+CXCL8	AF_inner	healthy_vs_degenerated_severe	0.0362960899341753	0.9999859435274328	486.2699486278696	UP	Inflammatory_pain	False
+FGF2	AF_inner	healthy_vs_degenerated_severe	0.7713255935742163	0.9999859435274328	3671.0231556888793	UP	Neovascularization	False
+FLT1	AF_inner	healthy_vs_degenerated_severe	1.5692974628746186	0.9999859435274328	488.8378220662431	UP	Neovascularization	False
+GAL	AF_inner	healthy_vs_degenerated_severe	-2.2017227613125296	0.9999859435274328	11.214431196374688	DOWN	Neuropeptides	False
+IL1B	AF_inner	healthy_vs_degenerated_severe	2.6834766547181648		0.5769528211173922	UP	Inflammatory_pain	False
+IL6	AF_inner	healthy_vs_degenerated_severe	1.3564401987586432	0.9999859435274328	46.74042458868106	UP	Inflammatory_pain	False
+KLK1	AF_inner	healthy_vs_degenerated_severe	1.3878024430231957	0.9999859435274328	9.276716208775971	UP	Inflammatory_pain	False
+NGF	AF_inner	healthy_vs_degenerated_severe	1.8376140133459065	0.9999859435274328	181.6617657184515	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	AF_inner	healthy_vs_degenerated_severe	0.8732373315084062	0.9999859435274328	34.49457420103115	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NPY	AF_inner	healthy_vs_degenerated_severe	-4.5138949806690505	0.9999859435274328	151.42180388704926	DOWN	Neuropeptides	False
+NRP1	AF_inner	healthy_vs_degenerated_severe	-0.4652985905012549	0.9999859435274328	87.79211644244377	DOWN	Nerve_guidance	False
+NRP2	AF_inner	healthy_vs_degenerated_severe	2.3644518676476003	0.2003894236660476	1863.3328611978568	UP	Nerve_guidance	False
+NTF3	AF_inner	healthy_vs_degenerated_severe	3.424182834498405	0.9999859435274328	81.0172662565039	UP	Neurotrophin_signaling	False
+NTN1	AF_inner	healthy_vs_degenerated_severe	2.240965014968381	0.9999859435274328	35.07284989939128	UP	Nerve_guidance	False
+NTN4	AF_inner	healthy_vs_degenerated_severe	-0.6109288456995883	0.9999859435274328	139.57554509964578	DOWN	Nerve_guidance	False
+NTRK2	AF_inner	healthy_vs_degenerated_severe	0.5213971736414726	0.9999859435274328	668.7090154351223	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NTRK3	AF_inner	healthy_vs_degenerated_severe	-0.7590200842255436	0.9999859435274328	6.003893434910137	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+OPRD1	AF_inner	healthy_vs_degenerated_severe	-1.0809430028156917	0.9999859435274328	2.2990838877774418	DOWN	Neurotrophin_receptors	False
+OPRK1	AF_inner	healthy_vs_degenerated_severe	-4.523589567858373	0.9999859435274328	18.21940923493973	DOWN	Neurotrophin_receptors	False
+P2RX4	AF_inner	healthy_vs_degenerated_severe	-0.3955204968457014	0.9999859435274328	162.2842004455993	DOWN	Nociception_ion_channels	False
+P2RX7	AF_inner	healthy_vs_degenerated_severe	-0.4695184936663111	0.9999859435274328	15.972841493404518	DOWN	Nociception_ion_channels	False
+PDGFA	AF_inner	healthy_vs_degenerated_severe	2.1991489501201804	0.8411148438526194	252.02333342834385	UP	Neovascularization	False
+PDGFB	AF_inner	healthy_vs_degenerated_severe	-2.343960424890873	0.9999859435274328	3.3735343468241896	DOWN	Neovascularization	False
+PENK	AF_inner	healthy_vs_degenerated_severe	1.7852728285101318	0.9999859435274328	20.031428032641568	UP	Neuropeptides	False
+PLA2G2A	AF_inner	healthy_vs_degenerated_severe	2.8081190789959867	0.9999859435274328	10313.653176564205	UP	Inflammatory_pain	False
+PTGES	AF_inner	healthy_vs_degenerated_severe	3.460647732458068	0.0080839397708401	261.2296832727959	UP	Inflammatory_pain	True
+PTGS2	AF_inner	healthy_vs_degenerated_severe	5.27263775502045	1.0194099426449218e-07	3705.559223197075	UP	Inflammatory_pain	True
+ROBO1	AF_inner	healthy_vs_degenerated_severe	0.5191277355616456	0.9999859435274328	148.7744321574795	UP	Nerve_guidance	False
+ROBO2	AF_inner	healthy_vs_degenerated_severe	-2.2537931253048598	0.9999859435274328	43.799593909618864	DOWN	Nerve_guidance	False
+SCN11A	AF_inner	healthy_vs_degenerated_severe	-0.8585539892251473	0.9999859435274328	5.664756767586859	DOWN	Nociception_ion_channels	False
+SEMA3A	AF_inner	healthy_vs_degenerated_severe	2.23251557812405	0.9999859435274328	346.8461938344192	UP	Nerve_guidance	False
+SEMA3E	AF_inner	healthy_vs_degenerated_severe	-0.6353220951038774	0.9999859435274328	629.5350874994701	DOWN	Nerve_guidance	False
+SLIT2	AF_inner	healthy_vs_degenerated_severe	-1.5663768231503843	0.9999859435274328	25.20698743494904	DOWN	Nerve_guidance	False
+SLIT3	AF_inner	healthy_vs_degenerated_severe	-0.4959904037588891	0.9999859435274328	33.798798125790825	DOWN	Nerve_guidance	False
+TAC1	AF_inner	healthy_vs_degenerated_severe	2.6559988132030115	0.9999859435274328	106.1060360333414	UP	Neuropeptides	False
+TEK	AF_inner	healthy_vs_degenerated_severe	2.683631980027015	0.9999859435274328	8.199883681383369	UP	Neovascularization	False
+TNF	AF_inner	healthy_vs_degenerated_severe	0.2409494203046247	0.9999859435274328	6.328465676373116	UP	Inflammatory_pain	False
+TRPV1	AF_inner	healthy_vs_degenerated_severe	-0.722500512286497	0.9999859435274328	24.41669903510831	DOWN	Nociception_ion_channels	False
+TRPV4	AF_inner	healthy_vs_degenerated_severe	0.783906305386363	0.9999859435274328	745.8956553971651	UP	Nociception_ion_channels	False
+UNC5B	AF_inner	healthy_vs_degenerated_severe	0.5780065979382694	0.9999859435274328	299.97882613419665	UP	Nerve_guidance	False
+VEGFA	AF_inner	healthy_vs_degenerated_severe	3.187281563540459	0.0021384278203323	8842.214174857741	UP	Neovascularization	True
+VEGFB	AF_inner	healthy_vs_degenerated_severe	-0.1364113462529111	0.9999859435274328	1015.601449537537	DOWN	Neovascularization	False
+ANGPT1	AF_outer	healthy_vs_degenerated_severe	0.0211221223718096	0.9932037136027552	960.4195303067548	UP	Neovascularization	False
+ANGPT2	AF_outer	healthy_vs_degenerated_severe	1.0911940618744915	0.5553308138207876	68.09318184275739	UP	Neovascularization	False
+ASIC1	AF_outer	healthy_vs_degenerated_severe	-0.4608534282551259	0.6926348321320441	115.32417735576848	DOWN	Nociception_ion_channels	False
+ASIC3	AF_outer	healthy_vs_degenerated_severe	1.3985783848128617	0.6397388389285182	9.492915425442122	UP	Nociception_ion_channels	False
+BDKRB1	AF_outer	healthy_vs_degenerated_severe	0.1067823417089198	0.9772639538511296	325.7329372255812	UP	Inflammatory_pain	False
+BDKRB2	AF_outer	healthy_vs_degenerated_severe	0.8214821214747969	0.4035251608512551	510.1008704616677	UP	Inflammatory_pain	False
+BDNF	AF_outer	healthy_vs_degenerated_severe	0.3367973110587376	0.8361301863201612	282.29853176284	UP	Neuropeptides; Neurotrophin_signaling	False
+CALCA	AF_outer	healthy_vs_degenerated_severe	-0.1525512823967317		0.9146540138484608	DOWN	Neuropeptides	False
+CALCB	AF_outer	healthy_vs_degenerated_severe	1.01187525188798	0.8677813826908403	2.8721894491682605	UP	Neuropeptides	False
+CCL2	AF_outer	healthy_vs_degenerated_severe	-1.6985195173262877	0.0335446177652706	5049.996728965661	DOWN	Inflammatory_pain	True
+CXCL8	AF_outer	healthy_vs_degenerated_severe	-4.012719097308949	0.1941482098023485	232.1271343868175	DOWN	Inflammatory_pain	False
+FGF2	AF_outer	healthy_vs_degenerated_severe	0.4422368669151652	0.6666907166451266	3594.4623521818157	UP	Neovascularization	False
+FLT1	AF_outer	healthy_vs_degenerated_severe	0.3558230386485355	0.9487705616793396	50.89522577975674	UP	Neovascularization	False
+GAL	AF_outer	healthy_vs_degenerated_severe	-1.689076222550511	0.6235710363517549	9.221449438497311	DOWN	Neuropeptides	False
+IL1B	AF_outer	healthy_vs_degenerated_severe	-1.468482968608472	0.7910179824488671	3.2911373922743143	DOWN	Inflammatory_pain	False
+IL6	AF_outer	healthy_vs_degenerated_severe	-0.1047561638453538	0.9825748611092944	147.6269267137449	DOWN	Inflammatory_pain	False
+KLK1	AF_outer	healthy_vs_degenerated_severe	-0.4985903952517111		1.930965707888897	DOWN	Inflammatory_pain	False
+NGF	AF_outer	healthy_vs_degenerated_severe	1.047933722452589	0.6390886646037007	289.4614382884668	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	AF_outer	healthy_vs_degenerated_severe	0.2516088675459522		1.1011837700790643	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NPY	AF_outer	healthy_vs_degenerated_severe	-0.0798462630262472		0.3444373470695652	DOWN	Neuropeptides	False
+NRP1	AF_outer	healthy_vs_degenerated_severe	0.0499389902588197	0.9842088902511416	2053.0891466071785	UP	Nerve_guidance	False
+NRP2	AF_outer	healthy_vs_degenerated_severe	-0.040478771577166	0.9740999078397968	2630.1874707944567	DOWN	Nerve_guidance	False
+NTF3	AF_outer	healthy_vs_degenerated_severe	-1.090107429240388	0.561494218705692	130.32098580300627	DOWN	Neurotrophin_signaling	False
+NTN1	AF_outer	healthy_vs_degenerated_severe	-1.9669373823831189	0.3622778485301413	65.09458052793957	DOWN	Nerve_guidance	False
+NTN4	AF_outer	healthy_vs_degenerated_severe	-0.1553013591315628	0.9275856965139776	3500.97215345572	DOWN	Nerve_guidance	False
+NTRK2	AF_outer	healthy_vs_degenerated_severe	0.5955789966486442	0.73184615965617	501.0581680626587	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NTRK3	AF_outer	healthy_vs_degenerated_severe	-0.3408366085031323	0.9673594200826	2.667037276571299	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+OPRD1	AF_outer	healthy_vs_degenerated_severe	2.2649532935425314		2.284749118424577	UP	Neurotrophin_receptors	False
+OPRK1	AF_outer	healthy_vs_degenerated_severe	3.5357252038741547		0.2905024042703493	UP	Neurotrophin_receptors	False
+P2RX4	AF_outer	healthy_vs_degenerated_severe	-0.5530529427572679	0.6599815879379758	1151.3161195434316	DOWN	Nociception_ion_channels	False
+P2RX7	AF_outer	healthy_vs_degenerated_severe	0.24041851359035	0.8677813826908403	125.86353348586616	UP	Nociception_ion_channels	False
+PDGFA	AF_outer	healthy_vs_degenerated_severe	0.3579459374776519	0.7506962952284978	242.5403921875349	UP	Neovascularization	False
+PDGFB	AF_outer	healthy_vs_degenerated_severe	0.4504064260869203		0.7595385164144978	UP	Neovascularization	False
+PENK	AF_outer	healthy_vs_degenerated_severe	2.5343196678941293	0.5642424995804111	6719.67837121709	UP	Neuropeptides	False
+PLA2G2A	AF_outer	healthy_vs_degenerated_severe	5.388138030589236		76.23085086432367	UP	Inflammatory_pain	False
+PTGES	AF_outer	healthy_vs_degenerated_severe	0.1009502143254523	0.9762863908935008	118.9609559482684	UP	Inflammatory_pain	False
+PTGS2	AF_outer	healthy_vs_degenerated_severe	0.3114642245367492	0.9164780049376606	205.71649389585332	UP	Inflammatory_pain	False
+ROBO1	AF_outer	healthy_vs_degenerated_severe	0.0576734546666163	0.9812859548875364	568.780539364382	UP	Nerve_guidance	False
+ROBO2	AF_outer	healthy_vs_degenerated_severe	0.0142439665223727	0.9950261864966355	281.8903553293588	UP	Nerve_guidance	False
+SCN11A	AF_outer	healthy_vs_degenerated_severe	1.127654633145959	0.7856963399562602	6.456808670023951	UP	Nociception_ion_channels	False
+SEMA3A	AF_outer	healthy_vs_degenerated_severe	-1.7622012772396267	0.0161651732841062	1581.5790277526428	DOWN	Nerve_guidance	True
+SEMA3E	AF_outer	healthy_vs_degenerated_severe	-0.1025743812129404	0.9757585711444344	1360.8335670554948	DOWN	Nerve_guidance	False
+SLIT2	AF_outer	healthy_vs_degenerated_severe	-0.541857699233737	0.8529678448298597	73.94708671609634	DOWN	Nerve_guidance	False
+SLIT3	AF_outer	healthy_vs_degenerated_severe	-2.154277703045506	0.134868210031027	95.475543375608	DOWN	Nerve_guidance	False
+TAC1	AF_outer	healthy_vs_degenerated_severe	-1.3695440705528714	0.7601603100853835	6.18769234496119	DOWN	Neuropeptides	False
+TEK	AF_outer	healthy_vs_degenerated_severe	0.9065487200604824	0.8102641718685407	13.338875739230096	UP	Neovascularization	False
+TNF	AF_outer	healthy_vs_degenerated_severe	1.0755864364774277		0.050289729604251	UP	Inflammatory_pain	False
+TRPV1	AF_outer	healthy_vs_degenerated_severe	1.1134742660843493	0.4690729231830217	51.14420456848092	UP	Nociception_ion_channels	False
+TRPV4	AF_outer	healthy_vs_degenerated_severe	0.3472319883165782	0.8379482556211467	172.6686299227169	UP	Nociception_ion_channels	False
+UNC5B	AF_outer	healthy_vs_degenerated_severe	0.3254103499490564	0.8767463103674772	588.740496737276	UP	Nerve_guidance	False
+VEGFA	AF_outer	healthy_vs_degenerated_severe	0.0611790731226138	0.9812859548875364	1838.589348763158	UP	Neovascularization	False
+VEGFB	AF_outer	healthy_vs_degenerated_severe	0.1317586578390946	0.9414717501915556	12000.295206363442	UP	Neovascularization	False
+ANGPT1	AF_outer	mild_vs_severe	0.0488900177293777	0.9744837199859452	739.2631515611998	UP	Neovascularization	False
+ANGPT2	AF_outer	mild_vs_severe	0.7819910123495729	0.5258944132843101	54.28298839251866	UP	Neovascularization	False
+ASIC1	AF_outer	mild_vs_severe	-0.041200894002178	0.9758303692325044	78.2926321107154	DOWN	Nociception_ion_channels	False
+ASIC3	AF_outer	mild_vs_severe	1.9099038284726304	0.3870470686566436	6.375796650009735	UP	Nociception_ion_channels	False
+BDKRB1	AF_outer	mild_vs_severe	0.495040418007697	0.7459812708616228	223.616743381051	UP	Inflammatory_pain	False
+BDKRB2	AF_outer	mild_vs_severe	0.6571519242543955	0.5054905231993003	398.0657407519736	UP	Inflammatory_pain	False
+BDNF	AF_outer	mild_vs_severe	0.3344603445706046	0.7307129610354474	216.11161302486835	UP	Neuropeptides; Neurotrophin_signaling	False
+CALCA	AF_outer	mild_vs_severe	-1.7014786531907242	0.7318490919021069	1.6967901141837285	DOWN	Neuropeptides	False
+CALCB	AF_outer	mild_vs_severe	-0.9765852892069884	0.7919737699488592	3.968647790920965	DOWN	Neuropeptides	False
+CCL2	AF_outer	mild_vs_severe	-0.7337419481910221	0.5302190795151779	2666.792341357188	DOWN	Inflammatory_pain	False
+CXCL8	AF_outer	mild_vs_severe	0.3181869635138969	0.9089839527581371	21.69345852542049	UP	Inflammatory_pain	False
+FGF2	AF_outer	mild_vs_severe	0.3584824503112623	0.5302190795151779	2804.4629085824795	UP	Neovascularization	False
+FLT1	AF_outer	mild_vs_severe	0.6374292728520771	0.8738396829794937	36.15909673970964	UP	Neovascularization	False
+GAL	AF_outer	mild_vs_severe	-3.0303633940868937	0.1681936698552182	17.53846115793116	DOWN	Neuropeptides	False
+IL1B	AF_outer	mild_vs_severe	-0.9355706806377648	0.8074032964318357	2.121537507788457	DOWN	Inflammatory_pain	False
+IL6	AF_outer	mild_vs_severe	-0.1145312215801627	0.9629034928639412	114.83200877545728	DOWN	Inflammatory_pain	False
+KLK1	AF_outer	mild_vs_severe	1.537986591796009	0.8356410866890158	0.9613781822797464	UP	Inflammatory_pain	False
+NGF	AF_outer	mild_vs_severe	0.809277931748177		226.7315918460989	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	AF_outer	mild_vs_severe	2.2328527328877903	0.7697892790820692	0.5198419370559798	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NPY	AF_outer	mild_vs_severe	-2.655868128410583	0.6353179849964566	1.4332350366482545	DOWN	Neuropeptides	False
+NRP1	AF_outer	mild_vs_severe	-0.0080892763747047	0.9946877697766312	1625.5650196568156	DOWN	Nerve_guidance	False
+NRP2	AF_outer	mild_vs_severe	-0.3709662503751711	0.6079979607498079	2315.2513624000567	DOWN	Nerve_guidance	False
+NTF3	AF_outer	mild_vs_severe	-0.8233822632482123	0.6750539946749072	94.20412741878766	DOWN	Neurotrophin_signaling	False
+NTN1	AF_outer	mild_vs_severe	-1.1213477718192415	0.2143315288266561	34.492904357926825	DOWN	Nerve_guidance	False
+NTN4	AF_outer	mild_vs_severe	-0.0112550709209451	0.9917254940362352	2605.30520245457	DOWN	Nerve_guidance	False
+NTRK2	AF_outer	mild_vs_severe	-0.347242728603123	0.8698347917762066	518.0600654869703	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NTRK3	AF_outer	mild_vs_severe	-1.683705702943611	0.5839638427601737	3.298091528232028	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+OPRD1	AF_outer	mild_vs_severe	1.2621142490094046	0.7202032560594149	1.9164110431569303	UP	Neurotrophin_receptors	False
+OPRK1	AF_outer	mild_vs_severe	0.6874512555604617	0.956648362235783	0.413600436426237	UP	Neurotrophin_receptors	False
+P2RX4	AF_outer	mild_vs_severe	-0.2207844763982598	0.8527467399944545	808.0514626297635	DOWN	Nociception_ion_channels	False
+P2RX7	AF_outer	mild_vs_severe	-0.0922786975152561	0.9510512405838076	108.50787406746952	DOWN	Nociception_ion_channels	False
+PDGFA	AF_outer	mild_vs_severe	-0.1404809853644586	0.8790312998404701	218.3822415756363	DOWN	Neovascularization	False
+PDGFB	AF_outer	mild_vs_severe	0.8415783925331803	0.9253344202480532	0.5086925871103123	UP	Neovascularization	False
+PENK	AF_outer	mild_vs_severe	1.1778920506408472	0.7272640735504932	5829.188198955527	UP	Neuropeptides	False
+PLA2G2A	AF_outer	mild_vs_severe	2.73513251936338		58.80353238537875	UP	Inflammatory_pain	False
+PTGES	AF_outer	mild_vs_severe	-0.8213219408788156	0.392110689232433	131.11367259501975	DOWN	Inflammatory_pain	False
+PTGS2	AF_outer	mild_vs_severe	-0.1684549745611046	0.9328227507274264	184.79407930649265	DOWN	Inflammatory_pain	False
+ROBO1	AF_outer	mild_vs_severe	-0.0590043459266093	0.952024650922285	459.7013402574024	DOWN	Nerve_guidance	False
+ROBO2	AF_outer	mild_vs_severe	0.2342089150507833	0.9185030253611388	204.29702458154927	UP	Nerve_guidance	False
+SCN11A	AF_outer	mild_vs_severe	1.3941211757523546	0.6447173926815186	4.506907872945532	UP	Nociception_ion_channels	False
+SEMA3A	AF_outer	mild_vs_severe	-1.046919349954553	0.24659709610478	930.9251762048948	DOWN	Nerve_guidance	False
+SEMA3E	AF_outer	mild_vs_severe	-0.0991178477889555	0.9604569363614968	1062.993301638301	DOWN	Nerve_guidance	False
+SLIT2	AF_outer	mild_vs_severe	-0.1722179446936064	0.9209326560436928	50.01530705068226	DOWN	Nerve_guidance	False
+SLIT3	AF_outer	mild_vs_severe	-1.373308675982751	0.3825066007542411	53.66705034690413	DOWN	Nerve_guidance	False
+TAC1	AF_outer	mild_vs_severe	-2.050722966150783	0.3877471275813228	6.70260546557391	DOWN	Neuropeptides	False
+TEK	AF_outer	mild_vs_severe	0.8462571959223126	0.772177283447273	10.001290719928305	UP	Neovascularization	False
+TRPV1	AF_outer	mild_vs_severe	0.9164080625291048	0.3533984266520416	39.57699864739615	UP	Nociception_ion_channels	False
+TRPV4	AF_outer	mild_vs_severe	0.3966647702394337	0.5451656554101204	128.5727951915032	UP	Nociception_ion_channels	False
+UNC5B	AF_outer	mild_vs_severe	-0.0282735541067845	0.9881427863158044	505.85254897525385	DOWN	Nerve_guidance	False
+VEGFA	AF_outer	mild_vs_severe	-0.1320418229782258	0.8848547062570281	1523.2724583445067	DOWN	Neovascularization	False
+VEGFB	AF_outer	mild_vs_severe	0.0448857156311216	0.975796910704434	9549.20846356339	UP	Neovascularization	False
+ANGPT1	EP_hyaline	healthy_vs_degenerated_all	1.708759074700715	0.9999232286203996	160.35966906686372	UP	Neovascularization	False
+ANGPT2	EP_hyaline	healthy_vs_degenerated_all	1.188564731722647	0.9999232286203996	150.54687851886595	UP	Neovascularization	False
+ASIC1	EP_hyaline	healthy_vs_degenerated_all	-0.6611878663703591	0.9999232286203996	25.53523887737599	DOWN	Nociception_ion_channels	False
+ASIC3	EP_hyaline	healthy_vs_degenerated_all	0.4960925186903652		5.669263454263902	UP	Nociception_ion_channels	False
+BDKRB1	EP_hyaline	healthy_vs_degenerated_all	0.216254444682671	0.9999232286203996	155.38532162042577	UP	Inflammatory_pain	False
+BDKRB2	EP_hyaline	healthy_vs_degenerated_all	0.8019577751565036	0.9999232286203996	154.9310570929582	UP	Inflammatory_pain	False
+BDNF	EP_hyaline	healthy_vs_degenerated_all	2.2249351468818466	0.9999232286203996	88.29383548918155	UP	Neuropeptides; Neurotrophin_signaling	False
+CALCB	EP_hyaline	healthy_vs_degenerated_all	1.8745758522251468		8.958404262200567	UP	Neuropeptides	False
+CCL2	EP_hyaline	healthy_vs_degenerated_all	-0.8206110043959941	0.9999232286203996	696.250251292795	DOWN	Inflammatory_pain	False
+CXCL8	EP_hyaline	healthy_vs_degenerated_all	-3.2043871745646206	0.3609065394167172	154.38702690649805	DOWN	Inflammatory_pain	False
+FGF2	EP_hyaline	healthy_vs_degenerated_all	0.2538982130658109	0.9999232286203996	4616.137577553953	UP	Neovascularization	False
+FLT1	EP_hyaline	healthy_vs_degenerated_all	-1.1810577474365442	0.9999232286203996	415.5885791382939	DOWN	Neovascularization	False
+GAL	EP_hyaline	healthy_vs_degenerated_all	-1.2408679696793037	0.9999232286203996	22.068766160829025	DOWN	Neuropeptides	False
+KLK1	EP_hyaline	healthy_vs_degenerated_all	-0.8258344123469546		9.431529519429183	DOWN	Inflammatory_pain	False
+NGF	EP_hyaline	healthy_vs_degenerated_all	1.1502063247642025	0.9999232286203996	356.206404295794	UP	Neuropeptides; Neurotrophin_signaling	False
+NGFR	EP_hyaline	healthy_vs_degenerated_all	-1.2408701374985849	0.9999232286203996	41.218002754716025	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+NRP1	EP_hyaline	healthy_vs_degenerated_all	-0.172837252060351	0.9999232286203996	766.9602082205455	DOWN	Nerve_guidance	False
+NRP2	EP_hyaline	healthy_vs_degenerated_all	-0.6945067564649078	0.9999232286203996	2570.3194943310705	DOWN	Nerve_guidance	False
+NTF3	EP_hyaline	healthy_vs_degenerated_all	-0.6290247141721128	0.9999232286203996	152.36151097962667	DOWN	Neurotrophin_signaling	False
+NTN1	EP_hyaline	healthy_vs_degenerated_all	0.83999672612569	0.9999232286203996	39.64894287734143	UP	Nerve_guidance	False
+NTN4	EP_hyaline	healthy_vs_degenerated_all	-1.036749005028447	0.9999232286203996	487.4325990610004	DOWN	Nerve_guidance	False
+NTRK2	EP_hyaline	healthy_vs_degenerated_all	2.053399572754796	0.9999232286203996	567.4948968204909	UP	Neurotrophin_receptors; Neurotrophin_signaling	False
+NTRK3	EP_hyaline	healthy_vs_degenerated_all	-0.8258274663792171		5.268250437214676	DOWN	Neurotrophin_receptors; Neurotrophin_signaling	False
+P2RX4	EP_hyaline	healthy_vs_degenerated_all	0.4406909669128526	0.9999232286203996	187.6712428164586	UP	Nociception_ion_channels	False
+P2RX7	EP_hyaline	healthy_vs_degenerated_all	0.2819726300660825	0.9999232286203996	38.8383338597066	UP	Nociception_ion_channels	False
+PDGFA	EP_hyaline	healthy_vs_degenerated_all	0.5643691441730467	0.9999232286203996	731.3161914083389	UP	Neovascularization	False
+PENK	EP_hyaline	healthy_vs_degenerated_all	3.174883603859534	0.8553842275734644	112.82245509489206	UP	Neuropeptides	False
+PTGES	EP_hyaline	healthy_vs_degenerated_all	1.7352320859482475	0.9999232286203996	346.4001847957922	UP	Inflammatory_pain	False
+PTGS2	EP_hyaline	healthy_vs_degenerated_all	0.6923090753941558	0.9999232286203996	3120.483033295759	UP	Inflammatory_pain	False
+ROBO1	EP_hyaline	healthy_vs_degenerated_all	0.3968176736999798	0.9999232286203996	303.8800675992913	UP	Nerve_guidance	False
+ROBO2	EP_hyaline	healthy_vs_degenerated_all	-0.2171110788579597	0.9999232286203996	306.77584711173574	DOWN	Nerve_guidance	False
+SCN11A	EP_hyaline	healthy_vs_degenerated_all	0.4594015395056459		4.381200450315041	UP	Nociception_ion_channels	False
+SEMA3A	EP_hyaline	healthy_vs_degenerated_all	0.022949200677645	0.9999232286203996	2415.03812484303	UP	Nerve_guidance	False
+SEMA3E	EP_hyaline	healthy_vs_degenerated_all	0.7346972373103005	0.9999232286203996	576.9317656984988	UP	Nerve_guidance	False
+SLIT2	EP_hyaline	healthy_vs_degenerated_all	-0.7515774085836058	0.9999232286203996	106.17094782690344	DOWN	Nerve_guidance	False
+SLIT3	EP_hyaline	healthy_vs_degenerated_all	1.3872227898863858	0.9999232286203996	125.3626720215862	UP	Nerve_guidance	False
+TAC1	EP_hyaline	healthy_vs_degenerated_all	-1.8258334910126652	0.9999232286203996	130.2798716169411	DOWN	Neuropeptides	False
+TEK	EP_hyaline	healthy_vs_degenerated_all	-0.8090647873534272		2.472576497393392	DOWN	Neovascularization	False
+TRPV1	EP_hyaline	healthy_vs_degenerated_all	0.3925473223162251	0.9999232286203996	59.5913152311997	UP	Nociception_ion_channels	False
+TRPV4	EP_hyaline	healthy_vs_degenerated_all	0.5047470050593593	0.9999232286203996	868.9526341174457	UP	Nociception_ion_channels	False
+UNC5B	EP_hyaline	healthy_vs_degenerated_all	2.551654668503551	0.9295327086279606	428.527024604951	UP	Nerve_guidance	False
+VEGFA	EP_hyaline	healthy_vs_degenerated_all	0.1555074042156616	0.9999232286203996	3423.4554976629624	UP	Neovascularization	False
+VEGFB	EP_hyaline	healthy_vs_degenerated_all	0.3626788620799258	0.9999232286203996	2186.583246473312	UP	Neovascularization	False

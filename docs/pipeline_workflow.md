@@ -2,7 +2,7 @@
 
 ## Overview
 
-Human-gated agentic bioinformatics pipeline analyzing 12 scRNA-seq datasets (436K cells, 78 samples, 57 donors) of human intervertebral disc tissue. Each module produces results that are reviewed at a human checkpoint before the pipeline advances.
+Human-gated agentic bioinformatics pipeline analyzing 11 scRNA-seq datasets (410K cells, 71 samples, 57 donors) of human intervertebral disc tissue. Each module produces results that are reviewed at a human checkpoint before the pipeline advances.
 
 **How to read this diagram:** Blue boxes are computational modules (agent-executed). Orange hexagons are human checkpoints where the pipeline pauses. Yellow notes show the key decisions made. Full questions and rationale for each checkpoint are in the [Checkpoint Details](#checkpoint-details) section below.
 
@@ -33,7 +33,7 @@ flowchart TD
     CP01 --> M02
 
     %% ── Module 02 ──
-    M02["Module 02: Metadata Harmonization<br/>78 samples, 57 donors, 12 studies<br/>Condition mapping, demographics, compartment labels"]:::module
+    M02["Module 02: Metadata Harmonization<br/>71 samples, 57 donors, 11 studies<br/>Condition mapping, demographics, compartment labels"]:::module
     M02 --> CP02
 
     CP02{{"HUMAN CHECKPOINT<br/>Approve Condition Mappings"}}:::checkpoint
@@ -42,7 +42,7 @@ flowchart TD
     CP02 --> M03
 
     %% ── Module 03 ──
-    M03["Module 03: Preprocessing<br/>436,558 cells post-QC across 12 datasets<br/>QC: min_genes=200, max_genes=6000, max_mt=20%<br/>Scrublet doublet detection"]:::module
+    M03["Module 03: Preprocessing<br/>~410K cells post-QC across 11 datasets<br/>QC: min_genes=200, max_genes=6000, max_mt=20%<br/>Scrublet doublet detection"]:::module
     M03 --> CP03
 
     CP03{{"HUMAN CHECKPOINT<br/>QC Review (retroactive)"}}:::checkpoint
@@ -51,73 +51,61 @@ flowchart TD
     CP03 --> M04
 
     %% ── Module 04 ──
-    M04["Module 04: Cell Type Annotation<br/>Marker-based scoring (16 signatures)<br/>+ CellTypist (Immune_All_Low)<br/>Consensus labels in cell_type_final"]:::module
+    M04["Module 04: Cell Classification<br/>Binary mesenchymal vs non-mesenchymal<br/>Marker-based scoring"]:::module
     M04 --> CP04
 
     CP04{{"HUMAN CHECKPOINT<br/>Annotation Review (retroactive)"}}:::checkpoint
-    N04["Details: see #04 below<br/>- NP subtypes: notochordal, mature, stressed, fibrocartilaginous<br/>- AF subtypes: inner, outer, mechanical stress<br/>- CellTypist refined immune populations<br/>- No IVD reference atlas available"]:::decision
+    N04["Details: see #04 below<br/>- Binary classification: mesenchymal vs non-mesenchymal<br/>- 0% ambiguous across 11 datasets<br/>- Marker-based scoring"]:::decision
     CP04 -.- N04
     CP04 --> M05
 
     %% ── Module 05 ──
-    M05["Module 05: Integration<br/>Tier 1: Non-resident cells (14.6K cells, scVI)<br/>Tier 2: Resident cells (NP 139K, AF 283K)<br/>4 approaches: scVI, scANVI, Harmony, BBKNN"]:::module
-    M05 --> CP05a
+    M05["Module 05: Integration + Annotation<br/>4 compartment objects: NP (263K), AF (85K), CEP (51K), all_cells (411K)<br/>scVI integration, clustering, de novo annotation<br/>CellTypist validation for non-mesenchymal"]:::module
+    M05 --> CP05
 
-    CP05a{{"HUMAN CHECKPOINT<br/>Tier 1 Integration Review"}}:::checkpoint
-    N05a["Details: see #05a below<br/>- Tier 1 scVI integration approved<br/>- Retroactive approval of Modules 03-04<br/>- Proceed to Tier 2"]:::decision
-    CP05a -.- N05a
-    CP05a --> CP05b
-
-    CP05b{{"HUMAN CHECKPOINT<br/>Tier 2 Integration Selection"}}:::checkpoint
-    N05b["Details: see #05b below (MOST CRITICAL GATE)<br/>- Primary: scANVI (best overall + cell type ASW)<br/>- Sensitivity: scVI (preserves continuum)<br/>- Harmony rejected (overcorrects)<br/>- BBKNN not primary (no embedding)<br/>- Pseudobulk DE uses scANVI labels"]:::decision
-    CP05b -.- N05b
-
-    %% ── Condition Mapping Revisit ──
-    CP05b --> COND_REVIEW
-
-    COND_REVIEW{{"HUMAN CHECKPOINT<br/>Condition Mapping Revisit<br/>(required before DE analysis)"}}:::checkpoint
-    N_COND["Details: see Condition Revisit below<br/>- Herniated: separate, exploratory (10 samples)<br/>- GSE205535_NNP (11yo trauma): exclude from DE<br/>- Thompson III boundary: accepted as mild<br/>- Neonatal (n=3): separate from healthy<br/>- Primary: healthy (20) vs degenerated_all (42)"]:::decision
-    COND_REVIEW -.- N_COND
-    COND_REVIEW --> M06
+    CP05{{"HUMAN CHECKPOINT<br/>Integration + Annotation Review"}}:::checkpoint
+    N05["Details: see #05 below (MOST CRITICAL GATE)<br/>- scVI-only integration, 4 compartment objects<br/>- De novo annotation with CellTypist validation<br/>- NP 8/13 discordant clusters flagged<br/>- Pseudobulk DE uses de novo labels"]:::decision
+    CP05 -.- N05
+    CP05 --> M06
 
     %% ── Module 06 ──
-    M06["Module 06: Differential Analysis<br/>Composition: Mann-Whitney U (0/58 significant)<br/>Pseudobulk DE: pyDESeq2, 17 powered comparisons<br/>5,328 significant genes"]:::module
+    M06["Module 06: Differential Analysis<br/>Composition: Mann-Whitney U<br/>Pseudobulk DE: pyDESeq2, 21 powered comparisons<br/>949 unique significant genes, herniated excluded"]:::module
     M06 --> CP06
 
     CP06{{"HUMAN CHECKPOINT<br/>DE Results Review"}}:::checkpoint
-    N06["Details: see #06 below<br/>- Herniated comparison exploratory only<br/>- Endothelial annotation caveat noted<br/>- Composition trends sensible despite no FDR hits<br/>- No systematic batch domination"]:::decision
+    N06["Details: see #06 below<br/>- 21 powered comparisons, herniated excluded<br/>- NP_fibrocartilaginous and EP_hyaline as new cell types<br/>- 949 unique significant genes<br/>- No systematic batch domination"]:::decision
     CP06 -.- N06
     CP06 --> M07
 
     %% ── Module 07 ──
-    M07["Module 07: Biological Interpretation<br/>ORA: 1,244 enrichments (GO/KEGG/Reactome/MSigDB)<br/>GSEA: 1,081 significant terms<br/>TF activity: 113 significant TFs<br/>Pain gene analysis: 3 significant hits"]:::module
+    M07["Module 07: Biological Interpretation<br/>ORA: 1,577 enrichments (GO/KEGG/Reactome/MSigDB)<br/>GSEA: 1,576 significant terms<br/>TF activity: 290 significant TFs<br/>Pain gene analysis: 10 significant hits"]:::module
     M07 --> CP07
 
     CP07{{"HUMAN CHECKPOINT<br/>Interpretation Review"}}:::checkpoint
-    N07["Details: see #07 below<br/>- Pathways consistent with known IVD biology<br/>- Novel TF findings (ATF3/7, HSF1/2) to highlight<br/>- Pain confirms indirect signaling model<br/>- No contradictions found"]:::decision
+    N07["Details: see #07 below<br/>- 1,577 ORA enrichments, 290 significant TFs<br/>- 10 pain gene hits<br/>- Novel TF findings to highlight<br/>- No contradictions found"]:::decision
     CP07 -.- N07
     CP07 --> M08
 
     %% ── Module 08 ──
-    M08["Module 08: Trajectory Analysis<br/>PAGA + diffusion pseudotime<br/>NP root: notochordal cluster<br/>AF root: AF_inner cluster<br/>500 trajectory genes per compartment"]:::module
+    M08["Module 08: Trajectory Analysis<br/>PAGA + diffusion pseudotime<br/>NP, AF, and CEP compartments<br/>500 trajectory genes per compartment"]:::module
     M08 --> CP08
 
     CP08{{"HUMAN CHECKPOINT<br/>Trajectory Review"}}:::checkpoint
-    N08["Details: see #08 below<br/>- NP: notochordal -> mature -> stressed<br/>- AF: inner -> outer -> mechanical_stress<br/>- Pseudotime correlates with disease<br/>- ~55% DE overlap confirms consistency<br/>- Sensitivity check (scVI) confirms direction"]:::decision
+    N08["Details: see #08 below<br/>- NP/AF/CEP trajectories<br/>- NP rho=-0.258, AF rho=+0.341 (reversed), CEP rho=-0.163<br/>- AF reversal flagged for investigation<br/>- Pseudotime-condition correlations computed"]:::decision
     CP08 -.- N08
     CP08 --> M09
 
     %% ── Module 09 ──
-    M09["Module 09: Cell-Cell Communication<br/>LIANA (4 methods consensus)<br/>Healthy: 44K interactions | Degenerated: 53K<br/>3,662-4,194 pain-relevant interactions"]:::module
+    M09["Module 09: Cell-Cell Communication<br/>LIANA (5 methods consensus)<br/>Healthy: 28.9K interactions | Degenerated: 27K<br/>Pain-relevant interactions flagged"]:::module
     M09 --> CP09
 
     CP09{{"HUMAN CHECKPOINT<br/>Communication Review"}}:::checkpoint
-    N09["Details: see #09 below<br/>- Interactions biologically plausible<br/>- Pain-relevant: neurotrophin + VEGF pathways<br/>- More interactions in degeneration (53K vs 44K)<br/>- Collagen-integrin positive controls confirmed"]:::decision
+    N09["Details: see #09 below<br/>- Interactions biologically plausible<br/>- Pain-relevant: neurotrophin + VEGF pathways<br/>- Reversed CCC pattern: fewer interactions in degeneration (27K vs 28.9K)<br/>- Collagen-integrin positive controls confirmed"]:::decision
     CP09 -.- N09
     CP09 --> M10
 
     %% ── Module 10 ──
-    M10["Module 10: Final Reporting<br/>12-section report, 13 supplementary tables<br/>All 18 validation checks PASS"]:::module
+    M10["Module 10: Final Reporting<br/>12-section report, 19 supplementary tables<br/>All validation checks PASS"]:::module
     M10 --> CP10
 
     CP10{{"HUMAN CHECKPOINT<br/>Final Review"}}:::checkpoint
@@ -125,9 +113,9 @@ flowchart TD
     CP10 -.- N10
 
     %% ── Data flow annotations ──
-    D1[("data/raw/<br/>12 datasets")]:::data
+    D1[("data/raw/<br/>11 datasets")]:::data
     D2[("data/processed/<br/>per-dataset .h5ad")]:::data
-    D3[("data/integrated/<br/>NP + AF atlases")]:::data
+    D3[("data/integrated/<br/>NP, AF, CEP, all_cells")]:::data
     D4[("results/<br/>DE, enrichments, trajectory, CCC")]:::data
     D5[("results/final_report.html")]:::data
 
@@ -235,81 +223,30 @@ flowchart TD
 6. Do the original study annotations agree with ours? Where they disagree, which is more credible?
 
 **Decisions (retroactive review):**
-- NP subtypes accepted: notochordal, mature chondrocyte, stressed/degenerative, fibrocartilaginous
-- AF subtypes accepted: inner, outer, mechanical stress
-- CellTypist-refined immune populations accepted (Immune_All_Low model)
-- No IVD-specific reference atlas available — consensus approach (marker scoring + CellTypist) is the best available strategy
+- Binary classification: mesenchymal vs non-mesenchymal
+- 0% ambiguous across 11 datasets — clean separation
+- Marker-based scoring sufficient for binary gate
 - No blocking issues identified
 
 ---
 
-### Checkpoint 05a: Tier 1 Integration
+### Checkpoint 05: Integration + Annotation Review
+
+*This is the most critical checkpoint in the pipeline — the integration and annotation choices affect all downstream analyses.*
 
 **Questions posed to reviewer:**
-1. Does the Tier 1 (non-resident cell) scVI integration adequately remove batch effects while preserving cell type structure?
-2. Are the 14,566 non-resident cells from 9 studies well-mixed across batches?
-3. Should the Modules 03-04 retroactive review be accepted, or do any issues need re-analysis?
+1. Does scVI integration adequately remove batch effects while preserving cell type structure across the 4 compartment objects?
+2. Are the de novo cluster annotations biologically sensible?
+3. Where CellTypist disagrees with de novo labels, which is more credible?
+4. Are there study-specific effects that persist after integration?
+5. Does the integration reveal any new cell states not visible in per-dataset analysis?
 
 **Decisions:**
-- Tier 1 scVI integration approved
-- Retroactive approval granted for Modules 03 and 04
-- Proceed to Tier 2 (resident cell integration)
-
----
-
-### Checkpoint 05b: Tier 2 Integration Selection
-
-*This is the most critical checkpoint in the pipeline — the integration choice affects all downstream analyses.*
-
-**Questions posed to reviewer:**
-1. Which integration approach (scVI, scANVI, Harmony, BBKNN) best preserves cell state variation while removing batch effects?
-2. Is any approach clearly superior, or is a combination needed (e.g., different methods for NP vs. AF)?
-3. Does the "blob" problem occur with any approach (overcorrection collapsing all cells into one cluster)?
-4. Should the analysis proceed with integrated data, per-dataset data, or both in parallel?
-5. Are there study-specific effects that persist after integration and need covariate handling in DE?
-6. Does the integration reveal any new cell states not visible in per-dataset analysis?
-
-**Quantitative comparison presented:**
-
-| Metric | scVI | scANVI | Harmony | BBKNN |
-|--------|------|--------|---------|-------|
-| NP overall score | 0.607 | **0.618** | 0.599 | 0.614 |
-| AF overall score | 0.608 | **0.615** | 0.601 | 0.611 |
-| Cell type separation (ASW) | 0.50 | **0.52** | 0.46 | 0.49 |
-| Continuum preservation | **1.0** | 0.65 | 0.68 | 0.53 |
-| Disease signal retention | 0.65 | 0.63 | 0.57 | **0.93** |
-
-**Decisions:**
-- **Primary: scANVI** — best overall score and cell type separation; semi-supervised approach leverages Module 04 annotations
-- **Sensitivity check: scVI** — perfectly preserves cell state continuum (score variance ratio = 1.0), important for trajectory analysis
-- **Harmony rejected** — most aggressive correction, fewest clusters (merges real biological groups), lowest condition accuracy
-- **BBKNN not primary** — highest condition accuracy but no corrected embedding, limiting downstream flexibility
-- No blob problem with any approach
-- Pseudobulk DE will use scANVI labels + raw counts (not embeddings)
-
----
-
-### Checkpoint: Condition Mapping Revisit
-
-*Required gate before differential expression analysis — changes after this point require full reanalysis.*
-
-**Questions posed to reviewer:**
-1. Should herniated samples (10 NP, from GSE233666 + GSE251686) be a separate category or folded into degenerated?
-2. Should GSE205535_NNP (11-year-old spinal cord injury, classified "healthy") be reclassified or excluded from DE?
-3. Is the Thompson III boundary classification (degenerated_mild) appropriate?
-4. Should neonatal samples (GSE189916, n=3) be mixed into "healthy" or kept separate?
-5. How should aged ungraded samples (GSE189916 adult, n=3) be handled — healthy, degenerated, or separate?
-6. How should degenerated samples with unknown grade be handled?
-7. What is the final set of DE comparisons?
-
-**Decisions:**
-- **Herniated kept separate** — mechanically disrupted tissue has distinct inflammatory/repair signatures vs. in-situ degeneration; 10 samples provide enough power for exploratory herniated vs. healthy comparisons
-- **GSE205535_NNP excluded from DE** — acute spinal cord injury is not representative of healthy disc biology; trauma response genes would contaminate healthy baseline; kept for annotation/integration only
-- **Thompson III boundary accepted** as degenerated_mild (conservative, no change)
-- **Neonatal samples kept separate** — neonatal disc biology is fundamentally different from adult healthy
-- **Aged ungraded kept separate** — could be healthy-aged or subclinically degenerated; useful for aging analyses but excluded from healthy vs. degenerated comparisons
-- **Degenerated ungraded** included in "degenerated_all" but not in mild vs. severe
-- **Final comparison plan:** Primary: healthy (20) vs. degenerated_all (42). Secondary: healthy vs. mild (18), healthy vs. severe (21), mild vs. severe. Exploratory: healthy vs. herniated, herniated vs. degenerated, neonatal vs. adult-healthy
+- **scVI-only integration** — 4 compartment objects: NP (263K cells), AF (85K cells), CEP (51K cells), all_cells (411K cells)
+- **De novo annotation** via clustering + marker analysis, with CellTypist validation for non-mesenchymal cells
+- **NP: 8 of 13 clusters discordant** between de novo and CellTypist — flagged but de novo labels retained (CellTypist lacks IVD-specific training)
+- **NP_fibrocartilaginous** and **EP_hyaline** identified as new cell types
+- Pseudobulk DE will use de novo labels + raw counts
 
 ---
 
@@ -323,14 +260,13 @@ flowchart TD
 5. Are there comparisons that should be added, removed, or redefined?
 6. Should any DE results feed back into annotation (e.g., subclusters with very different DE profiles)?
 
-**Key results presented:** 0/58 significant composition changes. 17 powered DE comparisons (128 skipped as underpowered). 5,328 significant genes total. NP_mature_chondrocyte healthy_vs_herniated dominated (4,316 genes).
+**Key results presented:** 21 powered DE comparisons. 949 unique significant genes. Herniated excluded from comparisons. NP_fibrocartilaginous and EP_hyaline identified as new cell types.
 
 **Decisions:**
-- **Herniated comparison flagged as exploratory/likely study-confounded** — RPL genes in top hits suggest technical rather than biological signal; only 2 studies contribute herniated samples
-- **Endothelial annotation caveat noted** — ACAN/IBSP/CYTL1 among top DE genes suggest some "endothelial" cells may be misclassified NP/AF cells; no re-annotation needed at this stage
-- Composition trends biologically sensible despite failing FDR (immune increase, chondrocyte decrease in degeneration)
+- **Herniated excluded** from DE comparisons — condition mapping revisited before rerun
+- **21 powered comparisons** across NP, AF, CEP compartments
+- **NP_fibrocartilaginous and EP_hyaline** accepted as new cell types with distinct DE profiles
 - No systematic batch domination in degeneration comparisons
-- No additional comparisons needed
 
 ---
 
@@ -343,7 +279,7 @@ flowchart TD
 4. Are there actionable targets (e.g., druggable genes) among the top hits?
 5. Are there findings that contradict established IVD biology — artifacts or genuinely novel?
 
-**Key results presented:** 1,244 ORA enrichments. ECM, inflammatory, collagen, immune pathways confirmed. 113 significant TFs including ATF3/ATF7, HSF1/HSF2, NFKBIB. Only 3 significant pain gene hits (TNF x2, CXCL8 x1).
+**Key results presented:** 1,577 ORA enrichments. 1,576 GSEA significant terms. ECM, inflammatory, collagen, immune pathways confirmed. 290 significant TFs. 10 significant pain gene hits.
 
 **Decisions:**
 - Pathways **consistent with known IVD biology** — ECM degradation, inflammatory signaling, cellular senescence all enriched in degeneration
@@ -363,15 +299,14 @@ flowchart TD
 5. Are there branch points suggesting divergent cell fates?
 6. Should trajectory findings feed back into cell type annotation?
 
-**Key results presented:** PAGA + DPT for NP (50K cells) and AF (50K cells). Pseudotime-condition correlation: NP rho=-0.207, AF rho=-0.177 (healthy at earlier pseudotime). 500 trajectory genes per compartment with ~55% overlap with DE genes.
+**Key results presented:** PAGA + DPT for NP, AF, and CEP compartments. Pseudotime-condition correlations: NP rho=-0.258, AF rho=+0.341 (reversed direction), CEP rho=-0.163. 500 trajectory genes per compartment.
 
 **Decisions:**
-- **NP trajectory biologically sensible:** notochordal -> mature chondrocyte -> stressed/degenerative gradient
-- **AF trajectory biologically sensible:** inner -> outer -> mechanical_stress gradient
-- Pseudotime **aligns with disease condition** (healthy cells at earlier pseudotime)
+- **NP trajectory biologically sensible:** pseudotime correlates with degeneration (rho=-0.258)
+- **AF trajectory reversed:** rho=+0.341 indicates healthy cells at later pseudotime — flagged for investigation, may reflect AF-specific biology or integration artifact
+- **CEP trajectory:** modest correlation (rho=-0.163) with degeneration
 - **RNA velocity unavailable** (no spliced/unspliced layers in input data) — documented and acceptable
-- ~55% DE gene overlap **confirms consistency** between trajectory and differential analyses
-- **Sensitivity check with scVI** (NP rho=-0.132) confirms same direction, supporting robustness
+- AF reversal requires cautious interpretation in manuscript
 
 ---
 
@@ -383,12 +318,12 @@ flowchart TD
 3. Are there pain-relevant interactions that could be therapeutic targets?
 4. Are any interactions likely artifacts of ambient RNA or doublets?
 
-**Key results presented:** LIANA consensus (CellPhoneDB + NATMI + Connectome + SingleCellSignalR). Healthy: 44,079 interactions. Degenerated: 53,036 interactions. 3,662-4,194 pain-relevant interactions flagged.
+**Key results presented:** LIANA consensus (5-method: CellPhoneDB + NATMI + Connectome + SingleCellSignalR + logFC). Healthy: 28.9K interactions. Degenerated: 27K interactions. Pain-relevant interactions flagged.
 
 **Decisions:**
 - Interactions **biologically plausible** — collagen-integrin positive controls confirmed
 - Pain-relevant interactions include **neurotrophin and VEGF pathways**
-- More interactions in degeneration (53K vs 44K) **consistent with increased paracrine signaling** in degenerative disc environment
+- **Reversed CCC pattern:** fewer interactions in degeneration (27K vs 28.9K) — opposite of v1 finding; may reflect loss of tissue organization in degenerated discs
 - No artifact concerns flagged
 
 ---
@@ -408,9 +343,8 @@ flowchart TD
 
 ## Key Pipeline Characteristics
 
-- **Human-in-the-loop**: 13 human checkpoints across 10 modules ensure scientific rigor
-- **Tiered integration**: Non-resident cells (immune, endothelial) integrated separately from resident cells (NP, AF) to preserve the IVD cell state continuum
+- **Human-in-the-loop**: 11 human checkpoints across 10 modules ensure scientific rigor
+- **Compartment-based integration**: Separate scVI integration for NP, AF, CEP, and all_cells objects to preserve compartment-specific biology
 - **Pseudobulk DE**: Avoids treating cells as independent observations (a common single-cell pitfall)
-- **Multi-method validation**: Integration compared 4 approaches; CCC used 4-method consensus
-- **Condition mapping revisited**: Explicit checkpoint before DE analysis to finalize disease categories
-- **Most critical gate**: Module 05 (Integration Selection) — this choice cascades through all downstream analyses
+- **Multi-method validation**: CCC used 5-method consensus; CellTypist cross-validation for annotation
+- **Most critical gate**: Module 05 (Integration + Annotation) — this choice cascades through all downstream analyses

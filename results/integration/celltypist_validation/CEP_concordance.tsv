@@ -1,0 +1,6 @@
+cluster	n_cells	de_novo_label	celltypist_majority	celltypist_agreement_pct	concordant
+2	58	B_cell	Tcm/Naive helper T cells	43.1	False
+0	112	Endothelial	Endothelial cells	80.4	True
+1	71	Macrophage	Intermediate macrophages	63.4	True
+4	40	Pericyte_SMC	Endothelial cells	60.0	False
+3	53	NK_cell	Tcm/Naive helper T cells	50.9	False

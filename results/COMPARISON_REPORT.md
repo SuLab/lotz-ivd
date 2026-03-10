@@ -14,14 +14,15 @@ Two independent analytical pipelines were applied to overlapping but non-identic
 
 | Feature | Claude Code Pipeline | Phylo Pipeline |
 |---------|---------------------|----------------|
-| Datasets | 12 | 7 |
-| Total cells (post-QC) | 436,239 | 173,628 |
-| Donors | 57 | 29 |
-| Samples | 78 | ~40 |
+| Datasets | 11 | 7 |
+| Total cells (post-QC) | 410,759 | 173,628 |
+| Donors | ~50 | 29 |
+| Samples | 71 | ~40 |
 | Compartments | NP, AF, CEP | NP, AF, CEP |
-| Unique datasets | GSE189916, GSE199866, GSE205535, CNP0002664, GSE251686 | (none unique) |
+| Unique datasets | GSE189916, GSE199866, GSE205535, CNP0002664 | (none unique) |
+| Excluded | GSE233666 (QC failure) | GSE251686 and others |
 
-The Claude Code pipeline includes all 7 Phylo datasets plus 5 additional studies, more than doubling the cell count and donor pool. The added datasets contribute more NP-specific studies (including neonatal, aged, and herniated conditions), increasing statistical power for pseudobulk DE and broadening condition coverage.
+The Claude Code pipeline includes all 7 Phylo datasets plus 4 additional studies (GSE233666 was excluded during QC), more than doubling the cell count and donor pool. The added datasets contribute more NP-specific studies (including neonatal, aged, and herniated conditions), increasing statistical power for pseudobulk DE and broadening condition coverage.
 
 **Implication:** The larger dataset in the Claude Code pipeline provides more statistical power for rare comparisons but also increases heterogeneity and the risk of batch effects, making integration strategy more critical.
 
@@ -31,17 +32,16 @@ The Claude Code pipeline includes all 7 Phylo datasets plus 5 additional studies
 
 | Feature | Claude Code Pipeline | Phylo Pipeline |
 |---------|---------------------|----------------|
-| Primary method | scANVI (semi-supervised) | Harmony |
-| Alternatives tested | scVI, Harmony, BBKNN | (not reported) |
-| Integration tiers | Yes — non-resident vs. resident cells | No — unified integration |
-| Selection metric | scIB composite score (0.615) | Visual assessment |
-| Cell type ASW | 0.511-0.521 | Not reported |
+| Primary method | scVI (unsupervised) | Harmony |
+| Alternatives tested | (none — scVI only) | (not reported) |
+| Integration objects | 4 compartment-specific (NP, AF, CEP, all_cells) | No — unified integration |
+| Selection metric | scIB composite score | Visual assessment |
 
-**Key difference:** The Claude Code pipeline uses a tiered integration strategy that separately processes non-resident cells (immune, endothelial; ~14.5K cells) from resident disc cells (NP, AF). This preserves the biological continuum among disc-resident populations that aggressive batch correction can erase. scANVI's semi-supervised approach also leverages marker-based annotations to guide integration.
+**Key difference:** The Claude Code pipeline uses scVI with compartment-specific integration objects (NP, AF, CEP, and an all_cells object), rather than a tiered resident/non-resident split. This allows each compartment's latent space to capture compartment-specific biology without interference from unrelated cell populations.
 
 Harmony, used by the Phylo pipeline, is a linear correction method that operates in PCA space. It is effective for removing batch effects but may over-correct subtle biological gradients, particularly the notochordal-to-degenerative continuum in NP cells.
 
-**Hypothesis:** The tiered scANVI approach may better preserve cell state gradients, which could explain why the Claude Code pipeline's trajectory analysis shows stronger pseudotime-condition correlations and more trajectory-DE gene overlap (~55%).
+**Hypothesis:** The compartment-specific scVI approach may better preserve cell state gradients within each anatomical region, which could explain why the Claude Code pipeline's trajectory analysis shows pseudotime-condition correlations in NP and CEP (though AF shows a reversed positive correlation).
 
 ---
 
@@ -49,16 +49,19 @@ Harmony, used by the Phylo pipeline, is a linear correction method that operates
 
 | Feature | Claude Code Pipeline | Phylo Pipeline |
 |---------|---------------------|----------------|
-| NP subtypes | NP_notochordal, NP_mature_chondrocyte, NP_stressed_degenerative | NP_chondrocyte, NP_chondrocyte_HAPLN1, NP_degenerative_UPR, NP_stress_response, NP_metallothionein |
+| NP subtypes | NP_notochordal, NP_mature_chondrocyte, NP_stressed_degenerative, NP_fibrocartilaginous | NP_chondrocyte, NP_chondrocyte_HAPLN1, NP_degenerative_UPR, NP_stress_response, NP_metallothionein |
 | AF subtypes | AF_inner, AF_outer | AF_fibroblast |
+| Additional types | EP_hyaline (new) | — |
 | Immune | CellTypist subtypes (Tcm/Naive, Tem/Trm, etc.) | T_NK_cell, Macrophage |
 | Endothelial | Endothelial cells | Endothelial |
-| Total clusters | ~10 types | 12 clusters |
-| Method | Marker scoring + CellTypist | Leiden clustering + manual |
+| Method | De novo annotation post-integration (marker scoring + CellTypist validation) | Leiden clustering + manual |
+| CellTypist concordance | NP: 5/13 clusters, AF: good, CEP: partial | N/A |
 
-The two pipelines use different cell type ontologies, making direct comparison of DE results challenging. The Phylo pipeline resolves NP cells into 5 subtypes (including HAPLN1+, UPR, metallothionein, stress response clusters), while the Claude Code pipeline uses 3 broader NP categories. Conversely, the Claude Code pipeline distinguishes AF_inner from AF_outer, while Phylo treats AF as a single fibroblast population.
+The two pipelines use different cell type ontologies, making direct comparison of DE results challenging. The Phylo pipeline resolves NP cells into 5 subtypes (including HAPLN1+, UPR, metallothionein, stress response clusters), while the Claude Code pipeline uses 4 NP categories (adding NP_fibrocartilaginous). The Claude Code pipeline also identifies EP_hyaline as a novel type. Conversely, the Claude Code pipeline distinguishes AF_inner from AF_outer, while Phylo treats AF as a single fibroblast population.
 
-**Implication:** The finer NP resolution in the Phylo pipeline may capture specialized subpopulation responses (e.g., metallothionein-high cells as a distinct stress state), while the Claude Code pipeline's AF subdivision enables inner-vs-outer AF comparisons that are anatomically meaningful.
+A key methodological difference is that the Claude Code pipeline performs de novo annotation post-integration (rather than pre-integration marker-based assignment), validated against CellTypist. CellTypist concordance was moderate for NP (5 of 13 clusters matched) and better for AF, reflecting the challenge of automated annotation in disc-resident cell types that are poorly represented in reference atlases.
+
+**Implication:** The finer NP resolution in the Phylo pipeline may capture specialized subpopulation responses (e.g., metallothionein-high cells as a distinct stress state), while the Claude Code pipeline's AF subdivision and novel EP_hyaline type enable anatomically meaningful comparisons not available in the Phylo analysis.
 
 ---
 
@@ -71,8 +74,9 @@ The two pipelines use different cell type ontologies, making direct comparison o
 | Tool | pyDESeq2 (Python) | DESeq2 (R) |
 | Approach | Pseudobulk per sample | Pseudobulk per sample |
 | Thresholds | \|log2FC\| > 0.5, padj < 0.05 | padj < 0.05 (no LFC cutoff stated) |
-| Powered comparisons | 17 | ~5-6 (severe_vs_healthy per cluster) |
-| Total DE genes | 5,328 | ~1,000+ (mostly downregulated) |
+| Powered comparisons | 21 | ~5-6 (severe_vs_healthy per cluster) |
+| Total DE genes | 949 unique | ~1,000+ (mostly downregulated) |
+| Herniated comparisons | Excluded entirely | Included |
 
 ### 4.2 Direction of Change
 
@@ -83,8 +87,9 @@ A striking divergence: the Phylo pipeline reports a ~7:1 downregulated-to-upregu
 - Dominated by **histone genes** and lncRNAs with extreme log2FC values
 
 **Claude Code top DE genes (NP_mature_chondrocyte mild vs severe):**
-- CXCL1 (+3.75), CXCL3 (+3.72), CXCL2 (+3.13), TNF (+2.45), MDK (+2.72)
-- Classical **inflammatory/catabolic** IVD signature
+- CXCL2 (padj=0.005), ICAM1 (padj=1.9e-5), HHEX (padj=1.9e-5)
+- CXCL1, CXCL3, and TNF were **not significant** in v2 (unlike v1)
+- More conservative result with 949 unique DE genes across 21 comparisons
 
 ### 4.3 Interpretation of DE Divergence
 
@@ -96,7 +101,7 @@ The Phylo pipeline's extreme log2FC values (up to -28) and histone gene dominanc
 
 3. **LFC shrinkage:** The Claude Code pipeline's pyDESeq2 applies LFC shrinkage by default, constraining estimates to biologically plausible ranges. The Phylo pipeline's extreme LFCs suggest either no shrinkage or insufficient regularization.
 
-**Hypothesis:** The Phylo pipeline's DE results are substantially driven by batch/processing artifacts (histone genes), while the Claude Code pipeline's more conservative approach surfaces genuine disease biology (inflammatory chemokines, ECM remodeling). The Claude Code pipeline explicitly flagged its own healthy_vs_herniated comparison (4,316 DE genes with ribosomal protein enrichment) as study-confounded, demonstrating similar artifact awareness.
+**Hypothesis:** The Phylo pipeline's DE results are substantially driven by batch/processing artifacts (histone genes), while the Claude Code pipeline's more conservative approach surfaces genuine disease biology. Notably, the v2 Claude Code pipeline excluded herniated comparisons entirely (recognizing study-level confounding) and produced far fewer DE genes (949 vs. 5,328 in v1), with only CXCL2 remaining significant among the CXC chemokines. This increased stringency provides higher-confidence hits at the cost of sensitivity.
 
 ---
 
@@ -117,10 +122,10 @@ The Phylo report interprets these as evidence for "suppression of Wnt signaling,
 
 ### 5.2 Claude Code Pipeline GSEA Results
 
-The Claude Code pipeline's top enrichments include:
+The v2 Claude Code pipeline produced 1,577 ORA and 1,576 GSEA significant results (up from 1,244/1,081 in v1), reflecting the expanded set of 21 powered comparisons. Top enrichments include:
 - **AF_inner (mild vs severe up):** Heat acclimation, protein refolding, unfolded protein response — driven by heat shock proteins (HSPA1A/B, HSPA6, DNAJB1)
 - **AF_inner (down):** Oxidative phosphorylation, electron transport chain — mitochondrial dysfunction
-- **NP/AF:** Granulocyte chemotaxis (CXCL1/2/3, CCL2), TNF signaling, cytokine-mediated signaling
+- **NP/AF:** Inflammatory and chemotactic pathways, though the CXC chemokine signal is weaker in v2 (only CXCL2 significant)
 
 These pathways are driven by diverse gene sets (not a single gene family), are biologically coherent with IVD degeneration (inflammation, stress response, metabolic decline), and show pathway-specific leading edges.
 
@@ -139,25 +144,27 @@ Despite the methodological differences, both analyses identify:
 |---------|---------------------|----------------|
 | Tool | LIANA (5-method consensus) | LIANA |
 | Methods | CellPhoneDB, NATMI, Connectome, SingleCellSignalR, log2FC | Similar consensus |
-| Healthy interactions | 44,079 | Not quantified |
-| Degenerated interactions | 53,036 | Not quantified |
+| Healthy interactions | 28,878 | Not quantified |
+| Degenerated interactions | 27,011 | Not quantified |
+| Direction of change | Fewer interactions in degeneration | Not quantified |
 
 ### 6.1 Convergent CCC Findings
 
 **FN1 signaling gain:** Both pipelines identify increased FN1 (fibronectin) signaling in degeneration.
 - Phylo: FN1->ITGA6, FN1->C5AR1, FN1->CD44 among top gained interactions
-- Claude Code: FN1 interactions among increased degeneration signaling (53K vs 44K total interactions)
+- Claude Code: FN1 interactions among altered degeneration signaling
 
 This is biologically robust — FN1 is a hallmark of fibrotic ECM remodeling in degenerative discs, and its interaction with integrins and complement receptors reflects both structural change and immune activation.
 
-### 6.2 Phylo-Specific Finding: TIMP1->CD63 Loss
+**TIMP1->CD63 convergence:** The Phylo pipeline's most prominent CCC finding — loss of TIMP1->CD63 signaling — was actually replicated in the v2 Claude Code pipeline, where TIMP1-CD63 emerged as the most enriched interaction in the differential CCC analysis. This cross-pipeline replication substantially increases confidence in this finding (see Section 6.2).
+
+### 6.2 Cross-Pipeline Convergence: TIMP1->CD63
 
 The Phylo pipeline's most striking CCC result is the **loss of TIMP1->CD63 signaling** across virtually all cell pair combinations (12 of 16 top lost interactions involve TIMP1->CD63).
 
-TIMP1 (tissue inhibitor of metalloproteinases-1) binding to CD63 (a tetraspanin) promotes cell survival and inhibits apoptosis. Its loss in degeneration is consistent with increased MMP activity and cell death. This was not highlighted in the Claude Code pipeline, possibly because:
-- Different cell type granularity affects which interactions are detected
-- The Claude Code pipeline's per-dataset (not integrated) approach to CCC may dilute this signal
-- Threshold differences in what constitutes "significant" change
+TIMP1 (tissue inhibitor of metalloproteinases-1) binding to CD63 (a tetraspanin) promotes cell survival and inhibits apoptosis. Its loss in degeneration is consistent with increased MMP activity and cell death. Importantly, the v2 Claude Code pipeline **replicated** this finding: TIMP1-CD63 was identified as the most enriched interaction in the differential CCC analysis. This cross-pipeline convergence, despite different integration methods, cell type ontologies, and dataset scopes, makes TIMP1->CD63 one of the highest-confidence CCC findings in this meta-analysis.
+
+**Note on CCC direction:** The v2 Claude Code pipeline shows a reversed overall pattern compared to v1 — fewer total interactions in degeneration (27,011) than in healthy tissue (28,878). This contrasts with the v1 result (53K vs 44K) and suggests that the increased CCC complexity finding was sensitive to integration strategy and dataset composition.
 
 ### 6.3 Phylo-Specific Finding: SEMA4A->PLXNB1 Gain
 
@@ -170,12 +177,17 @@ Both NP chondrocyte subtypes show gained SEMA4A->PLXNB1 signaling. Semaphorins a
 | Feature | Claude Code Pipeline | Phylo Pipeline |
 |---------|---------------------|----------------|
 | Method | PAGA + DPT | Not performed |
-| NP pseudotime-condition rho | -0.207 | N/A |
-| AF pseudotime-condition rho | -0.177 | N/A |
+| NP pseudotime-condition rho | -0.258 | N/A |
+| AF pseudotime-condition rho | +0.341 (reversed) | N/A |
+| CEP pseudotime-condition rho | -0.163 (new) | N/A |
 | Trajectory genes | 500 per compartment | N/A |
-| Trajectory-DE overlap | ~55% | N/A |
+| Trajectory-DE overlap | NP: 96/500, AF: 110/500, CEP: 38/500 | N/A |
 
-The Claude Code pipeline's trajectory analysis provides a unique contribution: evidence that NP cells follow a notochordal -> mature chondrocyte -> stressed/degenerative continuum, and that progression along this trajectory correlates with disease severity. The ~55% overlap between trajectory-associated genes and DE genes validates that the trajectory captures disease biology, not batch artifacts.
+The Claude Code pipeline's trajectory analysis provides a unique contribution: evidence that NP cells follow a notochordal -> mature chondrocyte -> stressed/degenerative continuum, and that progression along this trajectory correlates with disease severity (rho=-0.258, stronger than v1's -0.207). CEP cells show a similar negative correlation (rho=-0.163).
+
+However, a notable v2 finding is that the **AF trajectory-condition correlation reversed** from v1 (rho=+0.341 vs. v1's -0.177). This positive correlation means AF pseudotime progression is associated with less severe disease, suggesting that the AF trajectory captures a different biological axis (possibly structural maturation rather than degeneration). This reversal is likely attributable to the change in integration strategy (scVI-only with compartment-specific objects vs. tiered scANVI).
+
+The trajectory-DE overlap is more modest than in v1 (~19-22% for NP/AF vs. ~55% previously), reflecting both the smaller DE gene set (949 vs. 5,328) and possibly improved specificity.
 
 The Phylo pipeline did not perform trajectory analysis, missing this dimension of the biology.
 
@@ -186,12 +198,12 @@ The Phylo pipeline did not perform trajectory analysis, missing this dimension o
 | Feature | Claude Code Pipeline | Phylo Pipeline |
 |---------|---------------------|----------------|
 | Dedicated analysis | Yes — curated pain gene sets | Partial — SEMA4A noted |
-| Key pain mediators | TNF, CXCL8, CXCL1-3 | SEMA4A->PLXNB1 (nerve guidance) |
-| Pain-relevant L-R pairs | 3,662-4,194 | Not quantified |
+| Key pain mediators | 10 significant pain genes (incl. CXCL2, ICAM1) | SEMA4A->PLXNB1 (nerve guidance) |
+| Pain-relevant L-R pairs | Quantified | Not quantified |
 | Conclusion | Disc cells create pro-inflammatory environment promoting nerve ingrowth | Gained semaphorin signaling may affect innervation |
 
 Both pipelines contribute complementary views of pain biology:
-- **Claude Code:** Disc cells produce inflammatory mediators (TNF, CXCLs) that sensitize nerve endings, but do not express nociceptors themselves — consistent with the "inflammatory milieu" model
+- **Claude Code (v2):** 10 significant pain-related genes identified (up from 3 in v1), though the CXC chemokine signal is weaker — only CXCL2 is significant (CXCL1, CXCL3, TNF are not). The broader set of pain genes provides a more nuanced view of the inflammatory milieu.
 - **Phylo:** Gained SEMA4A->PLXNB1 signaling suggests active nerve guidance/repulsion changes in degeneration
 
 Together, these suggest degeneration involves both inflammation-mediated nerve sensitization AND altered nerve guidance signaling.
@@ -213,11 +225,11 @@ The lack of robust composition changes likely reflects high inter-donor variabil
 | Finding | Claude Code | Phylo | Confidence |
 |---------|:-----------:|:-----:|:----------:|
 | FN1 signaling increases in degeneration | Yes | Yes | **High** |
-| Inflammatory gene upregulation (CXCL, TNF) | Strong | Weak | **High** (Claude Code) |
+| TIMP1->CD63 altered in degeneration | Yes (most enriched differential) | Yes (dominant lost interaction) | **High** (cross-pipeline) |
+| Inflammatory gene upregulation (CXCL) | Moderate (CXCL2 only) | Weak | **Moderate** |
 | Stress response / UPR activation | Yes (HSPs) | Yes (UPR cluster) | **High** |
 | Senescence features | TF activity (E2F4) | GSEA (histone-driven) | **Moderate** |
 | No robust composition changes | Yes | Yes | **High** |
-| Increased CCC complexity in degeneration | 53K vs 44K | Not quantified | **Moderate** |
 | ECM remodeling (CEMIP, collagens) | Yes (AF) | Yes (FN1) | **High** |
 
 ---
@@ -226,12 +238,14 @@ The lack of robust composition changes likely reflects high inter-donor variabil
 
 | Feature | Claude Code | Phylo | Likely Explanation |
 |---------|-------------|-------|-------------------|
+| DE gene count | 949 unique (stringent) | ~1,000+ (mostly downregulated) | Claude Code excludes herniated; stricter thresholds |
 | DE gene direction ratio | Balanced up/down | 7:1 down:up | Phylo dominated by histone artifacts; missing LFC shrinkage |
-| Top DE genes | CXCL1/2/3, TNF, MDK | LINC01578, H3F3B, histones | Phylo's healthy vs severe comparison is cross-study confounded |
+| Top DE genes | CXCL2, ICAM1, HHEX | LINC01578, H3F3B, histones | Phylo's healthy vs severe comparison is cross-study confounded |
 | GSEA top pathways | HSP/inflammation/mitochondria | Histone/chromatin/senescence | Same histone artifact propagating through pathways |
-| TIMP1->CD63 loss | Not highlighted | Dominant finding | Different CCC approaches and cell type resolution |
-| Trajectory analysis | Strong disease correlation | Not performed | Methodological difference |
-| Cell type resolution | Finer AF, coarser NP | Finer NP, coarser AF | Different clustering strategies |
+| CCC direction | Fewer interactions in degeneration (27K vs 29K) | Not quantified | Sensitive to integration and dataset composition |
+| AF trajectory correlation | Positive (+0.341) | Not performed | AF pseudotime may capture maturation, not degeneration |
+| Trajectory-DE overlap | ~19-22% | Not performed | Smaller DE gene set reduces overlap |
+| Cell type resolution | Finer AF, 4 NP types + EP_hyaline | Finer NP (5 types), coarser AF | Different clustering strategies |
 
 ---
 
@@ -239,18 +253,26 @@ The lack of robust composition changes likely reflects high inter-donor variabil
 
 1. **Histone gene filtering:** Future analyses should consider excluding replication-dependent histone genes from DE and GSEA analyses, or at minimum flagging their dominance. Their extreme sensitivity to technical factors makes them unreliable disease markers in cross-study comparisons.
 
-2. **Within-study comparisons:** When possible, DE should prioritize within-study comparisons (e.g., mild vs. severe from the same study) to reduce batch confounding. Cross-study comparisons (healthy vs. severe) require careful batch modeling.
+2. **Within-study comparisons:** When possible, DE should prioritize within-study comparisons (e.g., mild vs. severe from the same study) to reduce batch confounding. The v2 Claude Code pipeline's exclusion of herniated comparisons exemplifies this principle.
 
-3. **TIMP1->CD63 validation:** The Phylo pipeline's TIMP1->CD63 finding is biologically compelling and should be investigated in the Claude Code pipeline's CCC results at a more granular level.
+3. **TIMP1->CD63 as high-confidence target:** Now replicated across both pipelines, TIMP1->CD63 alteration in degeneration is the highest-confidence CCC finding in this meta-analysis and warrants experimental validation.
 
-4. **SEMA4A pain axis:** The semaphorin-plexin finding from the Phylo pipeline complements the Claude Code pipeline's inflammatory pain mediator analysis and should be integrated into a unified pain biology model.
+4. **SEMA4A pain axis:** The semaphorin-plexin finding from the Phylo pipeline complements the Claude Code pipeline's expanded pain gene analysis (10 significant genes in v2) and should be integrated into a unified pain biology model.
 
-5. **Trajectory + DE integration:** The Claude Code pipeline's demonstration that ~55% of trajectory genes overlap with DE genes provides strong evidence that the NP cell state continuum is disease-relevant. This should be explored in the Phylo pipeline's finer NP subtype resolution.
+5. **AF trajectory interpretation:** The reversed AF trajectory-condition correlation (positive in v2 vs. negative in v1) suggests that AF pseudotime may capture maturation rather than degeneration. Future work should investigate whether AF trajectory endpoints correspond to specific anatomical or developmental states.
+
+6. **CXC chemokine robustness:** The weakening of the CXC chemokine signal in v2 (only CXCL2 significant, not CXCL1/3 or TNF) suggests this finding is sensitive to integration approach and comparison design. Independent experimental validation is needed before prioritizing these targets.
 
 ---
 
 ## 13. Conclusion
 
-The two pipelines converge on a core biological narrative: IVD degeneration involves ECM remodeling (FN1, CEMIP), inflammatory activation (CXCLs, TNF), stress responses (HSPs, UPR), and increased intercellular signaling complexity. They diverge primarily due to technical factors — the Phylo pipeline's DE and GSEA results are substantially contaminated by histone gene artifacts from cross-study confounding, while the Claude Code pipeline's more conservative approach (LFC shrinkage, within-study comparisons, study-confound flagging) surfaces more biologically interpretable signals.
+The two pipelines converge on a core biological narrative: IVD degeneration involves ECM remodeling (FN1, CEMIP), stress responses (HSPs, UPR), and altered intercellular signaling — most notably TIMP1->CD63, which was independently identified by both pipelines as a key altered interaction. They diverge primarily due to technical factors — the Phylo pipeline's DE and GSEA results are substantially contaminated by histone gene artifacts from cross-study confounding, while the Claude Code pipeline's more conservative v2 approach (LFC shrinkage, exclusion of herniated comparisons, stricter thresholds) produces fewer but higher-confidence DE hits.
 
-The pipelines are complementary: the Phylo pipeline's finer NP subtype resolution and TIMP1->CD63/SEMA4A findings add biological depth, while the Claude Code pipeline's larger dataset, trajectory analysis, and artifact-aware methodology provide a more robust statistical framework. An ideal analysis would combine the Claude Code pipeline's methodological rigor with the Phylo pipeline's cell type granularity, while applying histone gene filtering and within-study DE prioritization to both.
+The v2 rerun revealed important sensitivities: the CXC chemokine signature weakened substantially (only CXCL2 significant), the overall CCC direction reversed (fewer interactions in degeneration), and the AF trajectory-condition correlation flipped sign. These changes, driven by differences in integration strategy (scVI-only vs. tiered scANVI) and dataset scope (11 vs. 12 datasets), highlight which findings are robust and which are method-dependent.
+
+**Robust findings (replicated across pipelines and/or versions):** FN1 signaling gain, TIMP1->CD63 alteration, stress response activation, no robust composition changes.
+
+**Method-sensitive findings (changed between v1/v2 or discordant between pipelines):** CXC chemokine significance, CCC direction/magnitude, AF trajectory-condition correlation, trajectory-DE overlap magnitude.
+
+The pipelines are complementary: the Phylo pipeline's finer NP subtype resolution and SEMA4A findings add biological depth, while the Claude Code pipeline's larger dataset, trajectory analysis, and artifact-aware methodology provide a more robust statistical framework. The v2 replication of TIMP1->CD63 across both pipelines elevates it to the highest-confidence cell-cell communication finding in this meta-analysis.
