@@ -44,6 +44,9 @@ def collect_supplementary_tables():
         'S14_trajectory_genes_AF.tsv': RESULTS / 'trajectories' / 'trajectory_genes_AF.tsv',
         'S15_trajectory_genes_CEP.tsv': RESULTS / 'trajectories' / 'trajectory_genes_CEP.tsv',
         'S16_pain_interactions.tsv': RESULTS / 'communication' / 'pain_interactions.tsv',
+        'S17_celltypist_concordance_NP.tsv': RESULTS / 'integration' / 'celltypist_validation' / 'NP_concordance.tsv',
+        'S18_celltypist_concordance_AF.tsv': RESULTS / 'integration' / 'celltypist_validation' / 'AF_concordance.tsv',
+        'S19_celltypist_concordance_CEP.tsv': RESULTS / 'integration' / 'celltypist_validation' / 'CEP_concordance.tsv',
     }
 
     for dest_name, src in copies.items():
@@ -179,6 +182,38 @@ def generate_final_report():
 <p><strong>De novo annotation:</strong> Cell types discovered post-integration from Leiden clustering, cluster DE markers, and canonical marker panels. CellTypist validation for immune subtypes.</p>
 """)
 
+    # CellTypist concordance summary
+    celltypist_dir = RESULTS / 'integration' / 'celltypist_validation'
+    disagreements = []
+    for obj_name in ['NP', 'AF', 'CEP']:
+        conc_path = celltypist_dir / f'{obj_name}_concordance.tsv'
+        if conc_path.exists():
+            conc_df = pd.read_csv(conc_path, sep='\t')
+            disc = conc_df[conc_df['concordant'] == False]
+            for _, row in disc.iterrows():
+                disagreements.append({
+                    'object': obj_name,
+                    'cluster': row['cluster'],
+                    'n_cells': row['n_cells'],
+                    'de_novo': row['de_novo_label'],
+                    'celltypist': row['celltypist_majority'],
+                    'agreement_pct': row['celltypist_agreement_pct'],
+                })
+
+    if disagreements:
+        html.append("""
+<h3>CellTypist Validation Disagreements</h3>
+<p>The following non-mesenchymal clusters had disagreements between de novo annotation (based on cluster DE markers and canonical marker panels) and CellTypist (Immune_All_Low model). These are flagged for human review; de novo labels are retained as primary annotation. See Supplementary Tables S17-S19 for full concordance data.</p>
+<table>
+  <tr><th>Object</th><th>Cluster</th><th>Cells</th><th>De Novo Label</th><th>CellTypist Label</th><th>CellTypist Agreement %</th></tr>
+""")
+        for d in disagreements:
+            html.append(f'  <tr><td>{d["object"]}</td><td>{d["cluster"]}</td><td>{d["n_cells"]}</td>'
+                       f'<td>{d["de_novo"]}</td><td>{d["celltypist"]}</td><td>{d["agreement_pct"]:.1f}%</td></tr>')
+        html.append('</table>')
+    else:
+        html.append('<p>CellTypist validation: all non-mesenchymal clusters concordant.</p>')
+
     # Integration images
     for img_name in ['resolution_optimization_NP.png', 'resolution_optimization_AF.png',
                      'resolution_optimization_CEP.png', 'annotation_dotplots/']:
@@ -217,7 +252,7 @@ def generate_final_report():
 
     html.append("""
 <div class="caveat">
-<strong>Caution:</strong> NP_mature_chondrocyte healthy_vs_herniated (4,316 DE genes) is flagged as likely study-confounded. Top genes include ribosomal proteins (RPL17, RPL36A), a batch artifact signature. Excluded from primary interpretation.
+<strong>Note:</strong> Herniated comparisons excluded from this analysis — after GSE233666 removal, only GSE251686 contributes herniated samples, making any healthy_vs_herniated comparison fully confounded with study.
 </div>
 """)
 
@@ -311,7 +346,7 @@ def generate_final_report():
 <h2 id="limitations">10. Limitations</h2>
 <div class="caveat">
 <ul>
-  <li><strong>Cross-study confounding:</strong> Condition and study are partially confounded, especially for herniated samples (only 2 studies). Within-study comparisons where possible.</li>
+  <li><strong>Cross-study confounding:</strong> Condition and study are partially confounded. Herniated comparisons excluded entirely (single-study confound after GSE233666 removal). Within-study comparisons where possible for remaining conditions.</li>
   <li><strong>Underpowered comparisons:</strong> 128/145 cell type x comparison combinations skipped due to insufficient samples. CEP compartment entirely underpowered for DE.</li>
   <li><strong>No RNA velocity:</strong> Spliced/unspliced counts not available in public datasets. Would require reprocessing from BAM files.</li>
   <li><strong>Age-disease confound:</strong> In GSE230809, healthy donors are 21-27y and diseased are 37-73y. Cannot fully separate age from disease effects.</li>

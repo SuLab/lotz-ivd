@@ -16,10 +16,13 @@ import warnings
 from pathlib import Path
 from datetime import datetime
 
+import anndata
 import numpy as np
 import pandas as pd
 import scanpy as sc
 from scipy import sparse
+
+anndata.settings.allow_write_nullable_strings = True
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt

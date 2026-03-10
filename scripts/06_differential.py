@@ -66,7 +66,7 @@ COMPARISONS = [
     ("healthy_vs_degenerated_mild", "healthy", ["degenerated_mild"]),
     ("healthy_vs_degenerated_severe", "healthy", ["degenerated_severe"]),
     ("mild_vs_severe", "degenerated_mild", ["degenerated_severe"]),
-    ("healthy_vs_herniated", "healthy", ["herniated"]),
+    # ("healthy_vs_herniated", "healthy", ["herniated"]),  # Excluded: only GSE251686 contributes herniated samples after GSE233666 removal — fully confounded with study
 ]
 
 # IVD-relevant genes for highlighting in volcano plots

@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**PIPELINE COMPLETE.** All 10 modules executed, validated, and checkpointed. Final report at results/final_report.html.
+**PIPELINE RERUN IN PROGRESS.** Specs restructured (commits 7938443, 0307f65): Module 04 narrowed to binary classification, Module 05 expanded to include clustering + de novo annotation, four compartment objects replace two-tier structure. Modules 04–10 must be rerun with updated scripts.
 
 ## Active Step
 
-**None** — Pipeline complete. Awaiting final human review.
+**Pipeline v2 rerun complete.** Awaiting human checkpoint review.
 
 ### Condition Mapping Review (required before Module 06, per Module 02 checkpoint)
 
@@ -89,34 +89,50 @@ Key reasoning:
 | Module 09: Human checkpoint | 2026-03-05 | Approved | Interactions biologically plausible. Pain-relevant interactions include neurotrophin and VEGF pathways. More interactions in degeneration (53K vs 44K) consistent with increased paracrine signaling. Proceed to Module 10. |
 | Module 10: Final reporting | 2026-03-05 | Complete | Final report (results/final_report.html) with 12 sections. 13 supplementary tables collected. Requirements frozen. All 18 validation checks PASS. All module scripts (01-10) present. All intermediate reports present. |
 
-## Pending Steps
+## Pending Steps (Rerun with Restructured Specs)
 
-1. [x] Human review and approval of specs — DONE 2026-02-26
-2. [x] Module 01: Dataset discovery & acquisition — DONE 2026-02-26
-3. [x] Module 01: Human checkpoint — approve dataset list — DONE 2026-02-26
-4. [x] Module 02: Metadata harmonization — DONE 2026-02-26
-5. [x] Module 02: Human checkpoint — approve condition mappings — DONE 2026-02-26 (tentative; revisit before Module 06)
-6. [x] Module 03: Per-dataset preprocessing — DONE 2026-02-26
-7. [x] Module 03: Human checkpoint — retroactive review DONE 2026-03-03
-8. [x] Module 04: Per-dataset annotation — DONE 2026-02-26
-9. [x] Module 04: Human checkpoint — retroactive review DONE 2026-03-03
-10. [x] Module 05: Integration strategy (Tier 1) — DONE 2026-03-02
-11. [x] Module 05: Human checkpoint (Tier 1) — APPROVED 2026-03-03
-12. [x] Module 05: Integration strategy (Tier 2) — DONE 2026-03-05
-13. [x] Module 05: Human checkpoint (Tier 2) — APPROVED 2026-03-05
-14. [x] Module 06: Differential analysis — DONE 2026-03-05
-15. [x] Module 06: Human checkpoint — APPROVED 2026-03-05
-16. [x] Module 07: Biological interpretation — DONE 2026-03-05
-17. [x] Module 07: Human checkpoint — APPROVED 2026-03-05
-18. [x] Module 08: Trajectory analysis — DONE 2026-03-05
-19. [x] Module 08: Human checkpoint — APPROVED 2026-03-05
-20. [x] Module 09: Cell-cell communication — DONE 2026-03-05
-21. [x] Module 09: Human checkpoint — APPROVED 2026-03-05
-22. [x] Module 10: Reporting — DONE 2026-03-05
-23. [ ] Module 10: Human checkpoint — final review — AWAITING
+Modules 01–03 unchanged. Modules 04–10 rerun with restructured specs.
+
+1. [x] Modules 01–03: Dataset discovery, metadata, preprocessing — DONE (unchanged)
+2. [x] **Infrastructure prep:** Swap reactivated (8 GB), disk verified (68 GB free)
+3. [x] Module 04 (rerun): Coarse cell classification — 11 datasets classified (GSE233666 excluded), all validation PASS, 0% ambiguous across all datasets. GSE230809 and GSE242443 100% mesenchymal.
+4. [x] Module 05 (rerun): Integration + clustering + de novo annotation — 4 objects (NP 263K, AF 85K, CEP 51K, all_cells 411K). scVI-only, resolution optimization, de novo annotation, CellTypist validation. All checks PASS. Completed 2026-03-10 04:58.
+5. [ ] Module 05: Human checkpoint — annotation review (most critical gate) — **DEFERRED, proceeding with downstream modules per user instruction**
+   - **CellTypist disagreements to review:**
+     - NP: 8 discordant clusters (out of 13). Pericyte_SMC→Fibroblasts (3,970 cells), Macrophage→Endothelial (4,612 cells), 4 "unassigned" clusters called Classical monocytes/Late erythroid by CellTypist, T_cell→Classical monocytes (3,004 cells), B_cell→Double-positive thymocytes (1,521 cells).
+     - AF: 1 discordant — Pericyte_SMC→Fibroblasts (257 cells).
+     - CEP: 3 discordant — B_cell→T cells (58 cells), Pericyte_SMC→Endothelial (40 cells), NK_cell→T cells (53 cells).
+   - NP non-mesenchymal annotation quality is notably low — many disagreements may indicate poor marker resolution at the selected clustering resolution (0.2, 13 clusters for 40K cells).
+   - **Hypotheses for NP disagreements:**
+     1. **Misrouted mesenchymal cells (biggest issue):** Clusters 0, 2, 4 (~17K cells, 42% of NP non-mes) are likely stressed/inflammatory disc cells misclassified by Module 04. Top markers (NAMPT, SOD2, CXCL8, HSPA1A, HLA-B) are stress-response genes IVD cells upregulate under degeneration, not canonical immune markers. De novo correctly leaves them "unassigned"; CellTypist forces "Classical monocytes" because Immune_All_Low has no IVD cell type. These cells should probably be reclassified mesenchymal.
+     2. **De novo scoring formula disadvantages endothelial markers:** Cluster 1 (4,612 cells) is clearly endothelial by markers (GNG11, SPARCL1) but scored as Macrophage by de novo. The `frac_expr * 0.5 + mean_expr * 0.5` formula may favor CD68 (diffuse low IVD expression) over sparser but specific PECAM1/VWF/CDH5. CellTypist is likely correct (99.8% agreement on "Endothelial cells").
+     3. **CellTypist Immune_All_Low model has no pericyte/SMC category:** Cluster 3 (3,970 cells, Pericyte_SMC vs Fibroblasts) — CellTypist lumps pericytes as "Fibroblasts." These may also be IVD fibroblast-like cells (CALD1, TPM2, IGFBP7) misrouted from mesenchymal.
+     4. **Mixed clusters from insufficient resolution:** Clusters 6, 8 (T_cell by de novo but with myeloid markers MPO, CD74, LYZ) suggest merged populations. Higher resolution would separate them.
+   - **Potential fixes for rerun:**
+     - Tighten Module 04 classification to reduce mesenchymal→non-mesenchymal leakage (e.g., require co-expression of ≥2 immune markers, not just score-based)
+     - Fix igraph rebuild bottleneck in `optimize_clustering_resolution` (build graph once, not 20x)
+     - Use higher minimum resolution for non-mesenchymal tier (e.g., 0.5 floor)
+     - Fix de novo scoring to weight marker specificity, not just mean expression
+     - Consider using CellTypist as primary for non-mesenchymal annotation rather than the generic marker panel scoring
+6. [x] **Disk cleanup:** Old tier files removed (~14.6 GB freed), 58 GB available
+7. [x] Module 06 (rerun): Pseudobulk DE — 21 powered comparisons, 53 skipped. Herniated excluded (single-study confound). Key: NP_mature_chondrocyte mild_vs_severe 315 genes, NP_fibrocartilaginous mild_vs_severe 203 genes, AF_outer healthy_vs_degenerated_severe 97 genes, EP_hyaline healthy_vs_degenerated_all 84 genes. Completed 2026-03-10 05:32.
+8. [ ] Module 06: Human checkpoint — deferred
+9. [x] Module 07 (rerun): 1,577 sig ORA enrichments, 55K GSEA terms tested, 10 sig pain genes (PTGS2, TNF, PLA2G2A, BDKRB2, CCL2, PTGES). Completed 2026-03-10 05:47.
+10. [ ] Module 07: Human checkpoint — deferred
+11. [x] Module 08 (rerun): Trajectory on NP, AF, CEP. NP rho=-0.258, AF rho=+0.341 (reversed — flag for review), CEP rho=-0.163. 500 trajectory genes each. Completed 2026-03-10 06:00.
+12. [ ] Module 08: Human checkpoint — deferred
+13. [x] Module 09 (rerun): LIANA on integrated objects. Healthy 28,878 interactions, degenerated 27,011. 2,077 pain-relevant. 36,014 differential. Completed 2026-03-10 06:03.
+14. [ ] Module 09: Human checkpoint — deferred
+15. [x] Module 10 (rerun): Final report with 19 supplementary tables (incl. S17-S19 CellTypist concordance), CellTypist disagreement table in report. Completed 2026-03-10 06:03.
+16. [ ] Module 10: Human checkpoint — final review — **AWAITING**
+
+### Previous Pipeline Run (v1, 2026-02-26 to 2026-03-05)
+
+All modules completed; see Completed Steps table below. Results superseded by spec restructuring.
 
 ## Revisions Log
 
+- 2026-03-09: **Spec restructuring (commits 7938443, 0307f65).** Key changes: (1) Module 04 narrowed from fine-grained annotation to binary mesenchymal/non-mesenchymal classification; (2) Module 05 expanded to include clustering resolution optimization and de novo annotation (absorbs old Module 04 annotation logic); (3) Four compartment objects (NP, AF, CEP, all_cells) replace two-tier structure (tier1_nonresident, tier2_resident_NP/AF); (4) scVI-only replaces 4-approach benchmark; (5) GSE233666 excluded (herniated-only); (6) `cell_type_final` renamed to `cell_type`; (7) "resident/non-resident" terminology changed to "mesenchymal/non-mesenchymal." All modules 04-10 require rerun. Hardware upgraded: 62 GB RAM / 16 CPUs (from 30 GB / 4 CPUs), same A10G GPU.
 - 2026-02-26: Module 01 execution. Searched 7 databases with 8+ query combinations. Found 6 datasets not in the original known list.
 - 2026-02-26: Module 01 checkpoint. Human decisions: (1) GSE242443 included despite culture expansion, (2) Zhou 2023 embryonic data deferred to Module 08 trajectory analysis, (3) proceed without PRJCA014236 and PRJCA007656 (NGDC), (4) coverage deemed adequate.
 - 2026-02-26: Module 02 checkpoint. All condition mappings tentatively approved. Human decision: revisit all mappings before Module 06 (differential expression), since changes after that point require full reanalysis. Key items to revisit: whether "herniated" should be a separate axis vs folded into degeneration severity; GSE205535 NNP (11yo spinal cord injury) classification; Thompson III boundary.
