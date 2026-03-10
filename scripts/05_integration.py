@@ -348,9 +348,15 @@ def prepare_object(adata, n_top_genes=3000):
                 print(f"    WARNING: batch-aware HVG failed ({e}), falling back")
 
     if not hvg_done:
-        sc.pp.highly_variable_genes(
-            adata, n_top_genes=n_top, flavor='seurat_v3', layer='counts'
-        )
+        try:
+            sc.pp.highly_variable_genes(
+                adata, n_top_genes=n_top, flavor='seurat_v3', layer='counts'
+            )
+        except ValueError:
+            print("    WARNING: seurat_v3 HVG failed, falling back to cell_ranger flavor")
+            sc.pp.highly_variable_genes(
+                adata, n_top_genes=n_top, flavor='cell_ranger'
+            )
     n_hvg = adata.var['highly_variable'].sum()
     print(f"    HVGs: {n_hvg}")
 
@@ -550,6 +556,23 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
     embedding = adata.obsm[embedding_key]
     results = []
 
+    # Build igraph once for modularity computation (instead of per-resolution)
+    ig_graph = None
+    ig_weights = None
+    try:
+        import leidenalg
+        import igraph as ig
+        adj = adata.obsp['connectivities']
+        sources, targets = adj.nonzero()
+        weights = np.asarray(adj[sources, targets]).ravel()
+        g = ig.Graph(n=adata.shape[0], edges=list(zip(sources.tolist(), targets.tolist())),
+                     directed=False)
+        g.es['weight'] = weights.tolist()
+        ig_graph = g
+        ig_weights = g.es['weight']
+    except Exception:
+        pass
+
     for res in resolutions:
         key = f'leiden_{res:.1f}'
         sc.tl.leiden(adata, resolution=res, key_added=key)
@@ -568,22 +591,14 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
             except Exception:
                 pass
 
-        # Modularity from the graph partition
+        # Modularity from the graph partition (reuse pre-built graph)
         mod_score = np.nan
-        try:
-            import leidenalg
-            import igraph as ig
-            # Build igraph from scanpy neighbor graph
-            adj = adata.obsp['connectivities']
-            sources, targets = adj.nonzero()
-            weights = np.asarray(adj[sources, targets]).ravel()
-            g = ig.Graph(n=adata.shape[0], edges=list(zip(sources.tolist(), targets.tolist())),
-                         directed=False)
-            g.es['weight'] = weights.tolist()
-            membership = adata.obs[key].astype(int).values.tolist()
-            mod_score = float(g.modularity(membership, weights=g.es['weight']))
-        except Exception:
-            pass
+        if ig_graph is not None:
+            try:
+                membership = adata.obs[key].astype(int).values.tolist()
+                mod_score = float(ig_graph.modularity(membership, weights=ig_weights))
+            except Exception:
+                pass
 
         results.append({
             'resolution': round(res, 1),
@@ -599,12 +614,20 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
     )
 
     # Select resolution: peak silhouette, or knee in modularity
+    # For non-mesenchymal tier, enforce minimum resolution of 0.5 to avoid
+    # too-coarse clustering that creates mixed T cell/myeloid clusters
+    min_resolution = 0.5 if "non_mesenchymal" in tier_name.lower() else 0.1
     valid = results_df.dropna(subset=['silhouette'])
     if len(valid) > 0:
-        best_idx = valid['silhouette'].idxmax()
-        selected_res = valid.loc[best_idx, 'resolution']
+        valid_above_min = valid[valid['resolution'] >= min_resolution]
+        if len(valid_above_min) > 0:
+            best_idx = valid_above_min['silhouette'].idxmax()
+            selected_res = valid_above_min.loc[best_idx, 'resolution']
+        else:
+            best_idx = valid['silhouette'].idxmax()
+            selected_res = valid.loc[best_idx, 'resolution']
     else:
-        selected_res = 0.5  # fallback
+        selected_res = max(0.5, min_resolution)  # fallback
 
     print(f"    Selected resolution: {selected_res} "
           f"({results_df.loc[results_df['resolution'] == selected_res, 'n_clusters'].values[0]} clusters)")
@@ -765,14 +788,25 @@ def annotate_clusters_de_novo(adata, object_name, tier_name):
                 cluster_scores[cluster][ct_name] = 0.0
                 continue
 
-            # Mean expression of resolved markers in this cluster
-            expr = adata[mask, resolved].X
-            if sparse.issparse(expr):
-                expr = expr.toarray()
-            # Fraction expressing (>0) + mean expression
-            frac_expr = (expr > 0).mean()
-            mean_expr = expr.mean()
-            cluster_scores[cluster][ct_name] = float(frac_expr * 0.5 + mean_expr * 0.5)
+            # Expression scoring: weight marker specificity over diffuse expression.
+            # For each gene, compute in-cluster vs out-of-cluster expression ratio
+            # to penalize ubiquitously expressed genes (e.g., CD68 in stressed cells).
+            expr_in = adata[mask, resolved].X
+            expr_out = adata[~mask, resolved].X
+            if sparse.issparse(expr_in):
+                expr_in = expr_in.toarray()
+            if sparse.issparse(expr_out):
+                expr_out = expr_out.toarray()
+            # Per-gene scores: fraction expressing * specificity ratio
+            gene_scores = []
+            for g_idx in range(expr_in.shape[1]):
+                frac_in = (expr_in[:, g_idx] > 0).mean()
+                mean_in = expr_in[:, g_idx].mean()
+                mean_out = expr_out[:, g_idx].mean()
+                # Specificity: how enriched is this gene in-cluster vs out-of-cluster
+                specificity = mean_in / (mean_out + 0.01)  # avoid div by zero
+                gene_scores.append(frac_in * min(specificity, 5.0))  # cap at 5x
+            cluster_scores[cluster][ct_name] = float(np.mean(gene_scores)) if gene_scores else 0.0
 
     # Assign labels
     cell_types = pd.Series("unassigned", index=adata.obs_names, dtype=object)
@@ -1082,7 +1116,9 @@ def process_object(object_name, force=False):
         print(f"  Skipping mesenchymal tier: only {n_mes} cells")
 
     # ── Tier B: Non-mesenchymal ──────────────────────────────────────────
-    if n_non >= 50:
+    # Need enough cells for HVG + scVI to work (at least 200 cells)
+    MIN_CELLS_NON_MES = 200
+    if n_non >= MIN_CELLS_NON_MES:
         print(f"\n  --- Tier B: Non-mesenchymal ({object_name}) ---")
         non_mes_adata = adata_all[non_mes_mask].copy()
         non_mes_adata = prepare_object(non_mes_adata, n_top_genes=SCVI_PARAMS['n_top_genes'])

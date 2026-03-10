@@ -226,7 +226,8 @@ def classify_cells(adata):
 
     # Load key marker expression vectors and compute thresholds
     marker_data = {}
-    for gene in ['PTPRC', 'PECAM1', 'CD68', 'CD14', 'ACTA2', 'RGS5', 'PDGFRB']:
+    for gene in ['PTPRC', 'PECAM1', 'CD68', 'CD14', 'ACTA2', 'RGS5', 'PDGFRB',
+                  'VWF', 'CD3D', 'CD79A', 'NKG7', 'ACAN', 'SOX9']:
         expr = _get_gene_expression(adata, gene)
         if expr is not None:
             thresh = _compute_expression_threshold(expr)
@@ -270,12 +271,36 @@ def classify_cells(adata):
             labels[i] = "mesenchymal"
             continue
 
-        # Score-based classification
+        # Score-based classification with non-mesenchymal evidence gate
+        # Require at least one canonical lineage marker to call non-mesenchymal,
+        # otherwise stressed disc cells with downregulated mesenchymal markers
+        # get misrouted (Fix 1: require positive non-mes evidence)
+        non_mes_evidence = any([
+            _is_expressed('PTPRC', i),
+            _is_expressed('PECAM1', i),
+            _is_expressed('VWF', i),
+            _is_expressed('CD3D', i),
+            _is_expressed('CD79A', i),
+            _is_expressed('NKG7', i),
+        ])
         if s_mes > s_non:
             labels[i] = "mesenchymal"
-        elif s_non > s_mes:
+        elif s_non > s_mes and non_mes_evidence:
             labels[i] = "non_mesenchymal"
-        # else: both near zero or tied → stays "ambiguous"
+        else:
+            # Default to mesenchymal when ambiguous — IVD is >90% mesenchymal
+            labels[i] = "mesenchymal"
+
+    # Fix 2: ACAN/SOX9 rescue — reclassify non-mesenchymal cells that express
+    # core chondrocyte markers, which indicates they are stressed disc cells
+    n_rescued = 0
+    for i in range(n_cells):
+        if labels[i] == "non_mesenchymal":
+            if _is_expressed('ACAN', i) or _is_expressed('SOX9', i):
+                labels[i] = "mesenchymal"
+                n_rescued += 1
+    if n_rescued > 0:
+        print(f"    ACAN/SOX9 rescue: reclassified {n_rescued} cells as mesenchymal")
 
     adata.obs['cell_class_raw'] = labels
 
@@ -321,9 +346,17 @@ def cluster_majority_vote(adata, resolution=CLASSIFICATION_RESOLUTION):
         majority_class = counts.index[0]
         majority_pct = counts.iloc[0] / len(non_amb) * 100
 
-        final_labels[mask] = majority_class
-
-        if majority_pct < 70:
+        # Fix 3: raise threshold to 85% — for mixed clusters, keep individual
+        # cell labels instead of overriding with majority vote
+        if majority_pct >= 85:
+            final_labels[mask] = majority_class
+        else:
+            # Mixed cluster: keep per-cell labels, only override ambiguous
+            for idx in np.where(mask)[0]:
+                if labels[idx] != "ambiguous":
+                    final_labels[idx] = labels[idx]
+                else:
+                    final_labels[idx] = majority_class
             mixed_clusters.append({
                 "cluster": cluster,
                 "majority_class": majority_class,
@@ -334,7 +367,7 @@ def cluster_majority_vote(adata, resolution=CLASSIFICATION_RESOLUTION):
     adata.obs['cell_class'] = final_labels
 
     if mixed_clusters:
-        print(f"    WARNING: {len(mixed_clusters)} clusters with <70% majority:")
+        print(f"    WARNING: {len(mixed_clusters)} clusters with <85% majority (keeping per-cell labels):")
         for mc in mixed_clusters:
             print(f"      Cluster {mc['cluster']}: {mc['majority_class']} "
                   f"({mc['majority_pct']}%, {mc['n_cells']} cells)")

@@ -789,15 +789,18 @@ def generate_report(enrichment_df, gsea_df, tf_df, pain_df):
         html.append('<img src="tf_activity/tf_activity_heatmap.png" alt="TF activity heatmap">')
 
     if not tf_df.empty and 'padj' in tf_df.columns:
+        # Support both column naming conventions
+        act_col = 'activity' if 'activity' in tf_df.columns else 'log2FC'
+        tf_col = 'tf' if 'tf' in tf_df.columns else 'gene'
         sig_tf = tf_df[tf_df['padj'] < 0.05]
         if not sig_tf.empty:
             html.append('<h3>Top Differential TF Activities</h3>')
             html.append('<table><tr><th>TF</th><th>Activity</th><th>padj</th>'
                        '<th>Cell Type</th><th>Comparison</th></tr>')
-            for _, row in sig_tf.reindex(sig_tf['activity'].abs().nlargest(30).index).iterrows():
-                direction = 'UP' if row['activity'] > 0 else 'DOWN'
-                html.append(f'<tr><td><strong>{row["tf"]}</strong></td>'
-                           f'<td>{row["activity"]:.2f} ({direction})</td>'
+            for _, row in sig_tf.reindex(sig_tf[act_col].abs().nlargest(30).index).iterrows():
+                direction = 'UP' if row[act_col] > 0 else 'DOWN'
+                html.append(f'<tr><td><strong>{row[tf_col]}</strong></td>'
+                           f'<td>{row[act_col]:.2f} ({direction})</td>'
                            f'<td>{row["padj"]:.1e}</td><td>{row["cell_type"]}</td>'
                            f'<td>{row["comparison"]}</td></tr>')
             html.append('</table>')
