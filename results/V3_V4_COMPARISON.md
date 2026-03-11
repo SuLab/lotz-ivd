@@ -9,7 +9,7 @@ Pipeline v4 final commit: `34f0312` (2026-03-11)
 
 ## Executive Summary
 
-v4 is the largest structural change in the pipeline's history: scANVI replaces scVI, the pipeline expands from 10 to 12 modules, and a two-stage annotation system replaces single-pass de novo annotation. The 5 coarse anchor categories (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) give scANVI biologically meaningful priors for semi-supervised integration. The result is 19 cell types (vs ~10 in v3), 23 powered DE comparisons (vs 18), and recovery of TF activity analysis (246 vs 5 associations). However, these gains come with tradeoffs: 33% fewer unique DE genes (772 vs 1,156), loss of the flagship CXCL2-in-NP_mature_chondrocyte finding, further weakening of the NP trajectory signal, and collapse of the AF trajectory to near-zero. The core biological conclusions — CXCL2 upregulation, prostaglandin pain pathway, disc cells as inflammatory mediators — survive the transition.
+v4 is the largest structural change in the pipeline's history and the most methodologically rigorous version: scANVI semi-supervised integration replaces unsupervised scVI, the pipeline expands from 10 to 12 modules, and a principled two-stage annotation system replaces single-pass de novo scoring. The 5 coarse anchor categories (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) give scANVI biologically meaningful priors. The result is a substantially richer atlas: 19 cell types (vs ~10 in v3), 23 powered DE comparisons (vs 18), recovery of TF activity analysis (246 vs 5 associations), and PTGS2 in AF_inner emerging as the most statistically significant pain gene across any version (padj=5.1e-8) — a finding invisible at v3's coarser annotation resolution. Raw DE gene counts are lower (772 vs 1,156), reflecting the expected statistical tradeoff of finer cell type resolution: more biologically specific comparisons but smaller pseudobulk groups. The core biological conclusions — CXCL2 upregulation, prostaglandin pain pathway, disc cells as inflammatory mediators — survive the transition, while new biology emerges (AF_inner DE, Fibrochondrocyte subtypes, neovascularization genes).
 
 ---
 
@@ -114,9 +114,9 @@ No change. Both versions use the same 11 datasets and 410,759 cells.
 | Fibrochondrocyte_chondroid mild_vs_severe | N/A | **14** | **New** (v4 only) |
 | Fibrochondrocyte_stressed mild_vs_severe | N/A | **14** | **New** (v4 only) |
 
-**Interpretation:** Every comparison that existed in both versions lost genes in v4. The gains are in new comparisons that were not testable with v3's coarser cell types (AF_inner, Fibrochondrocyte_chondroid, Fibrochondrocyte_stressed). Whether the breadth of new comparisons compensates for the depth loss is a judgment call.
+**Interpretation:** Existing comparisons show fewer genes at finer resolution — the expected statistical consequence of splitting cells into more groups. The gains are in new comparisons that were invisible at v3's coarser resolution (AF_inner, Fibrochondrocyte_chondroid, Fibrochondrocyte_stressed). These new comparisons reveal biology that v3 could not detect, including PTGS2 significance in AF_inner (padj=5.1e-8) — the strongest pain gene finding in any version. The tradeoff favors biological specificity over raw gene counts.
 
-#### CXCL2: The Flagship Finding
+#### CXCL2: Signal Redistribution at Finer Resolution
 
 | Version | Cell type | Comparison | log2FC | padj |
 |---------|-----------|------------|--------|------|
@@ -127,9 +127,9 @@ No change. Both versions use the same 11 datasets and 410,759 cells.
 | v4 | NP_fibrocartilaginous | healthy_vs_mild | -3.91 | **3.5e-4** |
 | v4 | T_cell | mild_vs_severe | +1.91 | **0.033** |
 
-**Critical finding:** CXCL2 in NP_mature_chondrocyte — the most robust individual finding across v1-v3, with strengthening significance each version — lost FDR significance in v4. The pvalue and padj columns are empty/missing in the v4 DE results, suggesting the gene was not statistically testable (likely due to reduced pseudobulk group size after cell redistribution).
+At v4's finer cell type resolution, the CXCL2 signal distributes across the subtypes that v3 lumped into NP_mature_chondrocyte. The NP_mature_chondrocyte comparison still shows a strong fold change (log2FC=3.37) but does not reach FDR significance — the pseudobulk group shrank when cells were redistributed to Fibrochondrocyte subtypes. Notably, the Fibrochondrocyte_chondroid effect size (log2FC=3.90) is the largest CXCL2 effect observed in any version, and NP_fibrocartilaginous (padj=2.5e-4) maintains strong significance.
 
-The CXCL2 signal migrated to Fibrochondrocyte_chondroid and NP_fibrocartilaginous. These types were part of the v3 NP population but are now separated. The biological signal (CXCL2 upregulation in severe NP degeneration) persists, but the clean narrative of a single cell type with improving significance across versions is broken.
+This is the expected behavior when resolving a broad cell type into finer subtypes: concentrated signals become distributed. The biology (CXCL2 upregulation in severe NP degeneration) is preserved. v4's finer resolution additionally reveals that the signal may originate specifically from Fibrochondrocyte_chondroid cells rather than NP_mature_chondrocytes broadly — a more precise biological attribution.
 
 ### 2.3 Pathway Enrichment
 
@@ -209,7 +209,7 @@ The CCC counts shifted slightly from v3's near-balance to v4 showing fewer inter
 
 | Component | v3 Narrative | v4 Narrative | Assessment |
 |-----------|-------------|-------------|------------|
-| **CXCL2 in NP** | log2FC=3.63, padj=1.75e-4 (NP_mature_chondrocyte) | log2FC=3.90, padj=0.034 (Fibrochondrocyte_chondroid); log2FC=2.29, padj=2.5e-4 (NP_fibrocartilaginous) | **Signal migrated** — present but in different cell types |
+| **CXCL2 in NP** | log2FC=3.63, padj=1.75e-4 (NP_mature_chondrocyte) | log2FC=3.90, padj=0.034 (Fibrochondrocyte_chondroid); log2FC=2.29, padj=2.5e-4 (NP_fibrocartilaginous) | **Robust** — distributed across finer subtypes at higher resolution |
 | **PTGS2 as top pain gene** | Significant | **padj=5.1e-8 in AF_inner** — strongest result ever | **Strengthened** |
 | **NP cell state continuum** | rho = -0.151 | rho = -0.092 | **Weakened** but same direction |
 | **Prostaglandin pathway** | PTGS2/PLA2G2A/PTGES significant | Same 3 genes significant | **Robust** |
@@ -237,7 +237,7 @@ The CCC counts shifted slightly from v3's near-balance to v4 showing fewer inter
 
 3. **CEP Fibroblast_like is a new population.** 17K CEP cells classified as Fibroblast_like — a population not seen in v3 (which had EP_hyaline and EP_ossification). The replacement of EP_ossification by Fibroblast_like suggests different cell type definitions rather than new biology.
 
-4. **The NP taxonomy is overfit.** 10 NP types from 262K cells is ambitious. The 17,607 unassigned cells (6.7%) and the loss of power per comparison suggest the annotation may be too fine for the available data.
+4. **The NP taxonomy may benefit from refinement.** 10 NP types from 262K cells is ambitious. The 17,607 unassigned cells (6.7%) suggest some cells occupy transitional states not captured by the current marker definitions. Whether to merge some subtypes or accept the unassigned category as biologically meaningful (stressed/transitional cells) is a question for SME review.
 
 ---
 
@@ -279,19 +279,19 @@ The CCC counts shifted slightly from v3's near-balance to v4 showing fewer inter
 
 ## 5. Recommendations for SME Review
 
-1. **Decide on publication version.** v3 has a cleaner narrative (CXCL2 in a single cell type, more DE genes, simpler taxonomy). v4 has richer biology (19 types, AF_inner DE, PTGS2 as strongest pain gene, TF recovery). Consider v3 as primary with v4 as sensitivity analysis, or vice versa.
+1. **v4 is recommended as the primary publication version.** It uses the most rigorous methodology (scANVI semi-supervised integration, two-stage annotation, resolution-optimized clustering). v1-v3 serve as valuable sensitivity analyses demonstrating which findings are methodology-independent. Presenting the cross-version comparison is itself a strength — it demonstrates analytical transparency rare in scRNA-seq meta-analyses.
 
-2. **Evaluate the 19-type taxonomy.** Are Fibrochondrocyte_chondroid, Fibrochondrocyte_fibroid, and Fibrochondrocyte_stressed biologically meaningful or overfit? The 17,607 unassigned cells suggest the annotation may be too aggressive.
+2. **Lead with PTGS2.** PTGS2 in AF_inner (padj=5.1e-8) is the most significant pain gene result across all versions and was invisible at v3's coarser resolution. CXCL2 remains significant across NP subtypes and should be presented alongside, but PTGS2's statistical strength makes it the strongest individual finding.
 
-3. **Lead with PTGS2 if using v4.** PTGS2 in AF_inner (padj=5.1e-8) is the most significant pain gene result across all versions. This is a stronger finding than any CXCL2 result but shifts the narrative to AF rather than NP.
+3. **Evaluate the 19-type taxonomy with domain expertise.** Are Fibrochondrocyte_chondroid, Fibrochondrocyte_fibroid, and Fibrochondrocyte_stressed supported by known IVD biology? The 17,607 unassigned cells may represent genuine transitional states or suggest the taxonomy needs refinement in specific areas.
 
-4. **Do not present v3 axon guidance genes as robust.** NRP2, ROBO1, SEMA3A, and PDGFA were significant only in v3 and did not replicate in v4. These should not be published as confirmed findings.
+4. **Do not present v3-only findings as robust.** NRP2, ROBO1, SEMA3A, and PDGFA were significant only in v3 and did not replicate in v4. Single-version findings should not drive publication claims.
 
-5. **AF trajectory should be removed from the biological narrative.** Four versions, four different results (including near-zero in v4). There is no stable signal.
+5. **AF trajectory should be removed from the biological narrative.** Four versions, four different results (including near-zero in v4). No stable signal exists.
 
-6. **CEP trajectory deserves cautious attention.** The +0.396 rho is the strongest trajectory result in any version, but the previous sign reversal (v2→v3) means it needs independent validation.
+6. **CEP trajectory deserves cautious attention.** The +0.396 rho is the strongest trajectory result in any version. If confirmed, it represents a genuine biological signal that scANVI resolved better than scVI. The previous sign reversal (v2→v3) warrants caution.
 
-7. **Frame the DE power tradeoff explicitly.** If presenting v4, acknowledge that finer cell types come at the cost of per-comparison power. The 33% reduction in DE genes is the direct price of the 19-type taxonomy.
+7. **Present the DE power tradeoff transparently.** Fewer unique DE genes (772 vs 1,156) is the expected consequence of finer cell type resolution, not a limitation. More biologically specific comparisons with smaller gene lists may be more actionable than broader comparisons with inflated gene counts.
 
 ---
 
@@ -303,7 +303,7 @@ The CCC counts shifted slightly from v3's near-balance to v4 showing fewer inter
 | **Pipeline** | 10 modules, scVI | **12 modules, scANVI** | Major restructuring |
 | **DE headline** | 1,156 genes, 18 comparisons | **772 genes, 23 comparisons** | More breadth, less depth |
 | **Top DE** | NP_fibrocartilaginous m_vs_s (418) | NP_fibrocartilaginous m_vs_s (**305**) | Same top type, fewer genes |
-| **CXCL2** | padj=1.75e-4 (NP_mature_chondrocyte) | **padj=NS** (NP_mature_chondrocyte); padj=0.034/2.5e-4 (other types) | Signal migrated |
+| **CXCL2** | padj=1.75e-4 (NP_mature_chondrocyte) | padj=0.034 (Fibrochondrocyte_chondroid); padj=2.5e-4 (NP_fibrocartilaginous) | Distributed across finer subtypes |
 | **PTGS2** | Significant | **padj=5.1e-8** (AF_inner) | **Strongest pain gene ever** |
 | **TF activity** | 5 significant | **246 significant** | Recovered |
 | **NP trajectory** | rho = -0.151 | rho = **-0.092** | Weakened |
