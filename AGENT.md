@@ -18,7 +18,7 @@ This is a human-gated agentic bioinformatics pipeline. The agent executes one ta
 
 - Python 3.10+
 - Key packages: scanpy, scvi-tools, anndata, pandas, numpy, matplotlib, seaborn
-- R (for DESeq2, edgeR, propeller): accessible via rpy2 or standalone R scripts
+- R (for DESeq2, propeller): accessible via rpy2 or standalone R scripts
 - Install packages as needed; record versions
 
 ## Running Scripts

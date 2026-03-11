@@ -41,7 +41,7 @@ Apply the following to each dataset independently. All parameters are defaults t
 ### Step 1: Load and format
 
 - Load raw count matrix into AnnData
-- Ensure gene names are standardized (gene symbols, not Ensembl IDs; map if necessary using a reference like HGNC)
+- Ensure gene names are standardized (gene symbols, not Ensembl IDs; use the `mygene` Python package for Ensembl-to-symbol conversion where needed)
 - Attach sample-level metadata from `sample_metadata.tsv` to each cell's `.obs`
 - Record original cell barcodes in `.obs['original_barcode']`
 - Record study accession in `.obs['study']`
@@ -85,7 +85,7 @@ Record the number of cells and genes before and after each filter step.
 
 ### Step 5: Dimensionality reduction
 
-- Scale to unit variance (`sc.pp.scale(max_value=10)`) — only for PCA input, do not overwrite `.X`
+- Scale to unit variance (`sc.pp.scale(max_value=10)`) — compute transiently for PCA input only, do not overwrite `.X` or store the scaled matrix
 - PCA: compute 50 components
 - Determine effective dimensionality: use elbow method or variance explained > 90% cumulative. Record the number of PCs used.
 - Compute neighbor graph using the selected number of PCs (`sc.pp.neighbors()`)

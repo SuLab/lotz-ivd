@@ -21,13 +21,15 @@ Each iteration, the agent reads the current state from `analysis_plan.md`, execu
 | 01 | Dataset Discovery | Systematic search for all human IVD scRNA-seq datasets |
 | 02 | Metadata Harmonization | Standardize condition labels, demographics, covariates |
 | 03 | Preprocessing | Per-dataset QC, normalization, clustering |
-| 04 | Annotation | Cell type labeling using markers, references, and automated tools |
-| 05 | Integration | Cross-study integration with tiered strategy for resident vs. non-resident cells |
-| 06 | Differential Analysis | Cell composition changes and pseudobulk DE between conditions |
-| 07 | Biological Interpretation | Pathway enrichment, GRNs, pain-associated gene analysis |
-| 08 | Trajectory & Dynamics | Pseudotime, RNA velocity for the cell state continuum |
-| 09 | Cell-Cell Communication | Ligand-receptor interactions between IVD cell populations |
-| 10 | Reporting | Final report, figures, reproducibility documentation |
+| 04 | Coarse Annotation | Coarse cell classification for scANVI integration anchors |
+| 05 | Integration | Cross-study tiered scANVI integration |
+| 06 | Clustering | Resolution-optimized Leiden clustering of integrated objects |
+| 07 | Post-Integration Annotation | De novo cell type annotation from integrated, clustered data |
+| 08 | Differential Analysis | Cell composition changes and pseudobulk DE (DESeq2) between conditions |
+| 09 | Biological Interpretation | Pathway enrichment, GRNs, pain-associated gene analysis |
+| 10 | Trajectory & Dynamics | Pseudotime, RNA velocity for the cell state continuum |
+| 11 | Cell-Cell Communication | Ligand-receptor interactions between IVD cell populations |
+| 12 | Reporting | Final report, figures, reproducibility documentation |
 
 ## Key Files
 
@@ -70,11 +72,13 @@ ivd-analysis/
 │   ├── 03_PREPROCESSING.md
 │   ├── 04_ANNOTATION.md
 │   ├── 05_INTEGRATION.md
-│   ├── 06_DIFFERENTIAL.md
-│   ├── 07_INTERPRETATION.md
-│   ├── 08_TRAJECTORY.md
-│   ├── 09_COMMUNICATION.md
-│   └── 10_REPORTING.md
+│   ├── 06_CLUSTERING.md
+│   ├── 07_POST_ANNOTATION.md
+│   ├── 08_DIFFERENTIAL.md
+│   ├── 09_INTERPRETATION.md
+│   ├── 10_TRAJECTORY.md
+│   ├── 11_COMMUNICATION.md
+│   └── 12_REPORTING.md
 ├── data/
 │   ├── raw/                # Downloaded datasets
 │   ├── processed/          # Per-dataset h5ad files
@@ -86,12 +90,14 @@ ivd-analysis/
     ├── 01_datasets.ipynb       → Table 1
     ├── 02_metadata.ipynb       → Table 1 (cont.)
     ├── 03_qc.ipynb             → Fig S1
-    ├── 04_annotation.ipynb     → Fig 1, Fig S2
+    ├── 04_classification.ipynb → Fig S2
     ├── 05_integration.ipynb    → Fig S3
-    ├── 06_differential.ipynb   → Fig 2-3, Table 2
-    ├── 07_interpretation.ipynb → Fig 4-5, Fig S4
-    ├── 08_trajectory.ipynb     → Fig 6
-    └── 09_communication.ipynb  → Fig 7
+    ├── 06_clustering.ipynb     → Fig S3 (cont.)
+    ├── 07_annotation.ipynb     → Fig 1
+    ├── 08_differential.ipynb   → Fig 2-3, Table 2
+    ├── 09_interpretation.ipynb → Fig 4-5, Fig S4
+    ├── 10_trajectory.ipynb     → Fig 6
+    └── 11_communication.ipynb  → Fig 7
 ```
 
 ## Scripts vs. Notebooks

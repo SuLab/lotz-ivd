@@ -2,7 +2,7 @@
 
 ## Objective
 
-Assign each cell a coarse label from 5 anchor categories — chondrocyte-like, fibroblast-like, immune, endothelial, pericyte/SMC — or "Unknown" if the cell doesn't clearly fit any category. These coarse labels serve as seed labels for scANVI semi-supervised integration in Module 05. Fine-grained cell type annotation happens *after* integration (in Module 05), not here.
+Assign each cell a coarse label from 5 anchor categories — chondrocyte-like, fibroblast-like, immune, endothelial, pericyte/SMC — or "Unknown" if the cell doesn't clearly fit any category. These coarse labels serve as seed labels for scANVI semi-supervised integration in Module 05. Fine-grained cell type annotation happens *after* integration and clustering (in Module 07), not here.
 
 ## Rationale
 
@@ -47,25 +47,25 @@ Contains:
 Cells with clearly dominant chondrocyte markers.
 
 **Positive markers:** COL2A1, ACAN, SOX9
-**Requirement:** Chondrocyte score clearly higher than fibroblast score (e.g., chondrocyte score > 2× fibroblast score)
+**Requirement:** Chondrocyte score clearly higher than fibroblast score (chondrocyte score > 2× fibroblast score, and chondrocyte score > 0)
 
 ### Category 2: Fibroblast-like
 
 Cells with clearly dominant fibroblast markers.
 
 **Positive markers:** COL1A1, COL1A2, DCN, LUM
-**Requirement:** Fibroblast score clearly higher than chondrocyte score (e.g., fibroblast score > 2× chondrocyte score)
+**Requirement:** Fibroblast score clearly higher than chondrocyte score (fibroblast score > 2× chondrocyte score, and fibroblast score > 0)
 
 ### Category 3: Immune
 
 **Positive markers:** PTPRC (CD45) — primary gate
 **Supporting markers:** CD3D, CD3E (T cells), CD68, CD14, CSF1R (macrophage/monocyte), CD79A, MS4A1 (B cells), KIT, TPSAB1 (mast cells), NKG7, GNLY (NK cells)
-**Requirement:** PTPRC expression above background, or co-expression of ≥2 supporting immune markers
+**Requirement:** PTPRC expression in the top 10th percentile of all cells, or co-expression of ≥2 supporting immune markers (each in the top 10th percentile)
 
 ### Category 4: Endothelial
 
 **Positive markers:** PECAM1 (CD31), VWF, CDH5
-**Requirement:** Expression of ≥1 endothelial marker above background, without co-expression of mesenchymal markers (COL2A1, ACAN)
+**Requirement:** Expression of ≥1 endothelial marker in the top 10th percentile, without co-expression of mesenchymal markers (COL2A1, ACAN)
 
 ### Category 5: Pericyte/SMC
 
@@ -93,11 +93,11 @@ Cells that don't clearly fit any anchor category. This includes:
 
 Apply in order (first match wins):
 
-1. **Immune:** PTPRC > threshold, OR ≥2 immune supporting markers expressed. Must NOT co-express ACAN or SOX9 (rescue rule — prevents stressed disc cells with upregulated HLA genes from being misclassified).
-2. **Endothelial:** PECAM1, VWF, or CDH5 > threshold. Must NOT co-express ACAN or SOX9.
-3. **Pericyte/SMC:** RGS5 and PDGFRB co-expressed. Must NOT co-express ACAN or SOX9.
-4. **Chondrocyte-like:** Chondrocyte score > 2× fibroblast score, and chondrocyte score above a minimum threshold.
-5. **Fibroblast-like:** Fibroblast score > 2× chondrocyte score, and fibroblast score above a minimum threshold.
+1. **Immune:** PTPRC in top 10th percentile, OR ≥2 immune supporting markers each in the top 10th percentile. Must NOT co-express ACAN or SOX9 (rescue rule — prevents stressed disc cells with upregulated HLA genes from being misclassified).
+2. **Endothelial:** PECAM1, VWF, or CDH5 in top 10th percentile. Must NOT co-express ACAN or SOX9.
+3. **Pericyte/SMC:** RGS5 and PDGFRB co-expressed (both in top 10th percentile). Must NOT co-express ACAN or SOX9.
+4. **Chondrocyte-like:** Chondrocyte score > 2× fibroblast score, and chondrocyte score > 0 (positively enriched above background, as `sc.tl.score_genes()` centers scores around zero).
+5. **Fibroblast-like:** Fibroblast score > 2× chondrocyte score, and fibroblast score > 0.
 6. **Unknown:** Everything else.
 
 ### Cluster-level smoothing

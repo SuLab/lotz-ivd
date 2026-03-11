@@ -15,7 +15,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Requires `python3-dev` system package (for annoy/scib-metrics). Use `python3` not `python` to invoke scripts. R with DESeq2/edgeR/propeller needed for Module 06+.
+Requires `python3-dev` system package (for annoy/scib-metrics). Use `python3` not `python` to invoke scripts. R with DESeq2/propeller needed for Module 08+.
 
 ## Running the Pipeline
 
@@ -29,8 +29,8 @@ Requires `python3-dev` system package (for annoy/scib-metrics). Use `python3` no
 
 ## Architecture
 
-**10-module pipeline** (specs in `specs/01_*.md` through `specs/10_*.md`):
-1. Dataset Discovery → 2. Metadata Harmonization → 3. Preprocessing → 4. Annotation → 5. Integration → 6. Differential Analysis → 7. Interpretation → 8. Trajectory → 9. Cell-Cell Communication → 10. Reporting
+**12-module pipeline** (specs in `specs/01_*.md` through `specs/12_*.md`):
+1. Dataset Discovery → 2. Metadata Harmonization → 3. Preprocessing → 4. Coarse Annotation → 5. Integration → 6. Clustering → 7. Post-Integration Annotation → 8. Differential Analysis → 9. Interpretation → 10. Trajectory → 11. Cell-Cell Communication → 12. Reporting
 
 **Scripts vs Notebooks split:** Scripts (`scripts/`) do heavy compute headlessly. Notebooks (`notebooks/`) load saved results from `data/` and `results/` for visualization — they are independent of scripts and serve as checkpoint review artifacts and draft manuscript figures.
 
@@ -55,7 +55,7 @@ Requires `python3-dev` system package (for annoy/scib-metrics). Use `python3` no
 
 - IVD resident cells (chondrocyte-like, fibroblast-like) exist on a **continuum**, not discrete types. Standard batch correction can erase this variation — the pipeline uses per-dataset processing first, then tiered integration.
 - **Tiered integration:** non-resident cells (immune, endothelial) use standard methods; resident cells use conservative approaches.
-- **Pseudobulk DE** (DESeq2/edgeR), not single-cell DE, to avoid treating cells as independent observations.
+- **Pseudobulk DE** (DESeq2), not single-cell DE, to avoid treating cells as independent observations.
 - 12 datasets, ~423K cells, 78 samples, 57 donors across NP/AF/CEP compartments.
 
 ## Current Dataset List
@@ -68,4 +68,4 @@ Requires `python3-dev` system package (for annoy/scib-metrics). Use `python3` no
 - 3 non-10x platform datasets (BD Rhapsody, Singleron) — need platform-aware batch correction
 - GSE242443 CEP cells are culture-expanded (included by decision, requires caveats)
 - GSE230809: all-male donors with confounded age-disease effects
-- Condition mappings must be revisited before Module 06 (DE analysis)
+- Condition mappings must be revisited before Module 08 (DE analysis)
