@@ -62,6 +62,14 @@ Requires `python3-dev` system package (for annoy/scib-metrics). Use `python3` no
 
 12 studies: GSE160756, GSE165722, GSE189916, GSE199866, GSE205535, CNP0002664, GSE233666, GSE244889, GSE251686, GSE255768, GSE230809, GSE242443. Full details in `AGENT.md` and `metadata/dataset_registry.tsv`.
 
+## Interpretation and Communication Style
+
+- **Evaluate on rigor, not specific results.** When comparing pipeline versions or interpreting changes, assess methodological soundness — not whether a particular gene or result was reproduced. A finding disappearing in a more rigorous version is informative, not a failure.
+- **Explain mechanisms behind changes.** When results shift between versions, explain *why* (e.g., signal redistribution across finer cell types). The explanation is more valuable than declaring a winner.
+- **Default to conservative, defensible claims.** Do not editorialize or chase exciting narratives. Build interpretations on solid evidence.
+- **Bold guesses only when asked.** The user will explicitly request speculative interpretations and will expect strong evidence and reasoning behind them.
+- **Do not anchor on prior results.** Each pipeline version should be evaluated on its own scientific merit as a whole, not penalized for producing different results from earlier versions.
+
 ## Key Known Issues
 
 - GSE205535 has published corrigenda
