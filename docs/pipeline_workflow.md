@@ -4,7 +4,7 @@
 
 Human-gated agentic bioinformatics pipeline analyzing 11 scRNA-seq datasets (410,759 cells, 71 samples, ~50 donors) of human intervertebral disc tissue. Each module produces results that are reviewed at a human checkpoint before the pipeline advances.
 
-**Pipeline version:** v3 (annotation fix: non-mesenchymal evidence gate, ACAN/SOX9 rescue, 85% cluster voting threshold). See `results/THREE_VERSION_SUMMARY.md` for version history.
+**Pipeline version:** v3 (annotation fix: non-mesenchymal evidence gate, ACAN/SOX9 rescue, 85% cluster voting threshold). See `results/VERSION_DIFFERENCES_SUMMARY.md` for version history.
 
 **How to read this diagram:** Blue boxes are computational modules (agent-executed). Orange hexagons are human checkpoints where the pipeline pauses. Yellow notes show the key decisions made. Full questions and rationale for each checkpoint are in the [Checkpoint Details](#checkpoint-details) section below.
 

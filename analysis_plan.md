@@ -4,7 +4,7 @@
 
 **Pipeline v4 COMPLETE.** All 12 modules executed successfully. scANVI semi-supervised integration with 5 coarse anchor categories.
 
-**Pipeline version:** v4 (spec restructuring + scANVI integration). See `results/THREE_VERSION_SUMMARY.md` for v1-v3 history.
+**Pipeline version:** v4 (spec restructuring + scANVI integration). See `results/VERSION_DIFFERENCES_SUMMARY.md` for v1-v4 history.
 
 ## Active Step
 
