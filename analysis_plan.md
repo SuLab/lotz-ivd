@@ -2,44 +2,49 @@
 
 ## Current Status
 
-**Pipeline v3 complete.** All 10 modules executed. Awaiting final human checkpoint review.
+**Pipeline v4 ready.** Scripts restructured from 10-module to 12-module pipeline. Awaiting execution of Module 04+.
 
-**Pipeline version:** v3 (annotation fix applied 2026-03-10). See `results/THREE_VERSION_SUMMARY.md` for full version history.
+**Pipeline version:** v4 (spec restructuring + scANVI integration). See `results/THREE_VERSION_SUMMARY.md` for v1-v3 history.
 
 ## Active Step
 
-**Module 10: Human checkpoint — final review — AWAITING**
+**Module 04: Coarse Cell Classification — READY TO RUN**
 
-All results, notebooks, reports, and supplementary tables are current and pushed to GitHub.
+Scripts 04-12 have been updated to match the restructured specs. Modules 01-03 outputs are unchanged from v3.
 
 ---
 
-## Pipeline Summary (v3)
+## Pipeline Summary (v4 — planned)
 
-| Module | Status | Key Output |
-|--------|--------|------------|
-| 01: Dataset Discovery | Complete | 11 datasets, ~410K cells, 71 samples |
-| 02: Metadata Harmonization | Complete | Condition mappings finalized |
-| 03: Preprocessing | Complete | 410,759 cells post-QC across 11 datasets |
-| 04: Cell Classification | Complete (v3) | Binary mesenchymal/non-mesenchymal with evidence gate |
-| 05: Integration + Annotation | Complete (v3) | 4 compartment objects: NP (263K), AF (85K), CEP (51K), all_cells (411K) |
-| 06: Differential Analysis | Complete (v3) | 18 powered comparisons, 1,156 unique DE genes |
-| 07: Biological Interpretation | Complete (v3) | 1,043 ORA, 1,943 GSEA, 399 sig TFs, 10 pain genes |
-| 08: Trajectory Analysis | Complete (v3) | NP rho=-0.151, AF rho=+0.325, CEP rho=+0.135 |
-| 09: Cell-Cell Communication | Complete (v3) | 40.2K healthy / 40.9K degenerated interactions |
-| 10: Final Reporting | Complete (v3) | FINAL_REPORT.md, MANUSCRIPT.md, 27 supplementary tables |
+| Module | Status | Script | Description |
+|--------|--------|--------|-------------|
+| 01: Dataset Discovery | Complete (v1) | 01_dataset_download.py | 11 datasets, ~410K cells, 71 samples |
+| 02: Metadata Harmonization | Complete (v1) | 02_metadata_harmonization.py | Condition mappings finalized |
+| 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 410,759 cells post-QC across 11 datasets |
+| 04: Coarse Classification | Ready | 04_annotation.py | 5 anchor categories + Unknown for scANVI |
+| 05: Integration | Ready | 05_integration.py | Tiered scANVI (semi-supervised) integration |
+| 06: Clustering | Ready | 06_clustering.py | Leiden with resolution optimization |
+| 07: Post-Integration Annotation | Ready | 07_annotation.py | Two-stage: coarse markers → fine DE |
+| 08: Differential Analysis | Ready | 08_differential.py | Composition + pseudobulk DE |
+| 09: Biological Interpretation | Ready | 09_interpretation.py | Pathways, GRN, pain genes |
+| 10: Trajectory Analysis | Ready | 10_trajectory.py | PAGA + DPT pseudotime |
+| 11: Cell-Cell Communication | Ready | 11_communication.py | LIANA ligand-receptor |
+| 12: Final Reporting | Ready | 12_reporting.py | Comprehensive report + supplements |
 
-### v3 Annotation Fix (2026-03-10)
+### v4 Key Changes from v3
 
-Three changes to Module 04 cell classification to fix 17K stressed NP cells misrouted to non-mesenchymal in v2:
+1. **Module 04 restructured:** Binary mesenchymal/non-mesenchymal → 5 coarse anchor categories (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) + Unknown. Provides richer anchor labels for scANVI.
 
-1. **Non-mesenchymal evidence gate:** Cells must express at least one canonical non-mesenchymal marker (PTPRC, PECAM1, VWF, CDH5, CD68, CD163) above threshold to be classified non-mesenchymal. Prevents stressed disc cells with upregulated HLA/inflammatory genes from being misclassified.
+2. **scANVI replaces scVI:** Semi-supervised integration uses coarse_label anchors from Module 04. Should produce better batch correction, especially across platforms (10x, BD Rhapsody, Singleron).
 
-2. **ACAN/SOX9 rescue:** Cells expressing ACAN or SOX9 (core IVD markers) are rescued to mesenchymal regardless of non-mesenchymal score. These genes are essentially never expressed in immune/endothelial cells.
+3. **Module 05 split into 3:** Old monolithic integration+clustering+annotation script split into:
+   - 05: Integration only (scANVI)
+   - 06: Clustering with resolution optimization (NEW)
+   - 07: Two-stage post-integration annotation (NEW)
 
-3. **85% cluster voting:** After per-cell classification, if >85% of cells in a Leiden cluster share the same class, the entire cluster is assigned that class. Smooths out noisy per-cell calls using neighborhood information.
+4. **Downstream modules renumbered:** 06→08, 07→09, 08→10, 09→11, 10→12
 
-Modules 04-10 were rerun after the fix. Modules 01-03 were unchanged.
+5. **Two-stage annotation (Module 07):** Stage 1 assigns coarse identity via canonical markers. Stage 2 refines within coarse groups using cluster DE markers. More principled than v3's single-pass approach.
 
 ---
 
@@ -59,37 +64,14 @@ Modules 04-10 were rerun after the fix. Modules 01-03 were unchanged.
 
 ---
 
-## Integration Approach
+## Integration Approach (v4)
 
-**scVI-only** (v2+ simplification). One scVI model per compartment (NP, AF, CEP) with `batch_key='study'`. Separate models for mesenchymal and non-mesenchymal tiers within each compartment. Combined `all_cells` object for cross-compartment analyses.
+**Tiered scANVI** (semi-supervised). One scANVI model per tier per compartment object (NP, AF, CEP, all_cells) with `batch_key='study'` and `labels_key='coarse_label'`.
 
-The v1 4-approach benchmark (scVI, scANVI, Harmony, BBKNN) was replaced by scVI-only in v2.
+- Mesenchymal tier anchors: Chondrocyte_like, Fibroblast_like; Unknown cells are unlabeled (scANVI positions them by similarity)
+- Non-mesenchymal tier anchors: Immune, Endothelial, Pericyte_SMC
 
----
-
-## Key v3 Results
-
-### Differential Expression
-- **18 powered comparisons**, 56 skipped (underpowered)
-- **1,156 unique significant genes** (1,447 gene-comparison pairs)
-- Top: NP_mature_chondrocyte mild_vs_severe (315 genes), NP_fibrocartilaginous mild_vs_severe (203), NP_mature_chondrocyte healthy_vs_severe (172)
-- Herniated comparisons excluded (single-study confound)
-
-### Biological Interpretation
-- **1,043 significant ORA enrichments** (GO/KEGG/Reactome/MSigDB/IVD-custom)
-- **1,943 significant GSEA terms** (FDR < 0.05)
-- **399 significant TF-condition associations** (CollecTRI regulon overlap)
-- **10 significant pain genes:** PTGS2, TNF, PLA2G2A, BDKRB2, CCL2, PTGES, CXCL8, and others
-
-### Trajectories
-- PAGA + DPT for NP, AF, CEP compartments
-- NP rho=-0.151, AF rho=+0.325, CEP rho=+0.135
-- Trajectory-DE overlap: NP 96/500, AF 110/500, CEP 38/500
-
-### Cell-Cell Communication
-- LIANA 5-method consensus on 20K cells per condition
-- Healthy: 40,187 interactions, Degenerated: 40,872 interactions
-- Near-equal counts between conditions (in contrast to v1 and v2 which showed larger differences)
+Workflow: train scVI (max_epochs=200) → initialize scANVI from scVI → train scANVI (max_epochs=50, early_stopping).
 
 ---
 
@@ -97,7 +79,7 @@ The v1 4-approach benchmark (scVI, scANVI, Harmony, BBKNN) was replaced by scVI-
 
 1. **Trajectory instability across versions:** Pseudotime-condition correlations change sign between pipeline versions (e.g., CEP went from -0.163 in v2 to +0.135 in v3). This sensitivity to upstream annotation choices means trajectory results should be interpreted cautiously.
 
-2. **CellTypist NP disagreements:** 8/13 de novo NP clusters are discordant with CellTypist. CellTypist lacks IVD-specific cell types, so de novo labels are retained, but this should be acknowledged.
+2. **CellTypist NP disagreements:** 8/13 de novo NP clusters were discordant with CellTypist in v3. CellTypist lacks IVD-specific cell types, so de novo labels are retained, but this should be acknowledged.
 
 3. **CCC direction sensitivity:** v1 showed more interactions in degeneration (53K vs 44K), v2 showed fewer (27K vs 29K), v3 shows near-equal (40K vs 41K). The direction of this result is sensitive to annotation and sampling choices.
 
@@ -117,7 +99,7 @@ The v1 4-approach benchmark (scVI, scANVI, Harmony, BBKNN) was replaced by scVI-
 
 - **NGDC datasets excluded:** PRJCA014236 and PRJCA007656 not downloaded. NP already well-covered.
 - **GSE205535 corrigenda:** Published corrections exist — reviewed during preprocessing.
-- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scVI batch correction.
+- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scANVI batch correction.
 - **CEP underpowered:** Only 3 CEP datasets (6 samples). Compartment-specific CEP analyses are limited.
 - **GSE242443 culture-expanded:** CEP cells are culture-expanded. Included with caveats.
 - **GSE230809 sex bias:** All 24 samples from male donors. Limits sex-stratified analyses.
@@ -129,6 +111,14 @@ The v1 4-approach benchmark (scVI, scANVI, Harmony, BBKNN) was replaced by scVI-
 ---
 
 ## Version History
+
+### v4 (2026-03-11): Spec restructuring + scANVI
+- Pipeline restructured from 10 to 12 modules (clustering and annotation split from integration)
+- Module 04: 5 coarse anchor categories replace binary classification
+- Module 05: scANVI (semi-supervised) replaces scVI (unsupervised)
+- Module 07: Two-stage post-integration annotation (coarse → fine)
+- Modules 01-03 unchanged
+- Scripts updated, ready for execution
 
 ### v3 (2026-03-10): Annotation fix
 - Three fixes to Module 04 classification (evidence gate, ACAN/SOX9 rescue, 85% voting)
@@ -154,10 +144,11 @@ The v1 4-approach benchmark (scVI, scANVI, Harmony, BBKNN) was replaced by scVI-
 | Date | Decision |
 |------|----------|
 | 2026-02-26 | Specs approved. GSE242443 included. Zhou 2023 deferred. NGDC dropped. |
-| 2026-02-26 | Condition mappings tentatively approved. Revisit before Module 06. |
+| 2026-02-26 | Condition mappings tentatively approved. Revisit before Module 08. |
 | 2026-03-03 | Retroactive checkpoint review of Modules 03-05. No blocking issues. |
 | 2026-03-05 | scANVI primary for v1 (later superseded). Condition mappings finalized. |
 | 2026-03-05 | v1 pipeline complete. All modules 01-10 done. |
 | 2026-03-09 | Spec restructuring. GSE233666 excluded. scVI-only. v2 rerun initiated. |
 | 2026-03-10 | v2 complete. v3 annotation fix applied. Full rerun Modules 04-10. |
 | 2026-03-10 | v3 complete. Stale files cleaned. Notebooks re-executed. Reports updated. |
+| 2026-03-11 | Spec restructuring: 10→12 modules. scANVI integration. Scripts updated for v4. |

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Module 07: Biological interpretation for IVD scRNA-seq atlas.
+"""Module 09: Biological interpretation for IVD scRNA-seq atlas.
 
 Part 1: Pathway and gene set enrichment (ORA + GSEA via gseapy/decoupler)
 Part 2: TF activity inference (decoupler, CollecTRI regulons)
 Part 3: Pain-associated gene analysis
 
 Usage:
-    python3 scripts/07_interpretation.py
-    python3 scripts/07_interpretation.py --pathways-only
-    python3 scripts/07_interpretation.py --pain-only
-    python3 scripts/07_interpretation.py --tf-only
-    python3 scripts/07_interpretation.py --validate-only
+    python3 scripts/09_interpretation.py
+    python3 scripts/09_interpretation.py --pathways-only
+    python3 scripts/09_interpretation.py --pain-only
+    python3 scripts/09_interpretation.py --tf-only
+    python3 scripts/09_interpretation.py --validate-only
 """
 
 import gc
@@ -140,7 +140,7 @@ PAIN_GENE_SETS = {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_de_results():
-    """Load combined DE results from Module 06."""
+    """Load combined DE results from Module 08."""
     path = DE_DIR / "de_results_combined.tsv"
     if not path.exists():
         print(f"ERROR: DE results not found at {path}")
@@ -698,7 +698,7 @@ def plot_pain_genes(pain_df, de_results):
 def generate_report(enrichment_df, gsea_df, tf_df, pain_df):
     """Generate HTML interpretation report."""
     html = ['<!DOCTYPE html><html><head>',
-            '<title>Interpretation Report — Module 07</title>',
+            '<title>Interpretation Report — Module 09</title>',
             '<style>',
             '  body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }',
             '  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }',
@@ -717,7 +717,7 @@ def generate_report(enrichment_df, gsea_df, tf_df, pain_df):
             '  .pass { color: #27ae60; }',
             '  .section { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #3498db; }',
             '</style></head><body>',
-            '<h1>Module 07: Biological Interpretation Report</h1>',
+            '<h1>Module 09: Biological Interpretation Report</h1>',
             f'<p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>']
 
     # Stats
@@ -850,7 +850,7 @@ def generate_report(enrichment_df, gsea_df, tf_df, pain_df):
 def validate():
     """Run automated validation checks."""
     print("\n" + "=" * 60)
-    print("Validating Module 07 outputs")
+    print("Validating Module 09 outputs")
     print("=" * 60)
 
     checks = []
@@ -925,7 +925,7 @@ def validate():
 
 def main():
     print("=" * 60)
-    print("Module 07: Biological Interpretation")
+    print("Module 09: Biological Interpretation")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 

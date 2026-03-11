@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Module 04: Coarse cell classification (mesenchymal vs non-mesenchymal).
+"""Module 04: Coarse Cell Classification for Integration Anchors.
 
-Classifies cells into two broad categories using unambiguous marker genes.
-This coarse classification enables tiered integration in Module 05.
-Fine-grained cell type annotation happens after integration (in Module 05).
+Classifies cells into 5 anchor categories (Chondrocyte_like, Fibroblast_like,
+Immune, Endothelial, Pericyte_SMC) plus Unknown. These coarse labels serve as
+seed labels for scANVI semi-supervised integration in Module 05.
+Fine-grained cell type annotation happens after integration (in Module 07).
 
 Usage:
     python3 scripts/04_annotation.py                  # Classify all datasets
@@ -59,33 +60,43 @@ GENE_ALIASES = {
 }
 
 # ── Marker gene panels ──────────────────────────────────────────────────────
-# Non-mesenchymal markers: any of these expressed → non-mesenchymal candidate
-NON_MESENCHYMAL_MARKERS = {
-    "immune": {
-        "pan_immune":  ["PTPRC"],       # CD45
-        "t_cell":      ["CD3D", "CD3E"],
-        "macrophage":  ["CD68", "CD14", "CSF1R"],
-        "b_cell":      ["CD79A", "MS4A1"],
-        "mast_cell":   ["KIT", "TPSAB1"],
-        "nk_cell":     ["NKG7", "GNLY"],
-    },
-    "endothelial": {
-        "endothelial": ["PECAM1", "VWF", "CDH5"],
-    },
-    "pericyte": {
-        "pericyte":    ["ACTA2", "RGS5", "PDGFRB"],
-    },
+# Chondrocyte-like markers
+CHONDROCYTE_GENES = ["COL2A1", "ACAN", "SOX9"]
+
+# Fibroblast-like markers
+FIBROBLAST_GENES = ["COL1A1", "COL1A2", "DCN", "LUM"]
+
+# Non-mesenchymal markers
+IMMUNE_PRIMARY = ["PTPRC"]
+IMMUNE_SUPPORTING = [
+    "CD3D", "CD3E", "CD68", "CD14", "CSF1R",
+    "CD79A", "MS4A1", "KIT", "TPSAB1", "NKG7", "GNLY",
+]
+ENDOTHELIAL_GENES = ["PECAM1", "VWF", "CDH5"]
+PERICYTE_GENES = ["RGS5", "PDGFRB"]
+
+# Rescue markers (prevent stressed disc cells from being called non-mesenchymal)
+RESCUE_GENES = ["ACAN", "SOX9"]
+
+# All classification markers (flat list for reporting)
+ALL_MARKER_GENES = (
+    CHONDROCYTE_GENES + FIBROBLAST_GENES +
+    IMMUNE_PRIMARY + IMMUNE_SUPPORTING +
+    ENDOTHELIAL_GENES + PERICYTE_GENES
+)
+
+# Coarse label palette (6 categories)
+COARSE_PALETTE = {
+    "Chondrocyte_like": "#2196F3",
+    "Fibroblast_like": "#4CAF50",
+    "Immune": "#E91E63",
+    "Endothelial": "#FF9800",
+    "Pericyte_SMC": "#9C27B0",
+    "Unknown": "#9E9E9E",
 }
 
-# Flat list for scoring
-NON_MESENCHYMAL_GENES = [
-    "PTPRC", "CD3D", "CD3E", "CD68", "CD14", "CSF1R", "CD79A", "MS4A1",
-    "KIT", "TPSAB1", "NKG7", "GNLY", "PECAM1", "VWF", "CDH5",
-    "ACTA2", "RGS5", "PDGFRB",
-]
-
-# Mesenchymal markers: expected in IVD disc cells
-MESENCHYMAL_GENES = ["COL2A1", "COL1A1", "ACAN", "SOX9", "DCN", "LUM", "VCAN"]
+VALID_COARSE_LABELS = set(COARSE_PALETTE.keys())
+VALID_CELL_CLASSES = {"mesenchymal", "non_mesenchymal", "unknown"}
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -162,155 +173,167 @@ def _get_gene_expression(adata, gene):
     return np.asarray(col).ravel()
 
 
-def score_cell_class(adata):
-    """Score each cell for mesenchymal and non-mesenchymal marker expression.
+def _compute_top_percentile_threshold(expr, percentile=90):
+    """Compute the threshold for the top Nth percentile of nonzero values.
 
-    Computes fraction of markers detected above background for each set.
-    Stores scores in obs['score_mesenchymal'] and obs['score_non_mesenchymal'].
-    """
-    var_names = set(adata.var_names)
-
-    # Score mesenchymal markers
-    mes_resolved, mes_missing = resolve_gene_list(MESENCHYMAL_GENES, var_names)
-    if mes_resolved:
-        sc.tl.score_genes(adata, gene_list=mes_resolved, score_name='score_mesenchymal')
-    else:
-        adata.obs['score_mesenchymal'] = 0.0
-    print(f"    Mesenchymal markers: {len(mes_resolved)}/{len(MESENCHYMAL_GENES)} available"
-          + (f" (missing: {', '.join(mes_missing)})" if mes_missing else ""))
-
-    # Score non-mesenchymal markers
-    non_mes_resolved, non_mes_missing = resolve_gene_list(NON_MESENCHYMAL_GENES, var_names)
-    if non_mes_resolved:
-        sc.tl.score_genes(adata, gene_list=non_mes_resolved, score_name='score_non_mesenchymal')
-    else:
-        adata.obs['score_non_mesenchymal'] = 0.0
-    print(f"    Non-mesenchymal markers: {len(non_mes_resolved)}/{len(NON_MESENCHYMAL_GENES)} available"
-          + (f" (missing: {', '.join(non_mes_missing)})" if non_mes_missing else ""))
-
-    return {
-        "mesenchymal": {"available": mes_resolved, "missing": mes_missing},
-        "non_mesenchymal": {"available": non_mes_resolved, "missing": non_mes_missing},
-    }
-
-
-def _compute_expression_threshold(expr):
-    """Compute a per-gene threshold for 'expressed' status.
-
-    Uses the mean of nonzero values as a guide. Cells above 10% of that mean
-    are considered to have meaningful expression. This avoids treating
-    normalization artifacts or ambient RNA as true expression.
+    Returns the value at the given percentile of nonzero expression values.
+    Cells above this threshold are considered to have strong expression.
     """
     nonzero = expr[expr > 0]
     if len(nonzero) == 0:
-        return 0.0
-    return max(nonzero.mean() * 0.1, 0.1)
+        return np.inf  # No expression at all — threshold is unreachable
+    return np.percentile(nonzero, percentile)
+
+
+def score_cell_class(adata):
+    """Score each cell for chondrocyte and fibroblast marker expression.
+
+    Uses sc.tl.score_genes() for chondrocyte and fibroblast marker sets.
+    Stores scores in obs['score_chondrocyte'] and obs['score_fibroblast'].
+    """
+    var_names = set(adata.var_names)
+
+    # Score chondrocyte markers
+    chondro_resolved, chondro_missing = resolve_gene_list(CHONDROCYTE_GENES, var_names)
+    if chondro_resolved:
+        sc.tl.score_genes(adata, gene_list=chondro_resolved, score_name='score_chondrocyte')
+    else:
+        adata.obs['score_chondrocyte'] = 0.0
+    print(f"    Chondrocyte markers: {len(chondro_resolved)}/{len(CHONDROCYTE_GENES)} available"
+          + (f" (missing: {', '.join(chondro_missing)})" if chondro_missing else ""))
+
+    # Score fibroblast markers
+    fibro_resolved, fibro_missing = resolve_gene_list(FIBROBLAST_GENES, var_names)
+    if fibro_resolved:
+        sc.tl.score_genes(adata, gene_list=fibro_resolved, score_name='score_fibroblast')
+    else:
+        adata.obs['score_fibroblast'] = 0.0
+    print(f"    Fibroblast markers: {len(fibro_resolved)}/{len(FIBROBLAST_GENES)} available"
+          + (f" (missing: {', '.join(fibro_missing)})" if fibro_missing else ""))
+
+    # Report non-mesenchymal marker availability
+    nonmes_genes = IMMUNE_PRIMARY + IMMUNE_SUPPORTING + ENDOTHELIAL_GENES + PERICYTE_GENES
+    nonmes_resolved, nonmes_missing = resolve_gene_list(nonmes_genes, var_names)
+    print(f"    Non-mesenchymal markers: {len(nonmes_resolved)}/{len(nonmes_genes)} available"
+          + (f" (missing: {', '.join(nonmes_missing)})" if nonmes_missing else ""))
+
+    return {
+        "chondrocyte": {"available": chondro_resolved, "missing": chondro_missing},
+        "fibroblast": {"available": fibro_resolved, "missing": fibro_missing},
+        "non_mesenchymal": {"available": nonmes_resolved, "missing": nonmes_missing},
+    }
 
 
 def classify_cells(adata):
-    """Assign cell_class based on marker scores, with caveats for CD68 and ACTA2.
+    """Assign coarse_label based on hierarchical marker rules.
 
-    Primary classification uses sc.tl.score_genes() scores (mesenchymal vs
-    non-mesenchymal). Strong single-marker signals (PTPRC, PECAM1) override
-    scores when expression is well above background.
+    Classification hierarchy (first match wins):
+    1. Immune: PTPRC in top 10th percentile, OR ≥2 immune supporting markers
+       each in the top 10th percentile. Must NOT co-express ACAN or SOX9.
+    2. Endothelial: PECAM1, VWF, or CDH5 in top 10th percentile.
+       Must NOT co-express ACAN or SOX9.
+    3. Pericyte_SMC: RGS5 AND PDGFRB co-expressed (both in top 10th percentile).
+       Must NOT co-express ACAN or SOX9.
+    4. Chondrocyte_like: chondrocyte score > 2x fibroblast score AND > 0.
+    5. Fibroblast_like: fibroblast score > 2x chondrocyte score AND > 0.
+    6. Unknown: everything else.
 
-    Caveats:
-    - CD68 alone doesn't mean immune (expressed in stressed IVD cells)
-    - ACTA2 alone doesn't mean pericyte (expressed in myofibroblasts)
+    Derives cell_class from coarse_label:
+    - Chondrocyte_like, Fibroblast_like -> "mesenchymal"
+    - Immune, Endothelial, Pericyte_SMC -> "non_mesenchymal"
+    - Unknown -> "unknown"
     """
     n_cells = adata.shape[0]
-    labels = np.full(n_cells, "ambiguous", dtype=object)
+    labels = np.full(n_cells, "Unknown", dtype=object)
 
-    score_mes = adata.obs['score_mesenchymal'].values
-    score_non = adata.obs['score_non_mesenchymal'].values
+    score_chondro = adata.obs['score_chondrocyte'].values
+    score_fibro = adata.obs['score_fibroblast'].values
 
-    # Load key marker expression vectors and compute thresholds
+    # Precompute expression vectors and top-10th-percentile thresholds
+    all_genes = (IMMUNE_PRIMARY + IMMUNE_SUPPORTING + ENDOTHELIAL_GENES +
+                 PERICYTE_GENES + RESCUE_GENES)
     marker_data = {}
-    for gene in ['PTPRC', 'PECAM1', 'CD68', 'CD14', 'ACTA2', 'RGS5', 'PDGFRB',
-                  'VWF', 'CD3D', 'CD79A', 'NKG7', 'ACAN', 'SOX9']:
+    for gene in all_genes:
         expr = _get_gene_expression(adata, gene)
         if expr is not None:
-            thresh = _compute_expression_threshold(expr)
+            thresh = _compute_top_percentile_threshold(expr, percentile=90)
             marker_data[gene] = (expr, thresh)
 
-    def _is_expressed(gene, i):
+    def _is_top(gene, i):
+        """Check if cell i has gene expression above the top 10th percentile threshold."""
         if gene not in marker_data:
             return False
         expr, thresh = marker_data[gene]
         return expr[i] > thresh
 
+    def _has_rescue(i):
+        """Check if cell i co-expresses rescue genes (ACAN or SOX9)."""
+        return _is_top('ACAN', i) or _is_top('SOX9', i)
+
+    # Classify each cell using the hierarchy
     for i in range(n_cells):
-        s_mes = score_mes[i]
-        s_non = score_non[i]
-
-        # Strong PTPRC expression → non-mesenchymal (immune)
-        if _is_expressed('PTPRC', i):
-            labels[i] = "non_mesenchymal"
-            continue
-
-        # Strong PECAM1 expression → non-mesenchymal (endothelial)
-        if _is_expressed('PECAM1', i):
-            labels[i] = "non_mesenchymal"
-            continue
-
-        # CD68 caveat: in IVD cells, CD68 is expressed at low levels in
-        # stressed disc cells. Require PTPRC or CD14 co-expression.
-        if _is_expressed('CD68', i):
-            if _is_expressed('PTPRC', i) or _is_expressed('CD14', i):
-                labels[i] = "non_mesenchymal"
-                continue
-            # CD68 alone — fall through to score-based classification
-
-        # ACTA2 caveat: degenerated disc cells may express ACTA2 (myofibroblasts).
-        # Classify as mesenchymal unless co-expressed with pericyte markers.
-        if _is_expressed('ACTA2', i):
-            if _is_expressed('RGS5', i) or _is_expressed('PDGFRB', i):
-                labels[i] = "non_mesenchymal"
-                continue
-            # ACTA2 alone — likely myofibroblast, classify as mesenchymal
-            labels[i] = "mesenchymal"
-            continue
-
-        # Score-based classification with non-mesenchymal evidence gate
-        # Require at least one canonical lineage marker to call non-mesenchymal,
-        # otherwise stressed disc cells with downregulated mesenchymal markers
-        # get misrouted (Fix 1: require positive non-mes evidence)
-        non_mes_evidence = any([
-            _is_expressed('PTPRC', i),
-            _is_expressed('PECAM1', i),
-            _is_expressed('VWF', i),
-            _is_expressed('CD3D', i),
-            _is_expressed('CD79A', i),
-            _is_expressed('NKG7', i),
-        ])
-        if s_mes > s_non:
-            labels[i] = "mesenchymal"
-        elif s_non > s_mes and non_mes_evidence:
-            labels[i] = "non_mesenchymal"
+        # ── Rule 1: Immune ──────────────────────────────────────────────
+        is_immune = False
+        if _is_top('PTPRC', i):
+            is_immune = True
         else:
-            # Default to mesenchymal when ambiguous — IVD is >90% mesenchymal
-            labels[i] = "mesenchymal"
+            # Check ≥2 immune supporting markers in top 10th percentile
+            n_supporting = sum(1 for g in IMMUNE_SUPPORTING if _is_top(g, i))
+            if n_supporting >= 2:
+                is_immune = True
+        if is_immune and not _has_rescue(i):
+            labels[i] = "Immune"
+            continue
 
-    # Fix 2: ACAN/SOX9 rescue — reclassify non-mesenchymal cells that express
-    # core chondrocyte markers, which indicates they are stressed disc cells
+        # ── Rule 2: Endothelial ─────────────────────────────────────────
+        is_endo = any(_is_top(g, i) for g in ENDOTHELIAL_GENES)
+        if is_endo and not _has_rescue(i):
+            labels[i] = "Endothelial"
+            continue
+
+        # ── Rule 3: Pericyte_SMC ────────────────────────────────────────
+        is_pericyte = _is_top('RGS5', i) and _is_top('PDGFRB', i)
+        if is_pericyte and not _has_rescue(i):
+            labels[i] = "Pericyte_SMC"
+            continue
+
+        # ── Rule 4: Chondrocyte_like ────────────────────────────────────
+        s_c = score_chondro[i]
+        s_f = score_fibro[i]
+        if s_c > 0 and s_c > 2 * s_f:
+            labels[i] = "Chondrocyte_like"
+            continue
+
+        # ── Rule 5: Fibroblast_like ─────────────────────────────────────
+        if s_f > 0 and s_f > 2 * s_c:
+            labels[i] = "Fibroblast_like"
+            continue
+
+        # ── Rule 6: Unknown ─────────────────────────────────────────────
+        # labels[i] already set to "Unknown"
+
+    adata.obs['coarse_label_raw'] = labels
+
+    # Log rescue stats
     n_rescued = 0
     for i in range(n_cells):
-        if labels[i] == "non_mesenchymal":
-            if _is_expressed('ACAN', i) or _is_expressed('SOX9', i):
-                labels[i] = "mesenchymal"
+        # Count cells that matched immune/endo/pericyte but were rescued
+        if _has_rescue(i):
+            is_immune = _is_top('PTPRC', i) or sum(1 for g in IMMUNE_SUPPORTING if _is_top(g, i)) >= 2
+            is_endo = any(_is_top(g, i) for g in ENDOTHELIAL_GENES)
+            is_pericyte = _is_top('RGS5', i) and _is_top('PDGFRB', i)
+            if is_immune or is_endo or is_pericyte:
                 n_rescued += 1
     if n_rescued > 0:
-        print(f"    ACAN/SOX9 rescue: reclassified {n_rescued} cells as mesenchymal")
-
-    adata.obs['cell_class_raw'] = labels
+        print(f"    ACAN/SOX9 rescue: {n_rescued} cells kept from non-mesenchymal assignment")
 
 
 def cluster_majority_vote(adata, resolution=CLASSIFICATION_RESOLUTION):
-    """Assign cell_class by cluster-level majority voting to reduce noise.
+    """Assign coarse_label by cluster-level majority voting to reduce noise.
 
     1. Compute Leiden clusters at the given resolution
-    2. For each cluster, compute the majority cell_class
-    3. Assign majority class to all cells in the cluster
+    2. For each cluster, compute the majority coarse_label
+    3. If ≥85% of cells share a label, assign that label to the entire cluster
     4. Log clusters where majority is <70%
     """
     cluster_key = f"leiden_res_{resolution}"
@@ -327,47 +350,45 @@ def cluster_majority_vote(adata, resolution=CLASSIFICATION_RESOLUTION):
     n_clusters = adata.obs[cluster_key].nunique()
     print(f"    {n_clusters} clusters at resolution {resolution}")
 
-    labels = adata.obs['cell_class_raw'].values.copy()
-    final_labels = np.empty(adata.shape[0], dtype=object)
+    labels = adata.obs['coarse_label_raw'].values.copy()
+    final_labels = labels.copy()
     mixed_clusters = []
 
     for cluster in adata.obs[cluster_key].unique():
         mask = adata.obs[cluster_key] == cluster
         cluster_labels = labels[mask]
 
-        # Count non-ambiguous votes
-        non_amb = cluster_labels[cluster_labels != "ambiguous"]
-        if len(non_amb) == 0:
-            # All ambiguous — assign based on scores
-            final_labels[mask] = "ambiguous"
-            continue
+        counts = pd.Series(cluster_labels).value_counts()
+        majority_label = counts.index[0]
+        majority_pct = counts.iloc[0] / len(cluster_labels) * 100
 
-        counts = pd.Series(non_amb).value_counts()
-        majority_class = counts.index[0]
-        majority_pct = counts.iloc[0] / len(non_amb) * 100
-
-        # Fix 3: raise threshold to 85% — for mixed clusters, keep individual
-        # cell labels instead of overriding with majority vote
         if majority_pct >= 85:
-            final_labels[mask] = majority_class
+            final_labels[mask] = majority_label
         else:
-            # Mixed cluster: keep per-cell labels, only override ambiguous
-            for idx in np.where(mask)[0]:
-                if labels[idx] != "ambiguous":
-                    final_labels[idx] = labels[idx]
-                else:
-                    final_labels[idx] = majority_class
-            mixed_clusters.append({
-                "cluster": cluster,
-                "majority_class": majority_class,
-                "majority_pct": f"{majority_pct:.1f}",
-                "n_cells": mask.sum(),
-            })
+            # Mixed cluster: keep per-cell labels
+            if majority_pct < 70:
+                mixed_clusters.append({
+                    "cluster": cluster,
+                    "majority_class": majority_label,
+                    "majority_pct": f"{majority_pct:.1f}",
+                    "n_cells": mask.sum(),
+                })
 
-    adata.obs['cell_class'] = final_labels
+    adata.obs['coarse_label'] = final_labels
+
+    # Derive cell_class from coarse_label
+    class_map = {
+        "Chondrocyte_like": "mesenchymal",
+        "Fibroblast_like": "mesenchymal",
+        "Immune": "non_mesenchymal",
+        "Endothelial": "non_mesenchymal",
+        "Pericyte_SMC": "non_mesenchymal",
+        "Unknown": "unknown",
+    }
+    adata.obs['cell_class'] = adata.obs['coarse_label'].map(class_map)
 
     if mixed_clusters:
-        print(f"    WARNING: {len(mixed_clusters)} clusters with <85% majority (keeping per-cell labels):")
+        print(f"    WARNING: {len(mixed_clusters)} clusters with <70% majority:")
         for mc in mixed_clusters:
             print(f"      Cluster {mc['cluster']}: {mc['majority_class']} "
                   f"({mc['majority_pct']}%, {mc['n_cells']} cells)")
@@ -385,71 +406,109 @@ def validate_classification(adata, accession):
     all_pass = True
     n_cells = adata.shape[0]
 
-    # Check 1: All cells have cell_class
+    # Check 1: All cells have coarse_label and cell_class
+    if 'coarse_label' not in adata.obs.columns:
+        messages.append("FAIL: coarse_label column missing")
+        return False, messages
     if 'cell_class' not in adata.obs.columns:
         messages.append("FAIL: cell_class column missing")
         return False, messages
 
-    valid_classes = {"mesenchymal", "non_mesenchymal", "ambiguous"}
+    coarse_labels = adata.obs['coarse_label']
     cell_classes = adata.obs['cell_class']
-    invalid = ~cell_classes.isin(valid_classes)
-    if invalid.sum() > 0:
-        messages.append(f"FAIL: {invalid.sum()} cells have invalid cell_class values")
+
+    invalid_coarse = ~coarse_labels.isin(VALID_COARSE_LABELS)
+    if invalid_coarse.sum() > 0:
+        messages.append(f"FAIL: {invalid_coarse.sum()} cells have invalid coarse_label values")
         all_pass = False
     else:
-        messages.append(f"PASS: All {n_cells} cells have valid cell_class labels")
+        messages.append(f"PASS: All {n_cells} cells have valid coarse_label values")
 
-    # Check 2: <5% ambiguous per dataset
-    n_ambiguous = (cell_classes == 'ambiguous').sum()
-    pct_ambiguous = n_ambiguous / n_cells * 100
-    if pct_ambiguous < 5:
-        messages.append(f"PASS: {pct_ambiguous:.1f}% ambiguous (< 5%)")
-    else:
-        messages.append(f"FAIL: {pct_ambiguous:.1f}% ambiguous (>= 5%)")
+    invalid_class = ~cell_classes.isin(VALID_CELL_CLASSES)
+    if invalid_class.sum() > 0:
+        messages.append(f"FAIL: {invalid_class.sum()} cells have invalid cell_class values")
         all_pass = False
+    else:
+        messages.append(f"PASS: All {n_cells} cells have valid cell_class values")
 
-    # Check 3: PTPRC enriched in non_mesenchymal vs mesenchymal (>10-fold)
+    # Check 2: Unknown proportion 5-40%
+    n_unknown = (coarse_labels == 'Unknown').sum()
+    pct_unknown = n_unknown / n_cells * 100
+    if pct_unknown > 40:
+        messages.append(f"FAIL: {pct_unknown:.1f}% Unknown (> 40%, thresholds may be too strict)")
+        all_pass = False
+    elif pct_unknown < 5:
+        messages.append(f"WARNING: {pct_unknown:.1f}% Unknown (< 5%, thresholds may be too loose)")
+    else:
+        messages.append(f"PASS: {pct_unknown:.1f}% Unknown (within 5-40% range)")
+
+    # Check 3: PTPRC enriched in Immune vs Chondrocyte_like (>10-fold)
     if 'PTPRC' in adata.var_names:
         ptprc = _get_gene_expression(adata, 'PTPRC')
-        mes_mask = cell_classes == 'mesenchymal'
-        non_mes_mask = cell_classes == 'non_mesenchymal'
+        immune_mask = coarse_labels == 'Immune'
+        chondro_mask = coarse_labels == 'Chondrocyte_like'
 
-        if mes_mask.sum() > 0 and non_mes_mask.sum() > 0:
-            mean_mes = ptprc[mes_mask].mean() + 1e-10
-            mean_non = ptprc[non_mes_mask].mean() + 1e-10
-            fold = mean_non / mean_mes
+        if immune_mask.sum() > 0 and chondro_mask.sum() > 0:
+            mean_immune = ptprc[immune_mask].mean() + 1e-10
+            mean_chondro = ptprc[chondro_mask].mean() + 1e-10
+            fold = mean_immune / mean_chondro
 
             if fold > 10:
-                messages.append(f"PASS: PTPRC {fold:.0f}-fold enriched in non_mesenchymal")
+                messages.append(f"PASS: PTPRC {fold:.0f}-fold enriched in Immune vs Chondrocyte_like")
             else:
                 messages.append(f"WARNING: PTPRC only {fold:.1f}-fold enriched in "
-                                f"non_mesenchymal (expected >10-fold)")
+                                f"Immune vs Chondrocyte_like (expected >10-fold)")
         else:
             messages.append("INFO: Cannot compute PTPRC enrichment "
-                            "(missing mesenchymal or non_mesenchymal cells)")
+                            "(missing Immune or Chondrocyte_like cells)")
     else:
         messages.append("INFO: PTPRC not in var_names")
 
-    # Check 4: COL2A1 or COL1A1 enriched in mesenchymal
-    for gene in ["COL2A1", "COL1A1"]:
-        if gene not in adata.var_names:
-            continue
-        expr = _get_gene_expression(adata, gene)
-        mes_mask = cell_classes == 'mesenchymal'
-        non_mes_mask = cell_classes == 'non_mesenchymal'
+    # Check 4: COL2A1 enriched in Chondrocyte_like vs Immune (>10-fold)
+    if 'COL2A1' in adata.var_names:
+        col2a1 = _get_gene_expression(adata, 'COL2A1')
+        chondro_mask = coarse_labels == 'Chondrocyte_like'
+        immune_mask = coarse_labels == 'Immune'
 
-        if mes_mask.sum() > 0 and non_mes_mask.sum() > 0:
-            mean_mes = expr[mes_mask].mean() + 1e-10
-            mean_non = expr[non_mes_mask].mean() + 1e-10
-            fold = mean_mes / mean_non
+        if chondro_mask.sum() > 0 and immune_mask.sum() > 0:
+            mean_chondro = col2a1[chondro_mask].mean() + 1e-10
+            mean_immune = col2a1[immune_mask].mean() + 1e-10
+            fold = mean_chondro / mean_immune
 
-            if fold > 2:
-                messages.append(f"PASS: {gene} {fold:.1f}-fold enriched in mesenchymal")
+            if fold > 10:
+                messages.append(f"PASS: COL2A1 {fold:.0f}-fold enriched in Chondrocyte_like vs Immune")
             else:
-                messages.append(f"INFO: {gene} only {fold:.1f}-fold enriched in mesenchymal")
-        break  # Only need one of COL2A1/COL1A1
+                messages.append(f"WARNING: COL2A1 only {fold:.1f}-fold enriched in "
+                                f"Chondrocyte_like vs Immune (expected >10-fold)")
+        else:
+            messages.append("INFO: Cannot compute COL2A1 enrichment "
+                            "(missing Chondrocyte_like or Immune cells)")
+    else:
+        messages.append("INFO: COL2A1 not in var_names")
 
-    # Check 5: Classification report exists
+    # Check 5: COL1A1 higher in Fibroblast_like than Chondrocyte_like
+    if 'COL1A1' in adata.var_names:
+        col1a1 = _get_gene_expression(adata, 'COL1A1')
+        fibro_mask = coarse_labels == 'Fibroblast_like'
+        chondro_mask = coarse_labels == 'Chondrocyte_like'
+
+        if fibro_mask.sum() > 0 and chondro_mask.sum() > 0:
+            mean_fibro = col1a1[fibro_mask].mean() + 1e-10
+            mean_chondro = col1a1[chondro_mask].mean() + 1e-10
+            fold = mean_fibro / mean_chondro
+
+            if fold > 1:
+                messages.append(f"PASS: COL1A1 {fold:.1f}-fold higher in Fibroblast_like vs Chondrocyte_like")
+            else:
+                messages.append(f"WARNING: COL1A1 {fold:.2f}-fold in Fibroblast_like vs "
+                                f"Chondrocyte_like (expected >1)")
+        else:
+            messages.append("INFO: Cannot compute COL1A1 enrichment "
+                            "(missing Fibroblast_like or Chondrocyte_like cells)")
+    else:
+        messages.append("INFO: COL1A1 not in var_names")
+
+    # Check 6: Classification report exists
     report_path = ANN_DIR / f"{accession}_classification_report.html"
     if report_path.exists():
         messages.append("PASS: Classification report HTML generated")
@@ -468,20 +527,17 @@ def generate_classification_plots(adata, accession):
     """Generate classification-specific plots for one dataset."""
     plt.rcParams['figure.dpi'] = 100
 
-    # 1. UMAP colored by cell_class
+    # 1. UMAP colored by coarse_label
     fig, ax = plt.subplots(figsize=(10, 8))
-    palette = {"mesenchymal": "#2196F3", "non_mesenchymal": "#E91E63", "ambiguous": "#9E9E9E"}
-    sc.pl.umap(adata, color='cell_class', ax=ax, show=False, palette=palette,
-               title=f'{accession} — Cell Class')
+    sc.pl.umap(adata, color='coarse_label', ax=ax, show=False, palette=COARSE_PALETTE,
+               title=f'{accession} — Coarse Label')
     plt.tight_layout()
     plt.savefig(ANN_DIR / f"{accession}_umap_cell_class.png",
                 bbox_inches='tight', dpi=150)
     plt.close()
 
-    # 2. Dot plot of classification markers by cell_class
-    all_markers = MESENCHYMAL_GENES + NON_MESENCHYMAL_GENES
-    resolved_markers = [g for g in all_markers if resolve_gene(g, set(adata.var_names))]
-    # Resolve to actual var_names
+    # 2. Dot plot of classification markers by coarse_label
+    all_markers = CHONDROCYTE_GENES + FIBROBLAST_GENES + IMMUNE_PRIMARY + IMMUNE_SUPPORTING + ENDOTHELIAL_GENES + PERICYTE_GENES
     resolved_markers = [resolve_gene(g, set(adata.var_names)) for g in all_markers
                         if resolve_gene(g, set(adata.var_names)) is not None]
     # Deduplicate preserving order
@@ -492,11 +548,11 @@ def generate_classification_plots(adata, accession):
             unique_markers.append(g)
             seen.add(g)
 
-    if unique_markers and adata.obs['cell_class'].nunique() > 1:
+    if unique_markers and adata.obs['coarse_label'].nunique() > 1:
         try:
             sc.pl.dotplot(
                 adata, var_names=unique_markers,
-                groupby='cell_class', show=False,
+                groupby='coarse_label', show=False,
             )
             plt.savefig(ANN_DIR / f"{accession}_classification_dotplot.pdf",
                         bbox_inches='tight')
@@ -504,12 +560,12 @@ def generate_classification_plots(adata, accession):
         except Exception as e:
             print(f"    WARNING: dotplot failed: {e}")
 
-    # 3. Bar plot: mesenchymal vs non-mesenchymal proportions
-    counts = adata.obs['cell_class'].value_counts()
-    fig, ax = plt.subplots(figsize=(6, 4))
-    colors = [palette.get(c, '#999999') for c in counts.index]
+    # 3. Bar plot: coarse label proportions
+    counts = adata.obs['coarse_label'].value_counts()
+    fig, ax = plt.subplots(figsize=(8, 5))
+    colors = [COARSE_PALETTE.get(c, '#999999') for c in counts.index]
     counts.plot(kind='bar', ax=ax, color=colors)
-    ax.set_title(f'{accession} — Cell Class Proportions')
+    ax.set_title(f'{accession} — Coarse Label Proportions')
     ax.set_ylabel('Number of cells')
     ax.set_xlabel('')
     for i, (idx, val) in enumerate(counts.items()):
@@ -520,15 +576,16 @@ def generate_classification_plots(adata, accession):
     plt.close()
 
     # 4. Validation: marker expression distributions
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
     key_markers = {
-        'PTPRC': 'Non-mesenchymal (immune)',
-        'COL2A1': 'Mesenchymal',
+        'PTPRC': 'Immune marker',
+        'COL2A1': 'Chondrocyte marker',
+        'COL1A1': 'Fibroblast marker',
     }
     for ax, (gene, desc) in zip(axes, key_markers.items()):
         resolved = resolve_gene(gene, set(adata.var_names))
-        if resolved and adata.obs['cell_class'].nunique() > 1:
-            sc.pl.violin(adata, keys=resolved, groupby='cell_class',
+        if resolved and adata.obs['coarse_label'].nunique() > 1:
+            sc.pl.violin(adata, keys=resolved, groupby='coarse_label',
                          ax=ax, show=False, rotation=45)
             ax.set_title(f'{resolved} ({desc})')
         else:
@@ -559,7 +616,7 @@ CLASSIFICATION_REPORT_TEMPLATE = """<!DOCTYPE html>
   th { background-color: #2ecc71; color: white; }
   tr:nth-child(even) { background-color: #f2f2f2; }
   img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
   .stat-box { background: #ecf0f1; padding: 15px; border-radius: 5px; }
   .stat-box h3 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 12px; }
   .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
@@ -575,18 +632,21 @@ CLASSIFICATION_REPORT_TEMPLATE = """<!DOCTYPE html>
 
 <div class="stats-grid">
   <div class="stat-box"><h3>Total cells</h3><p>{{ stats.n_cells }}</p></div>
-  <div class="stat-box"><h3>Mesenchymal</h3><p>{{ stats.n_mesenchymal }} ({{ stats.pct_mesenchymal }}%)</p></div>
-  <div class="stat-box"><h3>Non-mesenchymal</h3><p>{{ stats.n_non_mesenchymal }} ({{ stats.pct_non_mesenchymal }}%)</p></div>
-  <div class="stat-box"><h3>Ambiguous</h3><p>{{ stats.n_ambiguous }} ({{ stats.pct_ambiguous }}%)</p></div>
+  <div class="stat-box"><h3>Chondrocyte-like</h3><p>{{ stats.n_chondrocyte_like }} ({{ stats.pct_chondrocyte_like }}%)</p></div>
+  <div class="stat-box"><h3>Fibroblast-like</h3><p>{{ stats.n_fibroblast_like }} ({{ stats.pct_fibroblast_like }}%)</p></div>
+  <div class="stat-box"><h3>Immune</h3><p>{{ stats.n_immune }} ({{ stats.pct_immune }}%)</p></div>
+  <div class="stat-box"><h3>Endothelial</h3><p>{{ stats.n_endothelial }} ({{ stats.pct_endothelial }}%)</p></div>
+  <div class="stat-box"><h3>Pericyte/SMC</h3><p>{{ stats.n_pericyte_smc }} ({{ stats.pct_pericyte_smc }}%)</p></div>
+  <div class="stat-box"><h3>Unknown</h3><p>{{ stats.n_unknown }} ({{ stats.pct_unknown }}%)</p></div>
   <div class="stat-box"><h3>Clustering resolution</h3><p>{{ stats.resolution }}</p></div>
   <div class="stat-box"><h3>Compartment</h3><p>{{ stats.dominant_compartment }}</p></div>
 </div>
 
-<h2>UMAP — Cell Class</h2>
-<img src="{{ accession }}_umap_cell_class.png" alt="UMAP cell class">
+<h2>UMAP — Coarse Label</h2>
+<img src="{{ accession }}_umap_cell_class.png" alt="UMAP coarse label">
 
-<h2>Cell Class Proportions</h2>
-<img src="{{ accession }}_class_proportions.png" alt="Class proportions">
+<h2>Coarse Label Proportions</h2>
+<img src="{{ accession }}_class_proportions.png" alt="Label proportions">
 
 <h2>Marker Dotplot</h2>
 {% if has_dotplot %}
@@ -601,7 +661,7 @@ CLASSIFICATION_REPORT_TEMPLATE = """<!DOCTYPE html>
 {% if mixed_clusters %}
 <h2>Mixed Clusters (majority < 70%)</h2>
 <table>
-  <tr><th>Cluster</th><th>Majority class</th><th>Majority %</th><th>Cells</th></tr>
+  <tr><th>Cluster</th><th>Majority label</th><th>Majority %</th><th>Cells</th></tr>
   {% for mc in mixed_clusters %}
   <tr>
     <td>{{ mc.cluster }}</td>
@@ -669,18 +729,24 @@ def generate_classification_report(accession, stats, marker_stats,
 # ═════════════════════════════════════════════════════════════════════════════
 
 def generate_aggregate_outputs(all_stats):
-    """Generate classification_summary.tsv with cell class proportions per dataset."""
+    """Generate classification_summary.tsv with coarse label proportions per dataset."""
     rows = []
     for stats in all_stats:
         rows.append({
             "accession": stats["accession"],
             "n_cells": stats["n_cells"],
-            "n_mesenchymal": stats["n_mesenchymal"],
-            "pct_mesenchymal": stats["pct_mesenchymal"],
-            "n_non_mesenchymal": stats["n_non_mesenchymal"],
-            "pct_non_mesenchymal": stats["pct_non_mesenchymal"],
-            "n_ambiguous": stats["n_ambiguous"],
-            "pct_ambiguous": stats["pct_ambiguous"],
+            "n_chondrocyte_like": stats["n_chondrocyte_like"],
+            "pct_chondrocyte_like": stats["pct_chondrocyte_like"],
+            "n_fibroblast_like": stats["n_fibroblast_like"],
+            "pct_fibroblast_like": stats["pct_fibroblast_like"],
+            "n_immune": stats["n_immune"],
+            "pct_immune": stats["pct_immune"],
+            "n_endothelial": stats["n_endothelial"],
+            "pct_endothelial": stats["pct_endothelial"],
+            "n_pericyte_smc": stats["n_pericyte_smc"],
+            "pct_pericyte_smc": stats["pct_pericyte_smc"],
+            "n_unknown": stats["n_unknown"],
+            "pct_unknown": stats["pct_unknown"],
             "dominant_compartment": stats["dominant_compartment"],
         })
 
@@ -722,16 +788,20 @@ def classify_dataset(accession, excluded_samples):
     # ── Step 2: Cell-level classification ────────────────────────────────
     print(f"\n  Step 2: Cell-level classification...")
     classify_cells(adata)
-    raw_counts = adata.obs['cell_class_raw'].value_counts()
+    raw_counts = adata.obs['coarse_label_raw'].value_counts()
     for cls, n in raw_counts.items():
         print(f"    {cls}: {n} ({n/adata.shape[0]*100:.1f}%)")
 
     # ── Step 3: Cluster majority voting ──────────────────────────────────
     print(f"\n  Step 3: Cluster-level majority voting...")
     mixed_clusters = cluster_majority_vote(adata)
-    final_counts = adata.obs['cell_class'].value_counts()
-    print(f"    Final class distribution:")
+    final_counts = adata.obs['coarse_label'].value_counts()
+    print(f"    Final coarse_label distribution:")
     for cls, n in final_counts.items():
+        print(f"      {cls}: {n} ({n/adata.shape[0]*100:.1f}%)")
+    class_counts = adata.obs['cell_class'].value_counts()
+    print(f"    Derived cell_class distribution:")
+    for cls, n in class_counts.items():
         print(f"      {cls}: {n} ({n/adata.shape[0]*100:.1f}%)")
 
     # ── Step 4: Generate plots ───────────────────────────────────────────
@@ -749,20 +819,29 @@ def classify_dataset(accession, excluded_samples):
     if 'compartment' in adata.obs.columns:
         dominant_comp = adata.obs['compartment'].value_counts().index[0]
 
-    n_mes = int((adata.obs['cell_class'] == 'mesenchymal').sum())
-    n_non = int((adata.obs['cell_class'] == 'non_mesenchymal').sum())
-    n_amb = int((adata.obs['cell_class'] == 'ambiguous').sum())
     n_total = adata.shape[0]
+    n_chondro = int((adata.obs['coarse_label'] == 'Chondrocyte_like').sum())
+    n_fibro = int((adata.obs['coarse_label'] == 'Fibroblast_like').sum())
+    n_immune = int((adata.obs['coarse_label'] == 'Immune').sum())
+    n_endo = int((adata.obs['coarse_label'] == 'Endothelial').sum())
+    n_peri = int((adata.obs['coarse_label'] == 'Pericyte_SMC').sum())
+    n_unknown = int((adata.obs['coarse_label'] == 'Unknown').sum())
 
     stats = {
         "accession": accession,
         "n_cells": n_total,
-        "n_mesenchymal": n_mes,
-        "pct_mesenchymal": f"{n_mes / n_total * 100:.1f}",
-        "n_non_mesenchymal": n_non,
-        "pct_non_mesenchymal": f"{n_non / n_total * 100:.1f}",
-        "n_ambiguous": n_amb,
-        "pct_ambiguous": f"{n_amb / n_total * 100:.1f}",
+        "n_chondrocyte_like": n_chondro,
+        "pct_chondrocyte_like": f"{n_chondro / n_total * 100:.1f}",
+        "n_fibroblast_like": n_fibro,
+        "pct_fibroblast_like": f"{n_fibro / n_total * 100:.1f}",
+        "n_immune": n_immune,
+        "pct_immune": f"{n_immune / n_total * 100:.1f}",
+        "n_endothelial": n_endo,
+        "pct_endothelial": f"{n_endo / n_total * 100:.1f}",
+        "n_pericyte_smc": n_peri,
+        "pct_pericyte_smc": f"{n_peri / n_total * 100:.1f}",
+        "n_unknown": n_unknown,
+        "pct_unknown": f"{n_unknown / n_total * 100:.1f}",
         "resolution": CLASSIFICATION_RESOLUTION,
         "dominant_compartment": dominant_comp,
     }
@@ -777,14 +856,15 @@ def classify_dataset(accession, excluded_samples):
     # Clean up old annotation columns if present (from previous pipeline run)
     old_cols = ['cell_type_final', 'cell_type_marker_based', 'cell_type_celltypist',
                 'cell_type_reference_based', 'cell_type_confidence',
-                'cell_type_marker_confidence', 'celltypist_conf_score']
+                'cell_type_marker_confidence', 'celltypist_conf_score',
+                'cell_class_raw', 'score_mesenchymal', 'score_non_mesenchymal']
     for col in old_cols:
         if col in adata.obs.columns:
             del adata.obs[col]
-    # Also remove old score columns
+    # Also remove old score columns (but keep our new ones)
+    keep_scores = {'score_chondrocyte', 'score_fibroblast'}
     old_score_cols = [c for c in adata.obs.columns
-                      if c.startswith('score_') and c not in
-                      ('score_mesenchymal', 'score_non_mesenchymal')]
+                      if c.startswith('score_') and c not in keep_scores]
     for col in old_score_cols:
         del adata.obs[col]
 
@@ -816,8 +896,8 @@ def validate_all():
         print(f"\n--- {accession} ---")
         adata = sc.read_h5ad(h5ad_path)
 
-        if 'cell_class' not in adata.obs.columns:
-            print(f"  SKIP: cell_class not present (not yet classified)")
+        if 'coarse_label' not in adata.obs.columns:
+            print(f"  SKIP: coarse_label not present (not yet classified)")
             del adata
             continue
 

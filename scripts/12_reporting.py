@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Module 10: Final reporting for IVD scRNA-seq atlas.
+"""Module 12: Final reporting for IVD scRNA-seq atlas.
 
 Generates a comprehensive HTML report integrating all module results,
 supplementary tables, and a reproducibility record.
 
 Usage:
-    python3 scripts/10_reporting.py
+    python3 scripts/12_reporting.py
 """
 
 import sys
@@ -426,7 +426,7 @@ def generate_requirements():
 def validate():
     """Validation checks."""
     print("\n" + "=" * 60)
-    print("Validating Module 10 outputs")
+    print("Validating Module 12 outputs")
     print("=" * 60)
 
     checks = []
@@ -474,7 +474,7 @@ def validate():
 
 def main():
     print("=" * 60)
-    print("Module 10: Final Reporting")
+    print("Module 12: Final Reporting")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 

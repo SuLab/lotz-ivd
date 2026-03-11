@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Module 06: Differential analysis for IVD scRNA-seq atlas.
+"""Module 08: Differential analysis for IVD scRNA-seq atlas.
 
 Part 1: Cell composition analysis (propeller-style proportion tests)
 Part 2: Pseudobulk differential expression using pyDESeq2
 
 Usage:
-    python3 scripts/06_differential.py
-    python3 scripts/06_differential.py --composition-only
-    python3 scripts/06_differential.py --de-only
-    python3 scripts/06_differential.py --validate-only
+    python3 scripts/08_differential.py
+    python3 scripts/08_differential.py --composition-only
+    python3 scripts/08_differential.py --de-only
+    python3 scripts/08_differential.py --validate-only
 """
 
 import gc
@@ -625,7 +625,7 @@ def _plot_heatmap(combined, datasets):
 def validate():
     """Run validation checks per spec."""
     print("\n" + "=" * 60)
-    print("Validating Module 06 outputs")
+    print("Validating Module 08 outputs")
     print("=" * 60)
 
     messages = []
@@ -701,7 +701,7 @@ def validate():
 
 def main():
     print("=" * 60)
-    print("Module 06: Differential Analysis")
+    print("Module 08: Differential Analysis")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 

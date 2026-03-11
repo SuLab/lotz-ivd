@@ -65,7 +65,7 @@ This is a human-gated agentic bioinformatics pipeline. The agent executes one ta
 
 Notes:
 - GSE242443 CEP cells are culture-expanded (included by human decision for coverage)
-- Zhou 2023 (embryonic IVD) deferred to Module 08 trajectory analysis
+- Zhou 2023 (embryonic IVD) deferred to Module 10 trajectory analysis
 - PRJCA014236, PRJCA007656 excluded at checkpoint (NP well-covered, NGDC access not obtained)
 - Use `python3` not `python` to invoke scripts
 

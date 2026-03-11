@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Module 09: Cell-cell communication analysis for IVD scRNA-seq atlas.
+"""Module 11: Cell-cell communication analysis for IVD scRNA-seq atlas.
 
 Uses LIANA to infer ligand-receptor interactions between IVD cell populations,
 comparing healthy vs degenerated conditions.
 
 Usage:
-    python3 scripts/09_communication.py
-    python3 scripts/09_communication.py --validate-only
+    python3 scripts/11_communication.py
+    python3 scripts/11_communication.py --validate-only
 """
 
 import gc
@@ -392,7 +392,7 @@ def plot_differential(diff_df):
 def generate_report(condition_results, diff_df, pain_results):
     """Generate HTML communication report."""
     html = ['<!DOCTYPE html><html><head>',
-            '<title>Communication Report — Module 09</title>',
+            '<title>Communication Report — Module 11</title>',
             '<style>',
             '  body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }',
             '  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }',
@@ -409,7 +409,7 @@ def generate_report(condition_results, diff_df, pain_results):
             '  .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #2c3e50; }',
             '  .pain { background-color: #fde8e8; }',
             '</style></head><body>',
-            '<h1>Module 09: Cell-Cell Communication Report</h1>',
+            '<h1>Module 11: Cell-Cell Communication Report</h1>',
             f'<p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>']
 
     # Stats
@@ -474,7 +474,7 @@ def generate_report(condition_results, diff_df, pain_results):
 def validate():
     """Automated validation checks."""
     print("\n" + "=" * 60)
-    print("Validating Module 09 outputs")
+    print("Validating Module 11 outputs")
     print("=" * 60)
 
     checks = []
@@ -526,7 +526,7 @@ def validate():
 
 def main():
     print("=" * 60)
-    print("Module 09: Cell-Cell Communication")
+    print("Module 11: Cell-Cell Communication")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 

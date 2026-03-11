@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Module 08: Trajectory & dynamics analysis for IVD scRNA-seq atlas.
+"""Module 10: Trajectory & dynamics analysis for IVD scRNA-seq atlas.
 
 Part 1: Trajectory inference (PAGA + DPT pseudotime)
 Part 2: RNA velocity check (document availability)
 Part 3: Gene programs along trajectories
 
 Usage:
-    python3 scripts/08_trajectory.py
-    python3 scripts/08_trajectory.py --validate-only
+    python3 scripts/10_trajectory.py
+    python3 scripts/10_trajectory.py --validate-only
 """
 
 import gc
@@ -43,13 +43,13 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Configuration ────────────────────────────────────────────────────────────
 # Cell types to include per compartment (mesenchymal/resident only)
-# These will be updated after Module 05 de novo annotation assigns final labels.
+# These will be updated after Module 07 de novo annotation assigns final labels.
 # For now, filter to mesenchymal cells and let the de novo labels drive the analysis.
 NP_RESIDENT = None  # Will use all mesenchymal cell types in NP object
 AF_RESIDENT = None  # Will use all mesenchymal cell types in AF object
 
 # Embeddings to use
-PRIMARY_EMBEDDING = 'X_scvi_mesenchymal'    # scVI mesenchymal tier
+PRIMARY_EMBEDDING = 'X_scanvi_mesenchymal'    # scANVI mesenchymal tier
 SENSITIVITY_EMBEDDING = None  # No second embedding in new pipeline
 
 PSEUDOTIME_CORR_FDR = 0.05
@@ -561,7 +561,7 @@ def cross_reference_de(traj_genes, compartment, embedding_name):
 def generate_report(compartments_run, velocity_available):
     """Generate HTML trajectory report."""
     html = ['<!DOCTYPE html><html><head>',
-            '<title>Trajectory Report — Module 08</title>',
+            '<title>Trajectory Report — Module 10</title>',
             '<style>',
             '  body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }',
             '  h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }',
@@ -575,7 +575,7 @@ def generate_report(compartments_run, velocity_available):
             '  .section { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #3498db; }',
             '  .warning { border-left-color: #e74c3c; }',
             '</style></head><body>',
-            '<h1>Module 08: Trajectory & Dynamics Report</h1>',
+            '<h1>Module 10: Trajectory & Dynamics Report</h1>',
             f'<p>Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}</p>']
 
     for comp in compartments_run:
@@ -668,7 +668,7 @@ def generate_report(compartments_run, velocity_available):
 def validate():
     """Run automated validation checks."""
     print("\n" + "=" * 60)
-    print("Validating Module 08 outputs")
+    print("Validating Module 10 outputs")
     print("=" * 60)
 
     checks = []
@@ -717,7 +717,7 @@ def validate():
 
 def main():
     print("=" * 60)
-    print("Module 08: Trajectory & Dynamics Analysis")
+    print("Module 10: Trajectory & Dynamics Analysis")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
