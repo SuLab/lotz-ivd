@@ -11,7 +11,7 @@
   th { background-color: #2ecc71; color: white; }
   tr:nth-child(even) { background-color: #f2f2f2; }
   img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
   .stat-box { background: #ecf0f1; padding: 15px; border-radius: 5px; }
   .stat-box h3 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 12px; }
   .stat-box p { margin: 0; font-size: 24px; font-weight: bold; color: #2c3e50; }
@@ -23,22 +23,25 @@
 </head>
 <body>
 <h1>Classification Report: GSE165722</h1>
-<p>Generated: 2026-03-10 07:33</p>
+<p>Generated: 2026-03-11 04:31</p>
 
 <div class="stats-grid">
   <div class="stat-box"><h3>Total cells</h3><p>37978</p></div>
-  <div class="stat-box"><h3>Mesenchymal</h3><p>22528 (59.3%)</p></div>
-  <div class="stat-box"><h3>Non-mesenchymal</h3><p>15450 (40.7%)</p></div>
-  <div class="stat-box"><h3>Ambiguous</h3><p>0 (0.0%)</p></div>
+  <div class="stat-box"><h3>Chondrocyte-like</h3><p>768 (2.0%)</p></div>
+  <div class="stat-box"><h3>Fibroblast-like</h3><p>10443 (27.5%)</p></div>
+  <div class="stat-box"><h3>Immune</h3><p>1443 (3.8%)</p></div>
+  <div class="stat-box"><h3>Endothelial</h3><p>230 (0.6%)</p></div>
+  <div class="stat-box"><h3>Pericyte/SMC</h3><p>7 (0.0%)</p></div>
+  <div class="stat-box"><h3>Unknown</h3><p>25087 (66.1%)</p></div>
   <div class="stat-box"><h3>Clustering resolution</h3><p>0.5</p></div>
   <div class="stat-box"><h3>Compartment</h3><p>NP</p></div>
 </div>
 
-<h2>UMAP — Cell Class</h2>
-<img src="GSE165722_umap_cell_class.png" alt="UMAP cell class">
+<h2>UMAP — Coarse Label</h2>
+<img src="GSE165722_umap_cell_class.png" alt="UMAP coarse label">
 
-<h2>Cell Class Proportions</h2>
-<img src="GSE165722_class_proportions.png" alt="Class proportions">
+<h2>Coarse Label Proportions</h2>
+<img src="GSE165722_class_proportions.png" alt="Label proportions">
 
 <h2>Marker Dotplot</h2>
 
@@ -51,62 +54,41 @@
 
 <h2>Mixed Clusters (majority < 70%)</h2>
 <table>
-  <tr><th>Cluster</th><th>Majority class</th><th>Majority %</th><th>Cells</th></tr>
+  <tr><th>Cluster</th><th>Majority label</th><th>Majority %</th><th>Cells</th></tr>
   
   <tr>
-    <td>0</td>
-    <td>non_mesenchymal</td>
-    <td>73.9%</td>
-    <td>2556</td>
+    <td>2</td>
+    <td>Fibroblast_like</td>
+    <td>63.2%</td>
+    <td>3179</td>
   </tr>
   
   <tr>
-    <td>1</td>
-    <td>non_mesenchymal</td>
-    <td>73.9%</td>
-    <td>962</td>
-  </tr>
-  
-  <tr>
-    <td>6</td>
-    <td>non_mesenchymal</td>
-    <td>64.5%</td>
-    <td>1899</td>
-  </tr>
-  
-  <tr>
-    <td>8</td>
-    <td>non_mesenchymal</td>
-    <td>62.9%</td>
-    <td>1810</td>
-  </tr>
-  
-  <tr>
-    <td>13</td>
-    <td>non_mesenchymal</td>
-    <td>70.0%</td>
-    <td>90</td>
-  </tr>
-  
-  <tr>
-    <td>14</td>
-    <td>non_mesenchymal</td>
-    <td>79.2%</td>
-    <td>2526</td>
-  </tr>
-  
-  <tr>
-    <td>15</td>
-    <td>non_mesenchymal</td>
-    <td>69.8%</td>
-    <td>8631</td>
+    <td>10</td>
+    <td>Fibroblast_like</td>
+    <td>57.1%</td>
+    <td>1621</td>
   </tr>
   
   <tr>
     <td>11</td>
-    <td>non_mesenchymal</td>
-    <td>79.4%</td>
+    <td>Endothelial</td>
+    <td>52.9%</td>
     <td>68</td>
+  </tr>
+  
+  <tr>
+    <td>4</td>
+    <td>Fibroblast_like</td>
+    <td>62.3%</td>
+    <td>4298</td>
+  </tr>
+  
+  <tr>
+    <td>3</td>
+    <td>Unknown</td>
+    <td>49.8%</td>
+    <td>5457</td>
   </tr>
   
 </table>
@@ -117,14 +99,20 @@
   <tr><th>Marker set</th><th>Available / Total</th><th>Missing genes</th></tr>
   
   <tr>
-    <td>mesenchymal</td>
-    <td>7 / 7</td>
+    <td>chondrocyte</td>
+    <td>3 / 3</td>
+    <td>—</td>
+  </tr>
+  
+  <tr>
+    <td>fibroblast</td>
+    <td>4 / 4</td>
     <td>—</td>
   </tr>
   
   <tr>
     <td>non_mesenchymal</td>
-    <td>15 / 18</td>
+    <td>14 / 17</td>
     <td>TPSAB1, VWF, CDH5</td>
   </tr>
   
@@ -133,13 +121,17 @@
 <h2>Validation</h2>
 <ul class="validation">
   
-  <li class="pass">PASS: All 37978 cells have valid cell_class labels</li>
+  <li class="pass">PASS: All 37978 cells have valid coarse_label values</li>
   
-  <li class="pass">PASS: 0.0% ambiguous (< 5%)</li>
+  <li class="pass">PASS: All 37978 cells have valid cell_class values</li>
   
-  <li class="pass">PASS: PTPRC 18-fold enriched in non_mesenchymal</li>
+  <li class="warning">FAIL: 66.1% Unknown (> 40%, thresholds may be too strict)</li>
   
-  <li class="pass">PASS: COL2A1 8.9-fold enriched in mesenchymal</li>
+  <li class="pass">PASS: PTPRC 14-fold enriched in Immune vs Chondrocyte_like</li>
+  
+  <li class="pass">PASS: COL2A1 34-fold enriched in Chondrocyte_like vs Immune</li>
+  
+  <li class="pass">PASS: COL1A1 34.0-fold higher in Fibroblast_like vs Chondrocyte_like</li>
   
   <li class="pass">PASS: Classification report HTML generated</li>
   

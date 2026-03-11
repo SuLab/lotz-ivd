@@ -47,11 +47,11 @@ for d in [CLUSTER_DIR]:
 TIER_CONFIG = {
     "mesenchymal": {
         "embedding_key": "X_scanvi_mesenchymal",
-        "cell_class_value": "mesenchymal",
+        "cell_class_values": ["mesenchymal", "unknown"],
     },
     "non_mesenchymal": {
         "embedding_key": "X_scanvi_non_mesenchymal",
-        "cell_class_value": "non_mesenchymal",
+        "cell_class_values": ["non_mesenchymal"],
     },
 }
 
@@ -69,7 +69,15 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
     Returns the selected resolution and stores results in obs.
     """
     if resolutions is None:
-        resolutions = np.arange(0.1, 2.1, 0.1)
+        # Use fewer resolutions for large datasets to reduce runtime
+        if adata.shape[0] > 300000:
+            resolutions = [0.4, 0.8, 1.0]  # 3 values for very large
+        elif adata.shape[0] > 200000:
+            resolutions = [0.2, 0.4, 0.6, 0.8, 1.0, 1.5]  # 6 values
+        elif adata.shape[0] > 50000:
+            resolutions = np.arange(0.2, 2.1, 0.2)  # 10 values
+        else:
+            resolutions = np.arange(0.1, 2.1, 0.1)  # 20 values
 
     print(f"  Optimizing clustering resolution ({tier_name})...")
     print(f"    Cells: {adata.shape[0]:,}, embedding: {embedding_key}")
@@ -81,21 +89,26 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
     results = []
 
     # Build igraph once for modularity computation (instead of per-resolution)
+    # Skip for large datasets (>100K cells) — modularity is expensive and silhouette suffices
     ig_graph = None
     ig_weights = None
-    try:
-        import leidenalg
-        import igraph as ig
-        adj = adata.obsp['connectivities']
-        sources, targets = adj.nonzero()
-        weights = np.asarray(adj[sources, targets]).ravel()
-        g = ig.Graph(n=adata.shape[0], edges=list(zip(sources.tolist(), targets.tolist())),
-                     directed=False)
-        g.es['weight'] = weights.tolist()
-        ig_graph = g
-        ig_weights = g.es['weight']
-    except Exception:
-        pass
+    MAX_CELLS_MODULARITY = 100000
+    if adata.shape[0] <= MAX_CELLS_MODULARITY:
+        try:
+            import igraph as ig
+            adj = adata.obsp['connectivities']
+            sources, targets = adj.nonzero()
+            weights = np.asarray(adj[sources, targets]).ravel()
+            edgelist = np.column_stack((sources, targets))
+            g = ig.Graph(n=adata.shape[0], edges=edgelist.tolist(), directed=False)
+            g.es['weight'] = weights.tolist()
+            ig_graph = g
+            ig_weights = g.es['weight']
+            print(f"    igraph built: {g.vcount()} vertices, {g.ecount()} edges")
+        except Exception as e:
+            print(f"    WARNING: igraph build failed: {e}, skipping modularity")
+    else:
+        print(f"    Skipping modularity (>{MAX_CELLS_MODULARITY:,} cells), using silhouette only")
 
     for res in resolutions:
         key = f'leiden_{res:.1f}'
@@ -227,7 +240,7 @@ def cluster_tier(adata, object_name, tier_name, tier_cfg):
     clustering results.
     """
     embedding_key = tier_cfg["embedding_key"]
-    cell_class_val = tier_cfg["cell_class_value"]
+    cell_class_vals = tier_cfg["cell_class_values"]
 
     # Check if the embedding exists
     if embedding_key not in adata.obsm:
@@ -235,10 +248,10 @@ def cluster_tier(adata, object_name, tier_name, tier_cfg):
         return None, None
 
     # Subset to cells of this tier
-    mask = adata.obs['cell_class'] == cell_class_val
+    mask = adata.obs['cell_class'].isin(cell_class_vals)
     n_cells = mask.sum()
     if n_cells == 0:
-        print(f"  SKIP: {object_name}/{tier_name} — no cells with cell_class={cell_class_val}")
+        print(f"  SKIP: {object_name}/{tier_name} — no cells with cell_class in {cell_class_vals}")
         return None, None
 
     print(f"\n  --- {object_name}/{tier_name}: {n_cells:,} cells ---")
@@ -305,8 +318,8 @@ def process_object(object_name):
     # ── Merge tier clustering results back into main adata ─────────────────
     print(f"\n  Merging tier clustering into main object...")
 
-    # Initialize new columns
-    adata.obs['leiden'] = pd.Categorical(['unassigned'] * adata.shape[0])
+    # Initialize new columns as string (avoid Categorical mismatch issues)
+    adata.obs['leiden'] = 'unassigned'
 
     for tier_name, result in tier_results.items():
         tier_adata = result['adata']
@@ -314,21 +327,21 @@ def process_object(object_name):
 
         # Store tier-specific leiden column
         tier_col = f'leiden_{tier_name}'
-        adata.obs[tier_col] = pd.Categorical(['NA'] * adata.shape[0])
-        adata.obs.loc[tier_adata.obs_names, tier_col] = tier_adata.obs['leiden'].values
+        adata.obs[tier_col] = 'NA'
+        adata.obs.loc[tier_adata.obs_names, tier_col] = tier_adata.obs['leiden'].astype(str).values
 
         # Store comparison resolutions per tier
         for ref_res in [0.5, 1.0]:
             ref_col = f'leiden_{ref_res}'
             if ref_col in tier_adata.obs.columns:
                 tier_ref_col = f'leiden_{tier_name}_{ref_res}'
-                adata.obs[tier_ref_col] = pd.Categorical(['NA'] * adata.shape[0])
+                adata.obs[tier_ref_col] = 'NA'
                 adata.obs.loc[tier_adata.obs_names, tier_ref_col] = \
-                    tier_adata.obs[ref_col].values
+                    tier_adata.obs[ref_col].astype(str).values
 
         # Build combined leiden: prefix cluster IDs with tier abbreviation
         prefix = 'M' if tier_name == 'mesenchymal' else 'NM'
-        combined_labels = [f'{prefix}{c}' for c in tier_adata.obs['leiden'].values]
+        combined_labels = [f'{prefix}{c}' for c in tier_adata.obs['leiden'].astype(str).values]
         adata.obs.loc[tier_adata.obs_names, 'leiden'] = combined_labels
 
         # Store selected resolution in uns

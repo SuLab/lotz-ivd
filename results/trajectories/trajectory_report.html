@@ -1,5 +1,5 @@
 <!DOCTYPE html><html><head>
-<title>Trajectory Report — Module 08</title>
+<title>Trajectory Report — Module 10</title>
 <style>
   body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; }
   h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
@@ -13,8 +13,8 @@
   .section { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #3498db; }
   .warning { border-left-color: #e74c3c; }
 </style></head><body>
-<h1>Module 08: Trajectory & Dynamics Report</h1>
-<p>Generated: 2026-03-10 16:16</p>
+<h1>Module 10: Trajectory & Dynamics Report</h1>
+<p>Generated: 2026-03-11 15:10</p>
 <h2>NP Compartment</h2>
 <img src="umap_trajectory_NP.png" alt="NP trajectory UMAP">
 <img src="paga_NP.png" alt="NP PAGA">
@@ -23,35 +23,39 @@
 <img src="gene_dynamics_NP.png" alt="NP gene dynamics">
 <h3>Pseudotime Correlations</h3><table>
 <tr><th>Test</th><th>Statistic</th><th>P-value</th><th>N</th></tr>
-<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=-0.151</td><td>7.5e-253</td><td>50000</td></tr>
-<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=217706720</td><td>7.3e-05</td><td>42545</td></tr>
-<tr><td>pseudotime_vs_condition_NP_fibrocartilaginous</td><td>rho=0.193</td><td>1.0e-136</td><td>16403</td></tr>
-<tr><td>pseudotime_vs_condition_NP_mature_chondrocyte</td><td>rho=-0.207</td><td>2.6e-259</td><td>26957</td></tr>
-<tr><td>pseudotime_vs_condition_NP_notochordal</td><td>rho=-0.283</td><td>2.6e-85</td><td>4597</td></tr>
-<tr><td>pseudotime_vs_condition_NP_stressed_degen</td><td>rho=-0.322</td><td>1.8e-50</td><td>2043</td></tr>
+<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=-0.092</td><td>5.6e-95</td><td>50000</td></tr>
+<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=196089248</td><td>0.0e+00</td><td>44534</td></tr>
+<tr><td>pseudotime_vs_condition_NP_mature_chondrocyte</td><td>rho=-0.545</td><td>0.0e+00</td><td>16133</td></tr>
+<tr><td>pseudotime_vs_condition_NP_fibrocartilaginous</td><td>rho=-0.025</td><td>2.7e-05</td><td>28890</td></tr>
+<tr><td>pseudotime_vs_condition_NP_stressed</td><td>rho=0.269</td><td>1.6e-21</td><td>1209</td></tr>
+<tr><td>pseudotime_vs_condition_NP_notochordal</td><td>rho=0.096</td><td>4.8e-02</td><td>425</td></tr>
+<tr><td>pseudotime_vs_condition_Fibrochondrocyte_chondroid</td><td>rho=0.058</td><td>4.7e-03</td><td>2341</td></tr>
+<tr><td>pseudotime_vs_condition_Fibrochondrocyte_stressed</td><td>rho=0.190</td><td>2.7e-04</td><td>363</td></tr>
+<tr><td>pseudotime_vs_condition_unassigned</td><td>rho=-0.162</td><td>2.6e-02</td><td>187</td></tr>
+<tr><td>pseudotime_vs_condition_Fibrochondrocyte_fibroid</td><td>rho=-0.647</td><td>5.7e-55</td><td>452</td></tr>
 </table>
 <h3>Trajectory Genes: 500 total</h3>
 <table><tr><th>Gene</th><th>rho</th><th>padj</th><th>Program</th></tr>
-<tr><td>LGALS1</td><td>-0.573</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>PRSS23</td><td>-0.538</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>RNASEK</td><td>-0.536</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>TMSB10</td><td>-0.508</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>VIM</td><td>-0.505</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>C12orf75</td><td>-0.491</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>S100A6</td><td>-0.482</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>THY1</td><td>-0.480</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>FTH1</td><td>-0.477</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>TMSB4X</td><td>-0.474</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>TRAPPC5</td><td>-0.467</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>MRPS24</td><td>-0.465</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>EIF4A1</td><td>-0.463</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>MGST1</td><td>-0.459</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>RPL17</td><td>-0.458</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>CD63</td><td>-0.456</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>CAMK2N1</td><td>-0.453</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>RPS27L</td><td>-0.449</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>CALD1</td><td>-0.449</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>ITGB1</td><td>-0.448</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>CPE</td><td>0.336</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>ITM2A</td><td>0.311</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>EIF3H</td><td>0.309</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>FBXO2</td><td>0.306</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>EIF1</td><td>0.295</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>SERPINA1</td><td>0.289</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RPS10</td><td>0.287</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>C11orf96</td><td>0.286</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RPS3</td><td>0.285</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>S100B</td><td>0.285</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>A2M</td><td>0.285</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RPL8</td><td>0.285</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>COL9A3</td><td>0.282</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>CAPS</td><td>0.279</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>PNRC1</td><td>0.279</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RPS4X</td><td>0.279</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>ACAN</td><td>0.278</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>COL9A2</td><td>0.277</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>NDUFA4L2</td><td>0.277</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>PPP1R15A</td><td>0.275</td><td>0.0e+00</td><td>late_up</td></tr>
 </table>
 <h2>AF Compartment</h2>
 <img src="umap_trajectory_AF.png" alt="AF trajectory UMAP">
@@ -61,34 +65,33 @@
 <img src="gene_dynamics_AF.png" alt="AF gene dynamics">
 <h3>Pseudotime Correlations</h3><table>
 <tr><th>Test</th><th>Statistic</th><th>P-value</th><th>N</th></tr>
-<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=0.325</td><td>0.0e+00</td><td>50000</td></tr>
-<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=192129376</td><td>0.0e+00</td><td>50000</td></tr>
-<tr><td>pseudotime_vs_condition_AF_inner</td><td>rho=-0.315</td><td>2.5e-273</td><td>11967</td></tr>
-<tr><td>pseudotime_vs_condition_AF_outer</td><td>rho=0.118</td><td>8.2e-92</td><td>29318</td></tr>
-<tr><td>pseudotime_vs_condition_AF_mechanical_stress</td><td>rho=-0.286</td><td>3.1e-164</td><td>8715</td></tr>
+<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=0.019</td><td>2.4e-05</td><td>50000</td></tr>
+<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=314691616</td><td>1.7e-01</td><td>50000</td></tr>
+<tr><td>pseudotime_vs_condition_AF_inner</td><td>rho=0.581</td><td>0.0e+00</td><td>12369</td></tr>
+<tr><td>pseudotime_vs_condition_AF_outer</td><td>rho=-0.388</td><td>0.0e+00</td><td>37631</td></tr>
 </table>
 <h3>Trajectory Genes: 500 total</h3>
 <table><tr><th>Gene</th><th>rho</th><th>padj</th><th>Program</th></tr>
-<tr><td>FGFBP2</td><td>-0.808</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>SERPINA1</td><td>-0.777</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>COMP</td><td>-0.736</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>PRELP</td><td>-0.729</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>MT1G</td><td>-0.723</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>MGP</td><td>-0.712</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>MT1X</td><td>-0.710</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>ACAN</td><td>-0.703</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>CYTL1</td><td>-0.701</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>APOD</td><td>-0.698</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>MIA</td><td>-0.692</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>CHAD</td><td>-0.682</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>S100B</td><td>-0.682</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>CALD1</td><td>0.681</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>RGCC</td><td>-0.678</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>COL9A3</td><td>-0.668</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>CLEC3A</td><td>-0.665</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>TMSB4X</td><td>0.658</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>H3F3B</td><td>-0.629</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>COL1A2</td><td>0.623</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>MT1G</td><td>-0.574</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>SERPINA1</td><td>-0.567</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>FGFBP2</td><td>-0.551</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>COL1A2</td><td>0.533</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>LGALS1</td><td>0.528</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>APOD</td><td>-0.526</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>CLEC3A</td><td>-0.514</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>COMP</td><td>-0.508</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>COL1A1</td><td>0.508</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>COL6A1</td><td>0.506</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>PRELP</td><td>-0.504</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>TMSB10</td><td>0.493</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>NME2</td><td>0.492</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>CHAD</td><td>-0.480</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>MIA</td><td>-0.480</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>CYTL1</td><td>-0.474</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>COL6A3</td><td>0.468</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>TMSB4X</td><td>0.466</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RPL17</td><td>0.464</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>FBN1</td><td>0.454</td><td>0.0e+00</td><td>late_up</td></tr>
 </table>
 <h2>CEP Compartment</h2>
 <img src="umap_trajectory_CEP.png" alt="CEP trajectory UMAP">
@@ -98,33 +101,34 @@
 <img src="gene_dynamics_CEP.png" alt="CEP gene dynamics">
 <h3>Pseudotime Correlations</h3><table>
 <tr><th>Test</th><th>Statistic</th><th>P-value</th><th>N</th></tr>
-<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=0.135</td><td>7.3e-201</td><td>50000</td></tr>
-<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=276318656</td><td>4.2e-01</td><td>50000</td></tr>
-<tr><td>pseudotime_vs_condition_EP_hyaline</td><td>rho=-0.431</td><td>0.0e+00</td><td>33776</td></tr>
-<tr><td>pseudotime_vs_condition_EP_ossification</td><td>rho=0.120</td><td>3.6e-53</td><td>16224</td></tr>
+<tr><td>pseudotime_vs_condition_ordinal</td><td>rho=0.396</td><td>0.0e+00</td><td>32141</td></tr>
+<tr><td>pseudotime_healthy_vs_degenerated</td><td>U=76982352</td><td>0.0e+00</td><td>32141</td></tr>
+<tr><td>pseudotime_vs_condition_Fibrochondrocyte_chondroid</td><td>rho=0.053</td><td>8.7e-02</td><td>1027</td></tr>
+<tr><td>pseudotime_vs_condition_EP_hyaline</td><td>rho=0.037</td><td>6.1e-06</td><td>14632</td></tr>
+<tr><td>pseudotime_vs_condition_Fibroblast_like</td><td>rho=0.239</td><td>1.9e-213</td><td>16482</td></tr>
 </table>
 <h3>Trajectory Genes: 500 total</h3>
 <table><tr><th>Gene</th><th>rho</th><th>padj</th><th>Program</th></tr>
-<tr><td>COMP</td><td>-0.753</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>MT1X</td><td>-0.737</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>TRAPPC5</td><td>0.730</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>RNASEK</td><td>0.730</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>CLU</td><td>-0.729</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>EEF1G</td><td>0.727</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>NME2</td><td>0.718</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>FTH1</td><td>0.715</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>NEK10</td><td>0.715</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>ATP6V0C</td><td>0.714</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>CA12</td><td>0.713</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>MRPS24</td><td>0.709</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>MYOF</td><td>0.707</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>EXT1</td><td>0.704</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>PRELP</td><td>-0.703</td><td>0.0e+00</td><td>late_down</td></tr>
-<tr><td>COL14A1</td><td>0.702</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>FGF13</td><td>0.700</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>PRSS23</td><td>0.692</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>THY1</td><td>0.687</td><td>0.0e+00</td><td>late_up</td></tr>
-<tr><td>BNC2</td><td>0.686</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>MGP</td><td>-0.786</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>NME2</td><td>0.778</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>EEF1G</td><td>0.775</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>RNASEK</td><td>0.770</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>COMP</td><td>-0.760</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>TRAPPC5</td><td>0.753</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>THY1</td><td>0.750</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>SNORC</td><td>-0.747</td><td>0.0e+00</td><td>late_down</td></tr>
+<tr><td>PRSS23</td><td>0.746</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>MYOF</td><td>0.744</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>AHNAK2</td><td>0.739</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>EXT1</td><td>0.738</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>LGALS1</td><td>0.738</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>ATP6V0C</td><td>0.737</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>FGF13</td><td>0.734</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>CA12</td><td>0.734</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>NEK10</td><td>0.734</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>MRPS24</td><td>0.733</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>MT-CO2</td><td>0.733</td><td>0.0e+00</td><td>late_up</td></tr>
+<tr><td>TRIO</td><td>0.730</td><td>0.0e+00</td><td>late_up</td></tr>
 </table>
 <h2>RNA Velocity</h2>
 <div class="section warning">

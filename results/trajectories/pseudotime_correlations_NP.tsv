@@ -1,7 +1,11 @@
 compartment	embedding	test	rho	pvalue	n	statistic	n_healthy	n_degen	median_healthy	median_degen
-NP	scVI_mesenchymal	pseudotime_vs_condition_ordinal	-0.15102454060646403	7.517241991794242e-253	50000.0					
-NP	scVI_mesenchymal	pseudotime_healthy_vs_degenerated		7.338474824791774e-05		217706720.0	16091.0	26454.0	0.04662100598216057	0.046122193336486816
-NP	scVI_mesenchymal	pseudotime_vs_condition_NP_fibrocartilaginous	0.19251489980706435	1.0173389830724596e-136	16403.0					
-NP	scVI_mesenchymal	pseudotime_vs_condition_NP_mature_chondrocyte	-0.20724594788253592	2.5752280770675842e-259	26957.0					
-NP	scVI_mesenchymal	pseudotime_vs_condition_NP_notochordal	-0.2828467209630794	2.619490644855305e-85	4597.0					
-NP	scVI_mesenchymal	pseudotime_vs_condition_NP_stressed_degen	-0.3219063787901341	1.7940129171351355e-50	2043.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_ordinal	-0.09227583148507676	5.567486829882847e-95	50000.0					
+NP	scVI_mesenchymal	pseudotime_healthy_vs_degenerated		0.0		196089248.0	14617.0	29917.0	0.18437586724758148	0.1844865381717682
+NP	scVI_mesenchymal	pseudotime_vs_condition_NP_mature_chondrocyte	-0.5447363230513957	0.0	16133.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_NP_fibrocartilaginous	-0.024708292208857466	2.6674722318199386e-05	28890.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_NP_stressed	0.2693087175638699	1.5578842696714373e-21	1209.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_NP_notochordal	0.09605787751938942	0.04781262341992507	425.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_Fibrochondrocyte_chondroid	0.05834767061630983	0.0047430603369116005	2341.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_Fibrochondrocyte_stressed	0.19024932373594777	0.00026678378517578613	363.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_unassigned	-0.1623838822821461	0.026389240616559485	187.0					
+NP	scVI_mesenchymal	pseudotime_vs_condition_Fibrochondrocyte_fibroid	-0.6470609831195729	5.687577264653276e-55	452.0					

@@ -690,7 +690,7 @@ def generate_cell_type_definitions(all_annotations):
             # Get clusters
             if 'leiden' in adata.obs.columns:
                 clusters = sorted(adata.obs.loc[ct_mask, 'leiden'].unique(),
-                                  key=lambda x: int(x))
+                                  key=lambda x: (x.lstrip('MN'), x))
                 cluster_str = ",".join(str(c) for c in clusters)
             else:
                 cluster_str = ""
@@ -800,7 +800,7 @@ def process_object(object_name, force=False):
     # Determine tiers present
     has_cell_class = 'cell_class' in adata.obs.columns
     if has_cell_class:
-        mes_mask = adata.obs['cell_class'] == 'mesenchymal'
+        mes_mask = adata.obs['cell_class'].isin(['mesenchymal', 'unknown'])
         non_mes_mask = adata.obs['cell_class'] == 'non_mesenchymal'
         n_mes = mes_mask.sum()
         n_non = non_mes_mask.sum()
@@ -824,6 +824,11 @@ def process_object(object_name, force=False):
     if n_mes >= 50:
         print(f"\n  --- Tier A: Mesenchymal ({object_name}) ---")
         mes_adata = adata[mes_mask].copy()
+
+        # Use tier-specific leiden column (plain integers, not M-prefixed)
+        tier_leiden_col = 'leiden_mesenchymal'
+        if tier_leiden_col in mes_adata.obs.columns:
+            mes_adata.obs['leiden'] = mes_adata.obs[tier_leiden_col].copy()
 
         # Ensure leiden exists for mesenchymal tier
         if 'leiden' not in mes_adata.obs.columns:
@@ -863,6 +868,11 @@ def process_object(object_name, force=False):
     if n_non >= MIN_CELLS_NON_MES:
         print(f"\n  --- Tier B: Non-mesenchymal ({object_name}) ---")
         non_mes_adata = adata[non_mes_mask].copy()
+
+        # Use tier-specific leiden column (plain integers, not NM-prefixed)
+        tier_leiden_col = 'leiden_non_mesenchymal'
+        if tier_leiden_col in non_mes_adata.obs.columns:
+            non_mes_adata.obs['leiden'] = non_mes_adata.obs[tier_leiden_col].copy()
 
         if 'leiden' not in non_mes_adata.obs.columns:
             print("    WARNING: No leiden column — cannot annotate non-mesenchymal tier")

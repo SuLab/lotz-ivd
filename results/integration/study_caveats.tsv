@@ -1,5 +1,5 @@
 study	first_author	caveat	impact	mitigation
-GSE165722	Tu 2022	BD Rhapsody platform (not 10x)	Different capture efficiency, gene detection	Platform-aware batch correction via scVI study-level batch key
+GSE165722	Tu 2022	BD Rhapsody platform (not 10x)	Different capture efficiency, gene detection	Platform-aware batch correction via scANVI study-level batch key
 GSE205535	Li 2022	BD Rhapsody platform; published corrigenda	See above; potential data quality issues	Monitor for outlier behavior in integration
 CNP0002664	Han 2022	Singleron Matrix platform (not 10x)	Different capture efficiency	Same as above
 GSE242443	Kuchynsky 2024	Culture-expanded CEP cells	Culture alters cell states; may not reflect in vivo biology	Caveat in all CEP results; compare with non-expanded CEP from GSE160756

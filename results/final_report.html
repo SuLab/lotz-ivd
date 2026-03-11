@@ -31,7 +31,7 @@
 
 <h1>Human Intervertebral Disc Single-Cell Atlas</h1>
 <p><strong>A comprehensive scRNA-seq meta-analysis of IVD degeneration</strong></p>
-<p>Report generated: 2026-03-10 16:34 | Pipeline version: 1.0</p>
+<p>Report generated: 2026-03-11 15:21 | Pipeline version: 1.0</p>
 
 
 <div class="stats-grid">
@@ -108,45 +108,37 @@
 <table>
   <tr><th>Object</th><th>Cluster</th><th>Cells</th><th>De Novo Label</th><th>CellTypist Label</th><th>CellTypist Agreement %</th></tr>
 
-  <tr><td>NP</td><td>8</td><td>1295</td><td>Pericyte_SMC</td><td>Fibroblasts</td><td>99.6%</td></tr>
-  <tr><td>NP</td><td>3</td><td>2139</td><td>Macrophage</td><td>Endothelial cells</td><td>99.9%</td></tr>
-  <tr><td>NP</td><td>10</td><td>1136</td><td>T_cell</td><td>Macrophages</td><td>63.9%</td></tr>
-  <tr><td>NP</td><td>9</td><td>1210</td><td>unassigned</td><td>Classical monocytes</td><td>99.6%</td></tr>
-  <tr><td>NP</td><td>5</td><td>1648</td><td>T_cell</td><td>Classical monocytes</td><td>55.0%</td></tr>
-  <tr><td>NP</td><td>13</td><td>269</td><td>Macrophage</td><td>Fibroblasts</td><td>82.5%</td></tr>
-  <tr><td>NP</td><td>0</td><td>4952</td><td>unassigned</td><td>Classical monocytes</td><td>100.0%</td></tr>
-  <tr><td>NP</td><td>4</td><td>1929</td><td>unassigned</td><td>Classical monocytes</td><td>99.2%</td></tr>
-  <tr><td>NP</td><td>6</td><td>1483</td><td>unassigned</td><td>Classical monocytes</td><td>99.7%</td></tr>
-  <tr><td>NP</td><td>2</td><td>2633</td><td>unassigned</td><td>Classical monocytes</td><td>88.2%</td></tr>
-  <tr><td>NP</td><td>15</td><td>93</td><td>T_cell</td><td>pDC</td><td>100.0%</td></tr>
-  <tr><td>AF</td><td>0</td><td>257</td><td>Pericyte_SMC</td><td>Fibroblasts</td><td>49.0%</td></tr>
-  <tr><td>CEP</td><td>2</td><td>58</td><td>B_cell</td><td>Tcm/Naive helper T cells</td><td>43.1%</td></tr>
-  <tr><td>CEP</td><td>4</td><td>40</td><td>Pericyte_SMC</td><td>Endothelial cells</td><td>60.0%</td></tr>
-  <tr><td>CEP</td><td>3</td><td>53</td><td>NK_cell</td><td>Tcm/Naive helper T cells</td><td>50.9%</td></tr>
+  <tr><td>NP</td><td>0</td><td>917</td><td>unassigned</td><td>Endothelial cells</td><td>100.0%</td></tr>
+  <tr><td>NP</td><td>1</td><td>859</td><td>unassigned</td><td>Classical monocytes</td><td>100.0%</td></tr>
+  <tr><td>NP</td><td>2</td><td>638</td><td>unassigned</td><td>Classical monocytes</td><td>100.0%</td></tr>
+  <tr><td>NP</td><td>3</td><td>610</td><td>unassigned</td><td>CD16+ NK cells</td><td>37.0%</td></tr>
+  <tr><td>NP</td><td>5</td><td>60</td><td>Pericyte_SMC</td><td>Fibroblasts</td><td>96.7%</td></tr>
 </table>
 
 <h2 id="de">4. Differential Expression</h2>
 <p>Pseudobulk DE analysis using pyDESeq2. 17 powered comparisons, 128 skipped (underpowered). |log2FC| > 0.5, padj < 0.05.</p>
 
 <table><tr><th>Cell Type</th><th>Comparison</th><th>Up</th><th>Down</th><th>Total</th></tr>
-<tr><td>AF_inner</td><td>healthy_vs_degenerated_all</td><td>3</td><td>2</td><td>5</td></tr>
-<tr><td>AF_inner</td><td>healthy_vs_degenerated_severe</td><td>3</td><td>2</td><td>5</td></tr>
-<tr><td>AF_outer</td><td>healthy_vs_degenerated_all</td><td>8</td><td>4</td><td>12</td></tr>
-<tr><td>AF_outer</td><td>healthy_vs_degenerated_mild</td><td>2</td><td>5</td><td>7</td></tr>
-<tr><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>52</td><td>48</td><td>100</td></tr>
-<tr><td>AF_outer</td><td>mild_vs_severe</td><td>26</td><td>12</td><td>38</td></tr>
-<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_all</td><td>3</td><td>2</td><td>5</td></tr>
-<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_mild</td><td>1</td><td>0</td><td>1</td></tr>
-<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_severe</td><td>241</td><td>144</td><td>385</td></tr>
-<tr><td>NP_fibrocartilaginous</td><td>mild_vs_severe</td><td>201</td><td>217</td><td>418</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_mild</td><td>3</td><td>1</td><td>4</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_severe</td><td>77</td><td>36</td><td>113</td></tr>
-<tr><td>NP_mature_chondrocyte</td><td>mild_vs_severe</td><td>155</td><td>136</td><td>291</td></tr>
-<tr><td>NP_notochordal</td><td>healthy_vs_degenerated_all</td><td>0</td><td>1</td><td>1</td></tr>
-<tr><td>NP_notochordal</td><td>healthy_vs_degenerated_severe</td><td>1</td><td>2</td><td>3</td></tr>
-<tr><td>NP_notochordal</td><td>mild_vs_severe</td><td>10</td><td>8</td><td>18</td></tr>
-<tr><td>NP_stressed_degen</td><td>mild_vs_severe</td><td>1</td><td>0</td><td>1</td></tr>
-<tr><td>T_cell</td><td>mild_vs_severe</td><td>27</td><td>13</td><td>40</td></tr>
+<tr><td>AF_inner</td><td>healthy_vs_degenerated_all</td><td>28</td><td>11</td><td>39</td></tr>
+<tr><td>AF_inner</td><td>healthy_vs_degenerated_severe</td><td>35</td><td>17</td><td>52</td></tr>
+<tr><td>AF_outer</td><td>healthy_vs_degenerated_all</td><td>3</td><td>3</td><td>6</td></tr>
+<tr><td>AF_outer</td><td>healthy_vs_degenerated_mild</td><td>0</td><td>2</td><td>2</td></tr>
+<tr><td>AF_outer</td><td>healthy_vs_degenerated_severe</td><td>39</td><td>19</td><td>58</td></tr>
+<tr><td>AF_outer</td><td>mild_vs_severe</td><td>2</td><td>0</td><td>2</td></tr>
+<tr><td>Fibrochondrocyte_chondroid</td><td>healthy_vs_degenerated_mild</td><td>0</td><td>2</td><td>2</td></tr>
+<tr><td>Fibrochondrocyte_chondroid</td><td>healthy_vs_degenerated_severe</td><td>2</td><td>0</td><td>2</td></tr>
+<tr><td>Fibrochondrocyte_chondroid</td><td>mild_vs_severe</td><td>8</td><td>6</td><td>14</td></tr>
+<tr><td>Fibrochondrocyte_stressed</td><td>mild_vs_severe</td><td>11</td><td>3</td><td>14</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_all</td><td>1</td><td>0</td><td>1</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_mild</td><td>6</td><td>8</td><td>14</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>healthy_vs_degenerated_severe</td><td>81</td><td>101</td><td>182</td></tr>
+<tr><td>NP_fibrocartilaginous</td><td>mild_vs_severe</td><td>114</td><td>191</td><td>305</td></tr>
+<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_mild</td><td>2</td><td>1</td><td>3</td></tr>
+<tr><td>NP_mature_chondrocyte</td><td>healthy_vs_degenerated_severe</td><td>3</td><td>2</td><td>5</td></tr>
+<tr><td>NP_mature_chondrocyte</td><td>mild_vs_severe</td><td>125</td><td>117</td><td>242</td></tr>
+<tr><td>NP_notochordal</td><td>healthy_vs_degenerated_all</td><td>6</td><td>4</td><td>10</td></tr>
+<tr><td>NP_notochordal</td><td>mild_vs_severe</td><td>2</td><td>0</td><td>2</td></tr>
+<tr><td>unassigned</td><td>mild_vs_severe</td><td>8</td><td>3</td><td>11</td></tr>
 </table>
 
 <div class="finding">

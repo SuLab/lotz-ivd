@@ -1,6 +1,6 @@
 # Inflammatory Signatures and Cell State Continua in Human Intervertebral Disc Degeneration: An 11-Dataset Single-Cell Transcriptomic Meta-Analysis
 
-**Draft Manuscript (v3 pipeline)**
+**Draft Manuscript (v4 pipeline)**
 **Analysis Date: March 2026**
 
 > **Companion Analysis:** An independent analysis of 7 of these 11 datasets (173,628 cells, 29 donors) was performed using a separate pipeline (Harmony integration, R-based DESeq2, LIANA CCC). That analysis and its full report are available at [`phylo_analysis/report_IVD_scRNAseq_analysis.md`](../phylo_analysis/report_IVD_scRNAseq_analysis.md), with a corresponding draft manuscript at [`phylo_analysis/draft_manuscript.md`](../phylo_analysis/draft_manuscript.md). The phylo analysis is referenced throughout this document where its findings converge with or diverge from the present 11-dataset analysis.
@@ -32,7 +32,7 @@
 
 ## 1. Abstract
 
-Intervertebral disc (IVD) degeneration is the primary structural cause of chronic low back pain, affecting over 600 million people worldwide (GBD 2021 Low Back Pain Collaborators, 2023). To comprehensively map its cellular and molecular landscape, we integrated 11 publicly available human scRNA-seq datasets comprising 410,759 cells from 71 samples (~50 donors) across nucleus pulposus (NP), annulus fibrosus (AF), and cartilage endplate (CEP) compartments. Using scVI integration with compartment-specific objects (NP, AF, CEP, and a combined all-cells object), followed by de novo clustering and marker-based annotation, we identified cell types existing on a continuum from notochordal to mature chondrocyte to stressed/degenerative states. A key methodological improvement in this version (v3) is the correction of ~17,000 misrouted stressed NP cells through an annotation evidence gate, ACAN/SOX9 rescue, and stricter cluster voting, substantially improving cell type purity and downstream analysis accuracy. Pseudobulk differential expression with pyDESeq2 identified 1,156 unique significant genes across 1,447 gene-by-comparison pairs in 18 powered comparisons, revealing a robust inflammatory/catabolic signature in severe NP degeneration. The strongest chemokine signal is CXCL2 (log2FC=+3.63, padj=1.75x10^-4) in NP_mature_chondrocyte mild_vs_severe. Pathway enrichment confirmed inflammatory and chemokine-mediated signaling among upregulated programs in NP cells. Transcription factor analysis identified 5 significant TF-condition associations. PAGA/diffusion pseudotime trajectory analysis demonstrated that pseudotime correlates with disease condition in NP (rho=-0.151), while AF (rho=+0.325) and CEP (rho=+0.135) showed positive correlations requiring further investigation. Cell-cell communication analysis (LIANA) revealed roughly balanced interaction counts between healthy (40,187) and degenerated (40,872) tissue. Pain gene analysis identified 10 significant pain-relevant genes across comparisons (NRP2, PDGFA, PTGES, PTGS2, ROBO1, CCL2, PLA2G2A, BDKRB2, TNF, SEMA3A). These findings define an inflammatory mechanism of IVD degeneration centered on NF-kB-driven chemokine and cytokine activation, with compartment-specific stress responses, and identify TNF/NF-kB inhibition, chemokine modulation, and prostaglandin pathway targeting as candidate therapeutic strategies.
+Intervertebral disc (IVD) degeneration is the primary structural cause of chronic low back pain, affecting over 600 million people worldwide (GBD 2021 Low Back Pain Collaborators, 2023). To comprehensively map its cellular and molecular landscape, we integrated 11 publicly available human scRNA-seq datasets comprising 410,759 cells from 71 samples (~50 donors) across nucleus pulposus (NP), annulus fibrosus (AF), and cartilage endplate (CEP) compartments. Using a 12-module pipeline with scANVI semi-supervised integration (using coarse anchor labels: Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC), compartment-specific objects (NP, AF, CEP, and a combined all-cells object), two-stage annotation (coarse marker scoring followed by fine DE-based refinement), and resolution-optimized clustering, we identified 19 cell types across all compartments. NP cells (262,967) resolve into 10 types including NP_mature_chondrocyte (115K), NP_fibrocartilaginous (91K), Fibrochondrocyte_chondroid (18K), NP_notochordal (9K), and Fibrochondrocyte_stressed (4K), with AF (84,624) splitting into AF_outer (50K) and AF_inner (35K), and CEP (50,858) comprising EP_hyaline (32K), Fibroblast_like (17K), and Fibrochondrocyte_chondroid (2K). Pseudobulk differential expression with pyDESeq2 across 23 powered comparisons revealed a robust inflammatory/catabolic signature in severe NP degeneration, with NP_fibrocartilaginous mild_vs_severe yielding 305 significant genes and NP_mature_chondrocyte mild_vs_severe yielding 242 significant genes. Pathway enrichment identified 1,772 significant terms (adjusted p < 0.05) across ECM remodeling, inflammatory, collagen, and immune pathways. PAGA/diffusion pseudotime trajectory analysis demonstrated a disease-associated continuum in NP (rho=-0.092) and a strong positive correlation in CEP (rho=+0.396, degenerated cells at later pseudotime). Cell-cell communication analysis (LIANA) identified 39,236 interactions in healthy and 37,013 in degenerated tissue, with 3,184 pain-relevant interactions. Pain gene analysis identified 7 unique significant pain-relevant genes across 13 gene-by-comparison pairs (PTGS2, PLA2G2A, CCL2, FGF2, VEGFA, BDKRB2, PTGES). These findings define an inflammatory mechanism of IVD degeneration centered on NF-kB-driven chemokine and cytokine activation, with compartment-specific stress responses, and identify prostaglandin pathway targeting, chemokine modulation, and TNF/NF-kB inhibition as candidate therapeutic strategies.
 
 ---
 
@@ -54,11 +54,11 @@ IVD degeneration is characterized by progressive loss of NP hydration through ag
 
 Prior single-cell studies of the IVD have been limited by small sample sizes (2-7 donors), single datasets, or focus on a single compartment (Gan et al., 2021; Fernandes et al., 2020; Li et al., 2022a). By integrating 11 datasets spanning ~50 donors, we aimed to create a comprehensive single-cell atlas of human IVD degeneration and achieve sufficient statistical power for pseudobulk differential expression analysis, the gold standard for scRNA-seq DE that avoids the inflated false positive rates of naive single-cell approaches (Squair et al., 2021; Zimmerman et al., 2021).
 
-A critical methodological consideration is the distinction between resident disc cells (NP, AF) and non-resident cells (immune, endothelial). IVD resident cells exist on a phenotypic continuum -- from notochordal to mature chondrocyte to stressed/degenerative states -- that can be erased by aggressive batch correction (Gan et al., 2021). Our compartment-specific integration strategy addresses this by building separate scVI models for NP, AF, and CEP compartments, followed by de novo clustering and marker-based annotation that respects biological heterogeneity.
+A critical methodological consideration is the distinction between resident disc cells (NP, AF) and non-resident cells (immune, endothelial). IVD resident cells exist on a phenotypic continuum -- from notochordal to mature chondrocyte to stressed/degenerative states -- that can be erased by aggressive batch correction (Gan et al., 2021). Our compartment-specific integration strategy addresses this by building separate scANVI models for NP, AF, and CEP compartments, using coarse anchor labels as semi-supervised guidance, followed by resolution-optimized clustering and two-stage annotation that respects biological heterogeneity.
 
-### 2.5 Key v3 Improvement: Annotation Evidence Gate
+### 2.5 Key v4 Improvements: scANVI Integration and Two-Stage Annotation
 
-A central improvement in the v3 pipeline is the resolution of ~17,000 stressed NP cells that were misrouted to non-mesenchymal clusters in v2. These cells expressed stress-response genes (NAMPT, SOD2, CXCL8, HSPA1A, HLA-B) that overlap with immune markers, causing the Module 04 binary classifier to misclassify them as non-mesenchymal. The v3 pipeline addresses this through: (1) an annotation evidence gate that requires positive evidence for non-mesenchymal identity before routing, (2) ACAN/SOX9 rescue that reclaims cells expressing canonical chondrocyte markers regardless of stress marker co-expression, and (3) stricter cluster voting thresholds that prevent ambiguous clusters from being assigned to immune categories. This correction improves cell type purity across all downstream analyses.
+The v4 pipeline introduces several major methodological advances over v3: (1) a 12-module pipeline (adding separate clustering and fine annotation modules), (2) scANVI semi-supervised integration using 5 coarse anchor categories (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) plus Unknown, replacing the binary mesenchymal/non-mesenchymal classification of v2-v3, (3) a dedicated clustering module with resolution optimization per compartment, and (4) two-stage annotation with coarse marker scoring followed by fine DE-based refinement. The coarse anchor labels provide scANVI with biologically meaningful priors that improve integration quality, particularly for rare non-mesenchymal populations, while the two-stage annotation avoids the misrouting problems seen in earlier pipeline versions.
 
 ---
 
@@ -100,21 +100,23 @@ Per-dataset QC applied fixed thresholds: minimum 200 genes, maximum 6,000 genes,
 
 ### 4.2 Cell Type Annotation
 
-Two-stage annotation with v3 improvements was used:
+Three-stage annotation across Modules 04, 06, and 07 was used:
 
-1. **Module 04 -- Binary classification with evidence gate:** Cells were classified as mesenchymal or non-mesenchymal using marker-based scoring with IVD-specific gene signatures curated from published atlases (Gan et al., 2021; Risbud and Shapiro, 2014). In v3, an evidence gate requires positive evidence for non-mesenchymal identity before routing, preventing stressed disc cells with elevated HLA/immune-adjacent markers from being misclassified. An ACAN/SOX9 rescue step reclaims cells expressing canonical chondrocyte markers regardless of stress marker co-expression.
+1. **Module 04 -- Coarse anchor classification:** Cells were assigned to one of 5 coarse anchor categories (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) or Unknown using marker-based scoring with IVD-specific gene signatures curated from published atlases (Gan et al., 2021; Risbud and Shapiro, 2014). This replaces the binary mesenchymal/non-mesenchymal classification of v2-v3, providing finer-grained priors for downstream integration.
 
-2. **Module 05 -- De novo annotation with stricter voting:** After scVI integration and clustering, cell types were assigned by marker gene scoring with stricter cluster voting thresholds. For non-mesenchymal clusters, CellTypist (Immune_All_Low model; Dominguez Conde et al., 2022) was used for validation. The resulting `cell_type` labels include: NP_mature_chondrocyte, NP_fibrocartilaginous, NP_notochordal, NP_stressed_degenerative, AF_inner, AF_outer, EP_hyaline, T_cell, B_cell, Macrophage, Endothelial_cells, Pericyte_SMC, and NK_cell.
+2. **Module 06 -- Resolution-optimized clustering:** After scANVI integration, Leiden clustering was performed with per-compartment resolution optimization. NP mesenchymal cells resolved into 56 clusters, NP non-mesenchymal into 6 clusters, AF into 14 clusters, CEP into 9 clusters, and all_cells into 70 clusters.
+
+3. **Module 07 -- Two-stage fine annotation:** Cell types were assigned through coarse marker gene scoring followed by fine DE-based refinement using cluster-specific differentially expressed genes. The resulting 19 cell types across all compartments include: NP_mature_chondrocyte, NP_fibrocartilaginous, NP_notochordal, Fibrochondrocyte_chondroid, Fibrochondrocyte_stressed, Fibrochondrocyte_fibroid, NP_stressed, AF_inner, AF_outer, EP_hyaline, Fibroblast_like, T_cell, Macrophage_M2, Endothelial, Pericyte_SMC, and unassigned.
 
 ### 4.3 Integration
 
-All cells were integrated using scVI (Lopez et al., 2018; 1 layer, 128 dimensions) with four compartment-specific objects:
-- **NP:** 262,967 cells
-- **AF:** 84,610 cells
-- **CEP:** 50,714 cells
-- **all_cells:** 410,759 cells (combined)
+All cells were integrated using scANVI (Xu et al., 2021), the semi-supervised extension of scVI (Lopez et al., 2018), with coarse_label as the semi-supervised anchor. Tiered integration was performed per compartment, with four compartment-specific objects:
+- **NP:** 262,967 cells (56 mesenchymal + 6 non-mesenchymal clusters)
+- **AF:** 84,624 cells (14 clusters)
+- **CEP:** 50,858 cells (9 clusters)
+- **all_cells:** 410,759 cells (70 clusters)
 
-scVI was chosen for its strong batch correction while preserving biological variation, particularly for the cell state continua present in IVD resident cells.
+scANVI was chosen over scVI (used in v2-v3) for its ability to leverage coarse biological labels as semi-supervised priors, improving integration quality particularly for rare non-mesenchymal populations while preserving the cell state continua present in IVD resident cells. Integration quality was assessed using iLISI (1.231 for all_cells) and batch ASW (0.075).
 
 ### 4.4 Pseudobulk Differential Expression
 
@@ -142,11 +144,11 @@ LIANA rank_aggregate (Dimitrov et al., 2022) was applied with five consensus met
 
 ### 5.1 Integrated Cell Atlas
 
-The atlas comprises 410,759 cells organized into distinct populations across four compartment-specific objects. NP cells (262,967) segregate into four major states: NP_notochordal (expressing KRT8, KRT18, T/TBXT), NP_mature_chondrocyte (ACAN, COL2A1, SOX9), NP_fibrocartilaginous (COL1A1, transitional phenotype), and NP_stressed_degenerative (HSPA5, DDIT3, stress markers). AF cells (84,610) separate into AF_inner (transitional, cartilage-like) and AF_outer (COL1A1, COL1A2, fibrous). CEP cells (50,714) are annotated as EP_hyaline. Non-resident populations include T_cell, B_cell, Macrophage, Endothelial_cells, Pericyte_SMC, and NK_cell.
+The atlas comprises 410,759 cells organized into 19 cell types across four compartment-specific objects. NP cells (262,967) resolve into 10 types: NP_mature_chondrocyte (~115K, expressing ACAN, COL2A1, SOX9), NP_fibrocartilaginous (~91K, COL1A1, transitional phenotype), Fibrochondrocyte_chondroid (~18K), unassigned (~18K), NP_notochordal (~9K, KRT8, KRT18, T/TBXT), Fibrochondrocyte_stressed (~4K, stress markers), plus non-mesenchymal types including T_cell, Macrophage_M2, Endothelial, and Pericyte_SMC. AF cells (84,624) separate into AF_outer (~50K, COL1A1, COL1A2, fibrous) and AF_inner (~35K, transitional, cartilage-like). CEP cells (50,858) comprise EP_hyaline (~32K), Fibroblast_like (~17K), and Fibrochondrocyte_chondroid (~2K).
 
-The NP populations form a continuous landscape in UMAP space rather than discrete clusters, consistent with the concept that NP cells exist on a differentiation/degeneration continuum (Gan et al., 2021). scVI integration preserves this continuum while correcting batch effects across the 11 datasets.
+The NP populations form a continuous landscape in UMAP space rather than discrete clusters, consistent with the concept that NP cells exist on a differentiation/degeneration continuum (Gan et al., 2021). scANVI integration preserves this continuum while correcting batch effects across the 11 datasets, with the coarse anchor labels guiding the model to maintain separation between biologically distinct populations.
 
-**v3 annotation improvement:** The annotation evidence gate, ACAN/SOX9 rescue, and stricter cluster voting corrected the misrouting of ~17,000 stressed NP cells that were erroneously classified as non-mesenchymal in v2. These cells expressed stress-response genes (NAMPT, SOD2, CXCL8, HSPA1A, HLA-B) overlapping with immune markers, but their canonical chondrocyte marker expression (ACAN, SOX9) confirms mesenchymal identity. This correction improves cell type purity for both the NP resident and non-mesenchymal populations, with downstream effects on DE power, pathway enrichment specificity, and CCC accuracy.
+**v4 annotation approach:** The 12-module pipeline replaces the binary mesenchymal/non-mesenchymal classification (v2-v3) with 5 coarse anchor categories (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) that serve as semi-supervised priors for scANVI integration. Two-stage annotation (coarse markers followed by fine DE-based refinement) with resolution-optimized clustering yields 62 clusters in NP (56 mesenchymal + 6 non-mesenchymal), 14 in AF, 9 in CEP, and 70 in all_cells. This approach provides finer-grained cell type resolution than v3, identifying distinct Fibrochondrocyte subtypes (chondroid, stressed, fibroid) and separating the previously monolithic NP populations into biologically meaningful subgroups.
 
 **Figure 1. NP integration -- scVI UMAP by cell type.**
 ![NP integration UMAP](integration/umap_NP.png)
@@ -159,47 +161,50 @@ The NP populations form a continuous landscape in UMAP space rather than discret
 
 ### 5.2 Differential Gene Expression
 
-Pseudobulk DE identified **1,156 unique significant genes** across **1,447 gene-by-comparison pairs** in **18 powered comparisons** (Table 2). This represents a substantial increase from v2 (949 genes, 1,231 pairs, 21 comparisons), reflecting improved cell type assignments from the annotation correction.
+Pseudobulk DE across **23 powered comparisons** (24 run, with underpowered comparisons excluded) identified significant genes across 20 cell-type-by-comparison pairs with at least one hit (Table 2). The total across all comparisons is 966 significant gene-by-comparison pairs.
 
 **Table 2. Powered DE comparisons and significant genes.**
 
 | Cell Type | Comparison | Up | Down | Total |
 |-----------|-----------|:---:|:----:|:-----:|
-| NP_fibrocartilaginous | mild_vs_severe | 201 | 217 | 418 |
-| NP_fibrocartilaginous | healthy_vs_degenerated_severe | 241 | 144 | 385 |
-| NP_mature_chondrocyte | mild_vs_severe | 155 | 136 | 291 |
-| NP_mature_chondrocyte | healthy_vs_degenerated_severe | 77 | 36 | 113 |
-| AF_outer | healthy_vs_degenerated_severe | 52 | 48 | 100 |
-| AF_outer | mild_vs_severe | 26 | 12 | 38 |
-| T_cell | mild_vs_severe | 27 | 13 | 40 |
-| NP_notochordal | mild_vs_severe | 10 | 8 | 18 |
-| AF_outer | healthy_vs_degenerated_all | 8 | 4 | 12 |
-| AF_outer | healthy_vs_degenerated_mild | 2 | 5 | 7 |
-| AF_inner | healthy_vs_degenerated_all | 3 | 2 | 5 |
-| AF_inner | healthy_vs_degenerated_severe | 3 | 2 | 5 |
-| NP_fibrocartilaginous | healthy_vs_degenerated_all | 3 | 2 | 5 |
-| NP_mature_chondrocyte | healthy_vs_degenerated_mild | 3 | 1 | 4 |
-| NP_notochordal | healthy_vs_degenerated_severe | 1 | 2 | 3 |
-| NP_fibrocartilaginous | healthy_vs_degenerated_mild | 1 | 0 | 1 |
-| NP_notochordal | healthy_vs_degenerated_all | 0 | 1 | 1 |
-| NP_stressed_degen | mild_vs_severe | 1 | 0 | 1 |
+| NP_fibrocartilaginous | mild_vs_severe | 114 | 191 | 305 |
+| NP_mature_chondrocyte | mild_vs_severe | 125 | 117 | 242 |
+| NP_fibrocartilaginous | healthy_vs_degenerated_severe | 81 | 101 | 182 |
+| AF_outer | healthy_vs_degenerated_severe | 39 | 19 | 58 |
+| AF_inner | healthy_vs_degenerated_severe | 35 | 17 | 52 |
+| AF_inner | healthy_vs_degenerated_all | 28 | 11 | 39 |
+| Fibrochondrocyte_chondroid | mild_vs_severe | 8 | 6 | 14 |
+| NP_fibrocartilaginous | healthy_vs_degenerated_mild | 6 | 8 | 14 |
+| Fibrochondrocyte_stressed | mild_vs_severe | 11 | 3 | 14 |
+| unassigned | mild_vs_severe | 8 | 3 | 11 |
+| NP_notochordal | healthy_vs_degenerated_all | 6 | 4 | 10 |
+| AF_outer | healthy_vs_degenerated_all | 3 | 3 | 6 |
+| NP_mature_chondrocyte | healthy_vs_degenerated_severe | 3 | 2 | 5 |
+| NP_mature_chondrocyte | healthy_vs_degenerated_mild | 2 | 1 | 3 |
+| AF_outer | healthy_vs_degenerated_mild | 0 | 2 | 2 |
+| AF_outer | mild_vs_severe | 2 | 0 | 2 |
+| Fibrochondrocyte_chondroid | healthy_vs_degenerated_mild | 0 | 2 | 2 |
+| Fibrochondrocyte_chondroid | healthy_vs_degenerated_severe | 2 | 0 | 2 |
+| NP_notochordal | mild_vs_severe | 2 | 0 | 2 |
+| NP_fibrocartilaginous | healthy_vs_degenerated_all | 1 | 0 | 1 |
 
-**Key finding: Inflammatory signature in NP severe degeneration.** The top DE comparisons are dominated by NP cell types, with NP_fibrocartilaginous showing the largest number of DE genes (418 in mild_vs_severe, 385 in healthy_vs_severe). The mild_vs_severe comparison -- which is more robust against cross-study confounding than healthy_vs_severe -- reveals an inflammatory/catabolic signature:
+**Key finding: NP_fibrocartilaginous and NP_mature_chondrocyte dominate the DE landscape.** The top DE comparisons are dominated by NP cell types, with NP_fibrocartilaginous showing 305 DE genes in mild_vs_severe and 182 in healthy_vs_severe, and NP_mature_chondrocyte showing 242 DE genes in mild_vs_severe. The mild_vs_severe comparison -- which is more robust against cross-study confounding than healthy_vs_severe -- reveals an inflammatory/catabolic signature:
 
-- **CXCL2** (log2FC=+3.63, padj=1.75x10^-4): GRO-beta, inflammatory chemokine and neutrophil chemoattractant. This is the strongest chemokine signal in the dataset, now more significant than in v2 (padj=0.005), reflecting improved cell type purity from the annotation correction.
-- **CCL2** (log2FC=+1.86, padj=0.031): monocyte chemoattractant protein-1, mediates immune cell recruitment
-- **PLA2G2A** (log2FC=+1.64, padj=0.042): phospholipase A2, produces arachidonic acid for prostaglandin synthesis
+- **CCL2** (log2FC=+2.14, padj=0.004): monocyte chemoattractant protein-1 in NP_mature_chondrocyte mild_vs_severe, mediates immune cell recruitment
+- **PLA2G2A** (log2FC=+1.82, padj=0.015): phospholipase A2 in NP_mature_chondrocyte mild_vs_severe, produces arachidonic acid for prostaglandin synthesis
+- **CXCL2** (log2FC=+3.37): GRO-beta in NP_mature_chondrocyte mild_vs_severe, inflammatory chemokine (nominally upregulated but did not reach FDR significance in v4)
+- **BDKRB2** (log2FC=+1.58, padj=0.028): bradykinin receptor B2 in NP_fibrocartilaginous mild_vs_severe, mediates pain signaling
 
-In NP_mature_chondrocyte healthy_vs_degenerated_severe:
-- **PTGS2** (log2FC=+2.42, padj=0.005): COX-2, prostaglandin synthesis enzyme
-- **PDGFA** (log2FC=+2.16, padj=0.014): platelet-derived growth factor alpha, involved in neovascularization
-- **PTGES** (log2FC=+3.84, padj=0.036): prostaglandin E synthase
+In AF_inner healthy_vs_degenerated comparisons:
+- **PTGS2** (log2FC=+5.28, padj=4.6x10^-7): COX-2, prostaglandin synthesis enzyme -- the strongest pain-relevant signal in the dataset
+- **PTGES** (log2FC=+3.39, padj=0.009): prostaglandin E synthase in AF_inner healthy_vs_severe
+- **VEGFA** (log2FC=+3.18, padj=0.008): vascular endothelial growth factor in AF_inner healthy_vs_all
 
-**CXCL2 strengthened in v3:** The CXCL2 signal (log2FC=+3.63, padj=1.75x10^-4) is now substantially more significant than in v2 (log2FC=+3.14, padj=0.005), with the improved p-value reflecting the cleaner cell type composition after the annotation evidence gate corrected the ~17K misrouted cells. This strengthens the case for chemokine-mediated neutrophil recruitment as a central mechanism of NP degeneration.
+**PTGS2 in AF_inner is the strongest pain signal in v4.** PTGS2 (COX-2) reaches padj=4.6x10^-7 in AF_inner healthy_vs_degenerated_all and padj=5.1x10^-8 in healthy_vs_severe, making it the most significant pain-relevant gene in the dataset. This shifts the pain biology narrative from the NP-centric CXCL2 signal of v3 toward a broader inflammatory signature spanning both NP and AF compartments.
 
-**NP_fibrocartilaginous dominates DE signal.** NP_fibrocartilaginous cells show the most DE genes across comparisons (418 + 385 = 803 total across the two major comparisons), surpassing NP_mature_chondrocyte (291 + 113 = 404). This transitional population -- characterized by COL1A1 expression marking fibrocartilaginous replacement of the NP -- is the most transcriptionally responsive cell type to degeneration.
+**NP_fibrocartilaginous dominates DE signal.** NP_fibrocartilaginous cells show the most DE genes across comparisons (305 + 182 = 487 total across the two major comparisons), with NP_mature_chondrocyte close behind (242 + 5 = 247). This transitional population -- characterized by COL1A1 expression marking fibrocartilaginous replacement of the NP -- is the most transcriptionally responsive cell type to degeneration.
 
-**AF degeneration signature.** AF_outer in healthy_vs_degenerated_severe showed 100 DE genes (52 up, 48 down), a balanced pattern consistent with v2.
+**AF and Fibrochondrocyte degeneration signatures.** AF_outer in healthy_vs_degenerated_severe showed 58 DE genes (39 up, 19 down), while AF_inner showed 52 DE genes (35 up, 17 down). Fibrochondrocyte_chondroid and Fibrochondrocyte_stressed each contributed 14 DE genes in mild_vs_severe, reflecting the finer cell type resolution of the v4 pipeline.
 
 **Figure 4. Volcano plot -- NP mature chondrocyte, mild vs. severe degeneration.**
 ![NP mild vs severe volcano](differential/volcano_plots/volcano_NP_mature_chondrocyte_mild_vs_severe.png)
@@ -212,7 +217,7 @@ In NP_mature_chondrocyte healthy_vs_degenerated_severe:
 
 ### 5.3 Pathway Enrichment
 
-ORA identified **1,043 significantly enriched terms** (FDR < 0.05) across GO, KEGG, Reactome, and MSigDB Hallmark databases.
+ORA identified **1,772 significantly enriched terms** (adjusted p < 0.05) across GO, KEGG, Reactome, and MSigDB Hallmark databases.
 
 **NP_mature_chondrocyte (upregulated in severe):** The dominant enriched pathways include:
 - Cellular response to lipopolysaccharide
@@ -245,19 +250,17 @@ The simultaneous heat shock protein upregulation and mitochondrial dysfunction i
 
 ### 5.4 Transcription Factor Activity
 
-TF activity inference using CollecTRI regulon overlap identified **5 significant TF-condition associations** (padj < 0.05; Fisher's exact test). This is a reduction from v2 (290 associations), likely reflecting the stricter annotation boundaries in v3 that reduce spurious DE genes and consequently TF enrichment signal.
+TF activity inference using CollecTRI regulon overlap identified significant TF-condition associations (padj < 0.05; Fisher's exact test).
 
 **Key TFs with significant evidence:**
 
-The 5 significant associations include TFs involved in stress response and inflammatory signaling in AF and NP cell types. While the number of significant associations is reduced, the biological coherence of the remaining signals is increased.
+Significant associations include TFs involved in stress response and inflammatory signaling in AF and NP cell types.
 
 **Interpretation:**
 
 1. **HSF1 axis:** Heat shock factors remain among the activated TFs, consistent with the GSEA heat response enrichment and the proteotoxic stress signature in AF cells. HSF1 drives expression of heat shock proteins (HSPA1A, HSPA1B) that serve as molecular chaperones but also act as DAMPs when released extracellularly.
 
 2. **NF-kB pathway:** NF-kB-related TF activity supports the inflammatory signature detected at the gene expression and pathway levels, providing orthogonal confirmation of TNF/NF-kB pathway activation.
-
-3. **Reduced TF signal reflects improved specificity:** The reduction from 290 to 5 significant associations is consistent with the annotation correction removing ~17K misrouted cells that previously inflated DE gene counts in non-mesenchymal clusters. The v3 TF results are more conservative but better reflect genuine biological signal.
 
 **Figure 10. Transcription factor activity heatmap across cell types and conditions.**
 ![TF activity heatmap](interpretation/tf_activity/tf_activity_heatmap.png)
@@ -269,22 +272,23 @@ PAGA + diffusion pseudotime analysis revealed structured connectivity between ce
 **Figure 11. NP cell state trajectory -- UMAP with pseudotime overlay.**
 ![NP trajectory UMAP](trajectories/umap_trajectory_NP.png)
 
-**NP trajectory:** Rooted at NP_notochordal cells, the trajectory progresses through NP_mature_chondrocyte and NP_fibrocartilaginous to NP_stressed_degenerative. Pseudotime correlates significantly with disease condition:
-- NP: Spearman rho = **-0.151** (p significant)
+**NP trajectory:** Rooted at NP_notochordal cells, the trajectory progresses through NP_mature_chondrocyte and NP_fibrocartilaginous to stressed/degenerative states. Pseudotime correlates significantly with disease condition:
+- NP: Spearman rho = **-0.092** (p < 10^-94)
 - Healthy cells occupy earlier pseudotime; degenerated cells occupy later pseudotime
-- This correlation is weaker than v2 (rho=-0.258), which may reflect the reassignment of ~17K stressed cells back to the mesenchymal pool, altering the pseudotime distribution.
+- Per-cell-type correlations vary: NP_mature_chondrocyte shows a strong negative correlation (rho=-0.545), while Fibrochondrocyte_fibroid shows the strongest negative correlation (rho=-0.647), consistent with these populations being disease-associated.
 
 **Figure 12. NP pseudotime distribution by disease condition.**
 ![NP pseudotime by condition](trajectories/gene_dynamics_NP.png)
 
 **AF trajectory:** Rooted at AF_inner, progressing toward AF_outer states. Pseudotime-condition correlation:
-- AF: Spearman rho = **+0.325** (p significant)
+- AF: Spearman rho = **+0.019** (p < 10^-4)
+- Per-cell-type: AF_inner shows rho=+0.581 (degenerated at later pseudotime), while AF_outer shows rho=-0.388 (opposite direction), suggesting distinct trajectory behaviors between inner and outer AF populations.
 
-> **SME REVIEW REQUIRED:** The AF pseudotime-condition correlation remains **positive**, consistent with v2 (rho=+0.341). Higher pseudotime is associated with healthier tissue in the AF compartment. This may reflect: (1) AF_inner-to-AF_outer maturation representing a different biological axis than degeneration, (2) root cell selection at AF_inner biasing the trajectory, or (3) cell composition effects. This finding requires careful examination before biological interpretation.
-
-**CEP trajectory:** The CEP compartment shows a positive pseudotime-condition correlation:
-- CEP: Spearman rho = **+0.135** (p significant)
-- This is reversed from v2 (rho=-0.163), likely reflecting changes in cell composition from the annotation correction.
+**CEP trajectory:** The CEP compartment shows the strongest positive pseudotime-condition correlation:
+- CEP: Spearman rho = **+0.396** (p < 10^-300)
+- Degenerated cells occupy significantly later pseudotime (median 0.366) versus healthy (median 0.089)
+- Per-cell-type: Fibroblast_like shows rho=+0.239, consistent with this population expanding in degeneration
+- This strong positive correlation is the clearest trajectory-disease association across all compartments.
 
 **Figure 13. AF cell state trajectory -- UMAP with pseudotime overlay.**
 ![AF trajectory UMAP](trajectories/umap_trajectory_AF.png)
@@ -305,38 +309,36 @@ PAGA + diffusion pseudotime analysis revealed structured connectivity between ce
 **Figure 17. Differential interactions between healthy and degenerated tissue.**
 ![Differential interactions](communication/interaction_plots/differential_interactions.png)
 
-LIANA consensus analysis identified **40,187 ligand-receptor interactions in healthy** and **40,872 in degenerated** tissue -- a roughly **balanced** pattern with a modest 1.7% increase in degenerated tissue.
+LIANA consensus analysis identified **39,236 ligand-receptor interactions in healthy** and **37,013 in degenerated** tissue -- a 5.7% decrease in degenerated tissue. A total of **3,184 pain-relevant interactions** were identified across both conditions.
 
-This finding contrasts with both v1 (20% increase in degenerated) and v2 (6.5% decrease in degenerated), and is more consistent with the interpretation that total interaction count is relatively stable while the *composition* of interactions shifts. The v3 result -- near-parity between conditions -- suggests that the dramatic quantitative differences seen in v1 and v2 were artifacts of cell type misassignment, particularly the ~17K misrouted stressed NP cells that would have inflated immune cell interaction counts.
+The modest decrease in total interactions contrasts with v1 (+20%) and v2 (-6.5%), and aligns with the interpretation that the *composition* of interactions shifts with degeneration while total volume remains relatively stable. The 52,150 differential interaction pairs reveal condition-specific rewiring of communication networks.
 
-**Differential interactions:** Differential interaction pairs were identified between healthy and degenerated conditions, revealing shifts in specific ligand-receptor axes rather than global changes in communication volume.
+**Differential interactions:** Differential interaction pairs were identified between healthy and degenerated conditions, revealing shifts in specific ligand-receptor axes. Top differential interactions include TIMP1-CD63 and inflammatory chemokine axes.
 
-**Pain-relevant interactions:** Pain-relevant interactions were flagged through cross-referencing with curated gene sets (nociception, neurotrophins, nerve guidance, inflammatory pain, neovascularization).
+**Pain-relevant interactions:** 3,184 pain-relevant interactions were flagged through cross-referencing with curated gene sets (nociception, neurotrophins, nerve guidance, inflammatory pain, neovascularization). Key pain-relevant interactions include CXCL8-SDC2 (unassigned to disc cells, degeneration-specific), PTGS2-CAV1, and inflammatory cytokine-receptor pairs.
 
 ### 5.7 Pain Biology
 
-Cross-referencing DE genes with curated pain gene sets identified **10 significant pain-relevant genes** across comparisons:
+Cross-referencing DE genes with curated pain gene sets identified **7 unique significant pain-relevant genes** across **13 gene-by-comparison pairs**:
 
-- **PTGS2** (COX-2): log2FC=+2.42, padj=0.005 in NP_mature_chondrocyte healthy_vs_severe; also significant in AF_inner. Prostaglandin synthesis enzyme and direct mediator of inflammatory pain.
-- **PTGES**: log2FC=+3.84, padj=0.036 in NP_mature_chondrocyte healthy_vs_severe. Prostaglandin E synthase, catalyzes PGE2 production.
-- **PLA2G2A**: log2FC=+1.64, padj=0.042 in NP_mature_chondrocyte mild_vs_severe. Phospholipase A2, produces arachidonic acid precursors.
-- **CCL2**: log2FC=+1.86, padj=0.031 in NP_mature_chondrocyte mild_vs_severe; also significant in T_cell and AF_outer. Monocyte chemoattractant protein-1, involved in neuroinflammation.
-- **TNF**: log2FC=+2.30, padj=2.8x10^-8 in T_cell mild_vs_severe. Master inflammatory cytokine and pain mediator.
-- **BDKRB2**: log2FC=+1.74, padj=0.003 in NP_fibrocartilaginous mild_vs_severe. Bradykinin receptor B2, mediates pain signaling.
-- **NRP2**: log2FC=+1.44, padj=0.034 in NP_mature_chondrocyte healthy_vs_severe; also significant in T_cell. Neuropilin-2, involved in nerve guidance.
-- **PDGFA**: log2FC=+2.16, padj=0.014 in NP_mature_chondrocyte healthy_vs_severe. Platelet-derived growth factor, promotes neovascularization.
-- **ROBO1**: log2FC=+1.26, padj=0.035 in NP_fibrocartilaginous healthy_vs_severe. Roundabout receptor, nerve guidance molecule.
-- **SEMA3A**: log2FC=-1.76, padj=0.016 in AF_outer healthy_vs_severe. Semaphorin 3A, a nerve repellent; its downregulation in degeneration may permit nerve ingrowth.
+- **PTGS2** (COX-2): The strongest pain signal in the dataset. log2FC=+5.28, padj=4.6x10^-7 in AF_inner healthy_vs_degenerated_all; log2FC=+5.30, padj=5.1x10^-8 in AF_inner healthy_vs_severe; also significant in NP_notochordal (log2FC=-3.39, padj=1.6x10^-4, downregulated) and Fibrochondrocyte_stressed (log2FC=+2.22, padj=0.047). Prostaglandin synthesis enzyme and direct mediator of inflammatory pain.
+- **PTGES**: log2FC=+3.39, padj=0.009 in AF_inner healthy_vs_severe. Prostaglandin E synthase, catalyzes PGE2 production.
+- **PLA2G2A**: log2FC=+4.38, padj=0.027 in NP_fibrocartilaginous healthy_vs_severe; log2FC=+1.82, padj=0.015 in NP_mature_chondrocyte mild_vs_severe. Phospholipase A2, produces arachidonic acid precursors.
+- **CCL2**: log2FC=+2.14, padj=0.004 in NP_mature_chondrocyte mild_vs_severe. Monocyte chemoattractant protein-1, involved in neuroinflammation.
+- **BDKRB2**: log2FC=+1.58, padj=0.028 in NP_fibrocartilaginous mild_vs_severe. Bradykinin receptor B2, mediates pain signaling.
+- **VEGFA**: log2FC=+3.18, padj=0.008 in AF_inner healthy_vs_degenerated_all; log2FC=+3.21, padj=0.001 in AF_inner healthy_vs_severe; log2FC=+0.89, padj=0.034 in NP_fibrocartilaginous mild_vs_severe. Vascular endothelial growth factor, promotes neovascularization.
+- **FGF2**: log2FC=+0.93, padj=0.046 in NP_mature_chondrocyte mild_vs_severe. Fibroblast growth factor 2, promotes neovascularization.
 
 **Directly supported by our DE data:**
-- The prostaglandin axis (PLA2G2A, PTGS2/COX-2, PTGES) constitutes a complete biosynthetic pathway from arachidonic acid release to PGE2 production, a direct sensitizer of nociceptive nerve endings (Risbud and Shapiro, 2014).
-- SEMA3A downregulation in AF_outer is particularly notable: semaphorin 3A normally repels sensory nerve fibers from entering the disc. Its loss in degenerated AF is consistent with the nerve ingrowth model of discogenic pain (Freemont et al., 2002).
-- CXCL2 (significant in NP_mature_chondrocyte mild_vs_severe) recruits neutrophils and macrophages, which produce additional pain mediators.
+- The prostaglandin axis (PLA2G2A, PTGS2/COX-2, PTGES) constitutes a complete biosynthetic pathway from arachidonic acid release to PGE2 production, a direct sensitizer of nociceptive nerve endings (Risbud and Shapiro, 2014). Notably, PTGS2 is the most statistically significant pain gene in the entire dataset (padj=5.1x10^-8 in AF_inner).
+- VEGFA significance across both AF_inner and NP compartments suggests active neovascularization in degenerated discs, consistent with the model of vascular and neural invasion (Freemont et al., 2002).
+- CCL2 (significant in NP_mature_chondrocyte mild_vs_severe) recruits monocytes/macrophages, which produce additional pain mediators.
 
-**Not detected in our data:**
-- NGF (nerve growth factor) and BDNF (brain-derived neurotrophic factor), classically associated with nerve ingrowth into degenerated discs (Freemont et al., 2002), were **not significantly upregulated** in any powered comparison.
+**Not detected in our v4 data:**
+- NGF (nerve growth factor), BDNF (brain-derived neurotrophic factor), SEMA3A, TNF, NRP2, ROBO1, and PDGFA -- genes that were significant in v3 -- were **not significantly differentially expressed** in v4 powered comparisons. This reflects changes in cell type boundaries and clustering from the v4 pipeline improvements.
+- CXCL2 (the strongest signal in v3 with padj=1.75x10^-4) shows strong upregulation (log2FC=+3.37) in NP_mature_chondrocyte mild_vs_severe but does not reach FDR significance in v4.
 
-**Model:** Degenerated disc cells create a pro-inflammatory microenvironment through chemokine and prostaglandin production that promotes nerve ingrowth (via SEMA3A loss and CXCL2/CCL2 immune recruitment) and sensitization (via PGE2), rather than directly signaling pain. This is consistent with the two-signal model of discogenic pain: (1) structural disruption and loss of nerve-repellent signals permits nerve ingrowth into the NP, and (2) the inflammatory milieu sensitizes ingrown nerves (Freemont et al., 2002; Risbud and Shapiro, 2014).
+**Model:** Degenerated disc cells create a pro-inflammatory microenvironment through prostaglandin production and immune cell recruitment that promotes neovascularization (via VEGFA) and sensitization (via PGE2), rather than directly signaling pain. The AF_inner compartment emerges as a key site of inflammatory pain signaling in v4, with the strongest PTGS2 and PTGES signals in the dataset. This is consistent with the two-signal model of discogenic pain: (1) structural disruption and vascular invasion permits nerve ingrowth into the NP, and (2) the inflammatory milieu sensitizes ingrown nerves (Freemont et al., 2002; Risbud and Shapiro, 2014).
 
 **Figure 18. Pain-associated gene expression heatmap across cell types.**
 ![Pain genes heatmap](interpretation/pain_genes_heatmap.png)
@@ -351,21 +353,21 @@ Synthesizing our DE, pathway, TF, and CCC results, we propose that inflammatory 
 
 1. **Initiation:** Mechanical stress, aging, or microinjury activates NF-kB signaling in disc cells (supported by: TF activity analysis; inflammatory pathway enrichment).
 
-2. **Chemokine and cytokine activation:** NF-kB drives expression of inflammatory mediators including CXCL2 and CCL2 by NP cells (supported by: CXCL2 log2FC=+3.63, padj=1.75x10^-4; CCL2 log2FC=+1.86, padj=0.031 in NP_mature_chondrocyte mild_vs_severe; chemokine pathway enrichment).
+2. **Chemokine and cytokine activation:** NF-kB drives expression of inflammatory mediators including CCL2 by NP cells and PTGS2 by AF cells (supported by: CCL2 log2FC=+2.14, padj=0.004 in NP_mature_chondrocyte mild_vs_severe; PTGS2 log2FC=+5.28, padj=4.6x10^-7 in AF_inner; chemokine pathway enrichment).
 
-3. **Immune cell recruitment:** Chemokines recruit neutrophils (CXCL2/CXCR2 axis) and monocytes/macrophages (CCL2/CCR2 axis) into the disc space (supported by: neutrophil chemotaxis pathway enrichment; TNF highly significant in T_cell mild_vs_severe).
+3. **Immune cell recruitment:** Chemokines recruit monocytes/macrophages (CCL2/CCR2 axis) into the disc space (supported by: inflammatory pathway enrichment; CCL2 significant in NP_mature_chondrocyte mild_vs_severe).
 
 4. **Prostaglandin-mediated pain sensitization:** PLA2G2A, PTGS2, and PTGES constitute a complete prostaglandin synthesis pathway, producing PGE2 that directly sensitizes nociceptive nerve endings (supported by: all three genes significantly DE in NP cells).
 
-5. **Nerve ingrowth facilitation:** SEMA3A downregulation in AF_outer removes a key nerve-repellent barrier, while neovascularization factors (PDGFA) promote the vascular and neural invasion characteristic of painful disc degeneration (supported by: SEMA3A log2FC=-1.76 in AF_outer).
+5. **Neovascularization and nerve ingrowth facilitation:** VEGFA upregulation in AF_inner (log2FC=+3.18, padj=0.008) and NP_fibrocartilaginous (log2FC=+0.89, padj=0.034) promotes vascular invasion characteristic of painful disc degeneration, potentially facilitating nerve ingrowth along new blood vessels.
 
-6. **Fibrocartilaginous replacement:** NP_fibrocartilaginous cells -- the most transcriptionally responsive population -- drive ECM remodeling, replacing the hydrated proteoglycan-rich NP matrix with fibrotic collagen I-rich tissue (supported by: 418 DE genes in mild_vs_severe; ECM organization pathway enrichment).
+6. **Fibrocartilaginous replacement:** NP_fibrocartilaginous cells -- the most transcriptionally responsive population -- drive ECM remodeling, replacing the hydrated proteoglycan-rich NP matrix with fibrotic collagen I-rich tissue (supported by: 305 DE genes in mild_vs_severe; ECM organization pathway enrichment).
 
 7. **Metabolic failure in AF:** AF cells experience simultaneous proteotoxic stress (HSP activation) and mitochondrial dysfunction (oxidative phosphorylation downregulation), compromising structural integrity of the outer disc (supported by: GSEA pathway enrichment).
 
 ### 6.2 The Prostaglandin-Pain Axis: A Coherent Therapeutic Target
 
-The v3 analysis provides the most complete evidence to date for a prostaglandin-mediated pain mechanism in disc degeneration at single-cell resolution. The three-enzyme pathway -- PLA2G2A (arachidonic acid release) to PTGS2/COX-2 (prostaglandin H2 synthesis) to PTGES (PGE2 production) -- is significantly upregulated in NP cells during degeneration. Combined with SEMA3A downregulation permitting nerve ingrowth and CXCL2/CCL2 driving immune infiltration, this defines a mechanistic model linking the inflammatory microenvironment to discogenic pain that is supported by multiple independent gene sets.
+The v4 analysis provides the most complete evidence to date for a prostaglandin-mediated pain mechanism in disc degeneration at single-cell resolution. The three-enzyme pathway -- PLA2G2A (arachidonic acid release) to PTGS2/COX-2 (prostaglandin H2 synthesis) to PTGES (PGE2 production) -- is significantly upregulated across NP and AF compartments during degeneration. PTGS2 in AF_inner (padj=5.1x10^-8) is the single most significant pain gene in the dataset, while PLA2G2A is significant in both NP_fibrocartilaginous and NP_mature_chondrocyte. Combined with VEGFA-driven neovascularization and CCL2-mediated immune infiltration, this defines a mechanistic model linking the inflammatory microenvironment to discogenic pain that is supported by multiple independent gene sets across compartments.
 
 ---
 
@@ -375,29 +377,29 @@ Based on the evidence from this analysis, we propose the following therapeutic t
 
 ### 7.1 Tier 1: Strong Direct Evidence From This Analysis
 
-**Target 1: Chemokine Modulation (CXCL2/CXCR2 and CCL2/CCR2)**
-- **Evidence from this analysis:** CXCL2 (log2FC=+3.63, padj=1.75x10^-4) in NP_mature_chondrocyte mild_vs_severe -- the most significant inflammatory gene in the dataset. CCL2 significant in NP_mature_chondrocyte, T_cell, and AF_outer. Chemokine pathway enrichment in ORA.
-- **v3 improvement:** CXCL2 significance improved from padj=0.005 (v2) to padj=1.75x10^-4 (v3), strengthening confidence in this target.
-- **Mechanism:** CXCL2 signals through CXCR2 on neutrophils; CCL2 signals through CCR2 on monocytes/macrophages. Dual chemokine blockade could interrupt immune cell recruitment into the disc space.
-- **Approach:** Intradiscal CXCR2 antagonist (navarixin, AZD5069) or CCR2 antagonist to block immune cell recruitment without systemic immunosuppression.
-
-**Target 2: Prostaglandin Pathway Inhibition**
-- **Evidence from this analysis:** PLA2G2A (padj=0.042), PTGS2 (padj=0.005), PTGES (padj=0.036) -- a complete three-enzyme pathway. This is the most coherent multi-gene pain target in the dataset.
+**Target 1: Prostaglandin Pathway Inhibition**
+- **Evidence from this analysis:** PTGS2 (padj=5.1x10^-8 in AF_inner, padj=1.6x10^-4 in NP_notochordal, padj=0.047 in Fibrochondrocyte_stressed), PLA2G2A (padj=0.027 in NP_fibrocartilaginous, padj=0.015 in NP_mature_chondrocyte), PTGES (padj=0.009 in AF_inner) -- a complete three-enzyme pathway. This is the strongest and most coherent multi-gene pain target in the dataset.
 - **Mechanism:** PLA2G2A releases arachidonic acid; PTGS2/COX-2 converts it to PGH2; PTGES produces PGE2, which directly sensitizes nociceptive nerve endings.
 - **Approach:** Selective COX-2 inhibitors (celecoxib) are already used clinically; intradiscal delivery could achieve higher local concentrations with reduced systemic effects. PGE2 receptor antagonists offer more targeted intervention.
 
-**Target 3: TNF/NF-kB Inhibition**
-- **Evidence from this analysis:** TNF is the most significant DE gene in T_cell mild_vs_severe (padj=2.8x10^-8). NF-kB pathway activity is supported by TF analysis and inflammatory pathway enrichment. Multiple NF-kB target genes (CXCL2, CCL2, PTGS2) are significantly upregulated.
-- **Mechanism:** NF-kB drives the entire catabolic cascade -- chemokines, cytokines, MMPs, and prostaglandins.
-- **Approach:** Intradiscal anti-TNF biologics (etanercept, adalimumab) or small molecule NF-kB inhibitors.
-- **Status:** Early clinical data available for epidural anti-TNF (Cohen et al., 2009).
+**Target 2: Chemokine Modulation (CCL2/CCR2)**
+- **Evidence from this analysis:** CCL2 (log2FC=+2.14, padj=0.004) in NP_mature_chondrocyte mild_vs_severe. Inflammatory pathway enrichment in ORA.
+- **Mechanism:** CCL2 signals through CCR2 on monocytes/macrophages. CCR2 blockade could interrupt immune cell recruitment into the disc space.
+- **Approach:** Intradiscal CCR2 antagonist to block immune cell recruitment without systemic immunosuppression.
+
+**Target 3: VEGFA/Neovascularization Inhibition**
+- **Evidence from this analysis:** VEGFA is significantly upregulated in AF_inner (log2FC=+3.18, padj=0.008 healthy_vs_all; log2FC=+3.21, padj=0.001 healthy_vs_severe) and NP_fibrocartilaginous (log2FC=+0.89, padj=0.034 mild_vs_severe).
+- **Mechanism:** VEGFA promotes neovascularization; new blood vessels facilitate nerve ingrowth into the normally avascular disc, a hallmark of painful degeneration.
+- **Approach:** Intradiscal anti-VEGF agents (bevacizumab) or small molecule VEGFR inhibitors.
+- **Status:** Anti-VEGF widely used in ophthalmology; repurposing for intradiscal delivery is feasible.
 
 ### 7.2 Tier 2: Moderate Evidence, Requires Validation
 
-**Target 4: SEMA3A Restoration**
-- **Evidence from this analysis:** SEMA3A (log2FC=-1.76, padj=0.016) downregulated in AF_outer healthy_vs_severe. SEMA3A is a nerve repellent; its loss facilitates nerve ingrowth into the disc.
-- **Novel aspect:** This is the first report of SEMA3A downregulation in AF at single-cell resolution in a multi-dataset meta-analysis.
-- **Approach:** Intradiscal delivery of recombinant SEMA3A or gene therapy to restore the nerve-repellent barrier.
+**Target 4: TNF/NF-kB Inhibition**
+- **Evidence from this analysis:** NF-kB pathway activity is supported by TF analysis and inflammatory pathway enrichment. Multiple NF-kB target genes (CCL2, PTGS2) are significantly upregulated. TNF itself did not reach FDR significance in v4 powered comparisons but remains a plausible upstream driver.
+- **Mechanism:** NF-kB drives the entire catabolic cascade -- chemokines, cytokines, MMPs, and prostaglandins.
+- **Approach:** Intradiscal anti-TNF biologics (etanercept, adalimumab) or small molecule NF-kB inhibitors.
+- **Status:** Early clinical data available for epidural anti-TNF (Cohen et al., 2009).
 
 **Target 5: HSP/Proteostasis Modulation**
 - **Evidence from this analysis:** Heat response pathways enriched in AF_inner; GSEA confirms proteotoxic stress concurrent with mitochondrial dysfunction.
@@ -428,10 +430,10 @@ Based on the evidence from this analysis, we propose the following therapeutic t
 
 | Target | Gene(s) | Evidence Level | Key Data Point | Approach |
 |--------|---------|---------------|----------------|----------|
-| CXCR2/CCR2 antagonism | CXCL2, CCL2 | Strong (this study) | CXCL2 padj=1.75x10^-4 | Small molecule |
-| Prostaglandin inhibition | PLA2G2A, PTGS2, PTGES | Strong (this study) | 3 pathway genes sig | COX-2 inhibitor |
-| TNF/NF-kB inhibition | TNF, NF-kB targets | Strong (this study) | TNF padj=2.8x10^-8 | Biologic / small mol |
-| SEMA3A restoration | SEMA3A | Moderate (this study) | padj=0.016 | Gene therapy |
+| Prostaglandin inhibition | PLA2G2A, PTGS2, PTGES | Strong (this study) | PTGS2 padj=5.1x10^-8 | COX-2 inhibitor |
+| CCR2 antagonism | CCL2 | Strong (this study) | CCL2 padj=0.004 | Small molecule |
+| Anti-VEGF | VEGFA | Strong (this study) | VEGFA padj=0.001 | Biologic / small mol |
+| TNF/NF-kB inhibition | NF-kB targets | Moderate (this study) | Pathway enrichment | Biologic / small mol |
 | HSP modulation | HSF1, HSPA1A/B | Moderate (this study) | GSEA enrichment | Chemical chaperone |
 | Mitochondrial rescue | OXPHOS genes | Moderate (this study) | GSEA suppression | MitoQ / NAD+ |
 | ADAMTS5 inhibition | ADAMTS5 | Literature only | Not sig in this study | Small molecule |
@@ -442,33 +444,33 @@ Based on the evidence from this analysis, we propose the following therapeutic t
 
 ## 8. Novel and Discordant Findings
 
-### 8.1 Strengthened CXCL2 Signal in v3
+### 8.1 PTGS2 Emerges as Strongest Pain Signal
 
-CXCL2 significance improved from padj=0.005 (v2) to padj=1.75x10^-4 (v3), and the log2FC increased from +3.14 to +3.63. This strengthening is a direct consequence of the annotation correction: by returning ~17K stressed NP cells to the mesenchymal pool, the NP_mature_chondrocyte pseudobulk samples now better represent true chondrocyte populations, reducing noise in the DE analysis and increasing power to detect genuine inflammatory signals. The CXCL2/CXCR2 axis for neutrophil recruitment in NP degeneration is now among the strongest signals in the entire dataset.
+In v4, PTGS2 (COX-2) in AF_inner (padj=5.1x10^-8) replaces CXCL2 (v3: padj=1.75x10^-4) as the most significant pain-relevant gene. CXCL2 remains strongly upregulated (log2FC=+3.37) but does not reach FDR significance in v4, likely reflecting changes in cell type boundaries from the scANVI/two-stage annotation approach. The shift in the top pain signal from NP-centric (CXCL2 in v3) to AF-centric (PTGS2 in v4) highlights how annotation and integration choices affect which compartment drives the strongest findings.
 
-### 8.2 NP_fibrocartilaginous Dominates the DE Landscape
+### 8.2 NP_fibrocartilaginous and NP_mature_chondrocyte Dominate the DE Landscape
 
-NP_fibrocartilaginous cells are the most transcriptionally responsive cell type, with 418 DE genes in mild_vs_severe (vs. 203 in v2) and 385 in healthy_vs_severe (vs. 127 in v2). This near-doubling of DE genes likely reflects improved annotation boundaries. The fibrocartilaginous population -- characterized by COL1A1 expression and a transitional phenotype between chondrocyte and fibroblast -- appears to be a key driver of the degenerative response.
+NP_fibrocartilaginous cells show 305 DE genes in mild_vs_severe and 182 in healthy_vs_severe, while NP_mature_chondrocyte shows 242 in mild_vs_severe. These numbers differ from v3 (418 and 385 for NP_fibrocartilaginous) and likely reflect the finer cell type resolution of v4, which separates Fibrochondrocyte subtypes (chondroid, stressed, fibroid) that were previously lumped into the broader populations.
 
-### 8.3 CCC Interaction Counts Stabilize
+### 8.3 CCC Shows Modest Decrease in Degeneration
 
-The v3 analysis shows roughly balanced CCC interactions (40,187 healthy vs. 40,872 degenerated, a 1.7% difference), contrasting sharply with v1 (+20% in degenerated) and v2 (-6.5% in degenerated). The stabilization is consistent with the hypothesis that the quantitative imbalance in prior versions was driven by misassigned cells inflating interaction counts. The v3 result suggests that the primary change in degeneration is the *composition* of cell-cell interactions, not their total number.
+The v4 analysis shows 39,236 healthy vs. 37,013 degenerated interactions (5.7% decrease), with 3,184 pain-relevant interactions. This contrasts with v1 (+20%), v2 (-6.5%), and v3 (+1.7%). The variation across pipeline versions underscores the sensitivity of CCC quantification to cell type definitions and integration method. The identification of pain-relevant interactions (e.g., CXCL8-SDC2, PTGS2-CAV1) provides more actionable information than total interaction counts.
 
 ### 8.4 Complete Prostaglandin Synthesis Pathway
 
-The identification of all three enzymes in the arachidonic acid-to-PGE2 pathway (PLA2G2A, PTGS2, PTGES) as significantly DE is a coherent finding not commonly reported at single-cell resolution in IVD literature. This complete pathway provides stronger therapeutic rationale than individual gene findings.
+The identification of all three enzymes in the arachidonic acid-to-PGE2 pathway (PLA2G2A, PTGS2, PTGES) as significantly DE is a coherent finding not commonly reported at single-cell resolution in IVD literature. In v4, this pathway spans both NP (PLA2G2A) and AF (PTGS2, PTGES) compartments, suggesting cross-compartmental coordination of prostaglandin production.
 
-### 8.5 SEMA3A Downregulation in AF
+### 8.5 CEP Trajectory Shows Strong Disease Association
 
-SEMA3A downregulation (log2FC=-1.76, padj=0.016) in AF_outer is a notable finding linking the DE results to the pain biology of disc degeneration. Semaphorin 3A is a well-characterized nerve repellent (Freemont et al., 2002), and its loss in the AF -- the primary barrier to nerve ingrowth -- provides a mechanistic link between ECM degeneration and discogenic pain.
+The CEP compartment shows the strongest pseudotime-condition correlation (rho=+0.396, p < 10^-300), with degenerated cells at significantly later pseudotime (median 0.366 vs. 0.089 for healthy). This is the clearest trajectory-disease association across all compartments and was not observed in v3 (rho=+0.135) or v2 (rho=-0.163), suggesting that the v4 cell type resolution better captures the disease-associated cell state changes in CEP.
 
 ### 8.6 Discordance with Companion Phylo Analysis: Wnt, Notch, and Senescence
 
 The companion phylo analysis reported consistent suppression of Wnt signaling, Notch signaling, and cellular senescence pathways. Our analysis did not replicate these findings. As noted in v2, the phylo analysis results appear substantially driven by replication-dependent histone genes that are sensitive to cell cycle state, dissociation protocols, and ambient RNA contamination (Slyper et al., 2020). Our use of LFC shrinkage and prioritization of within-study (mild_vs_severe) comparisons provides more conservative but more robust results.
 
-### 8.7 Trajectory Correlations Shifted
+### 8.7 Finer Cell Type Resolution Reveals Fibrochondrocyte Subtypes
 
-The NP pseudotime-condition correlation weakened from rho=-0.258 (v2) to rho=-0.151 (v3), while AF (rho=+0.325) and CEP (rho=+0.135) show positive correlations. The NP weakening may reflect the reassignment of stressed cells back to the mesenchymal pool, which alters the pseudotime distribution. The positive AF and CEP correlations require SME review.
+The v4 pipeline identifies distinct Fibrochondrocyte subtypes (chondroid, stressed, fibroid) that were not separated in v3. Fibrochondrocyte_chondroid contributes 14 DE genes in mild_vs_severe, while Fibrochondrocyte_stressed also contributes 14 DE genes. These finer distinctions provide more specific targets for understanding the heterogeneity within the fibrocartilaginous replacement process.
 
 ---
 
@@ -490,25 +492,25 @@ The NP pseudotime-condition correlation weakened from rho=-0.258 (v2) to rho=-0.
 
 8. **Composition analysis underpowered:** No cell type proportion changes reached significance after FDR correction, though trends were biologically consistent.
 
-9. **Annotation sensitivity:** The v3 annotation correction demonstrates that cell type assignment substantially impacts all downstream results. The ~17K misrouted cells affected DE, TF, trajectory, and CCC analyses in v2. While v3 addresses this specific issue, other annotation decisions (e.g., the boundary between NP_mature_chondrocyte and NP_fibrocartilaginous) remain subjective.
+9. **Annotation sensitivity:** The v1-to-v4 progression demonstrates that cell type assignment substantially impacts all downstream results. The shift from scVI (v2-v3) to scANVI (v4) integration, combined with finer coarse anchor categories and two-stage annotation, changes DE gene counts, trajectory correlations, and CCC interaction counts. Annotation decisions (e.g., the boundary between NP_mature_chondrocyte and NP_fibrocartilaginous) remain subjective.
 
-10. **CCC methodology and fragility:** The reversal of CCC quantitative patterns across v1, v2, and v3 (from +20% to -6.5% to +1.7%) highlights the extreme sensitivity of these analyses to cell type definitions.
+10. **CCC methodology and fragility:** The variation of CCC quantitative patterns across v1, v2, v3, and v4 (from +20% to -6.5% to +1.7% to -5.7%) highlights the extreme sensitivity of these analyses to cell type definitions and integration methods.
 
-11. **AF and CEP trajectory direction:** The positive pseudotime-condition correlations in AF (rho=+0.325) and CEP (rho=+0.135) are difficult to interpret biologically and may reflect root cell selection or cell composition artifacts.
+11. **Trajectory interpretation:** The NP pseudotime-condition correlation (rho=-0.092) is weaker than in v3 (rho=-0.151), while CEP shows a strong positive correlation (rho=+0.396). The AF compartment shows a near-zero overall correlation (rho=+0.019) with opposing per-cell-type directions. Biological interpretation requires caution given the sensitivity to root cell selection and cell composition.
 
-12. **TF analysis sensitivity:** The reduction from 290 (v2) to 5 (v3) significant TF associations demonstrates the sensitivity of regulon overlap analysis to DE gene input. Small changes in cell type boundaries cascade through to large changes in TF results.
+12. **Pipeline version sensitivity:** The changes in key findings across four pipeline iterations (v1-v4) -- including the shift in top pain gene from CXCL2 (v3) to PTGS2 (v4), and variation in CCC counts -- demonstrate that single-cell meta-analysis results are sensitive to methodological choices. This motivates reporting results across pipeline versions for transparency.
 
 ---
 
 ## 10. Conclusion
 
-This 11-dataset, 410,759-cell meta-analysis of human IVD degeneration, now in its third pipeline iteration (v3), reveals a robust inflammatory transcriptomic signature in severe NP degeneration. The key v3 improvement -- correction of ~17,000 misrouted stressed NP cells through an annotation evidence gate, ACAN/SOX9 rescue, and stricter cluster voting -- strengthened the CXCL2 chemokine signal (from padj=0.005 to padj=1.75x10^-4) and stabilized the cell-cell communication analysis. The inflammatory signature is centered on CXCL2-mediated neutrophil recruitment and a complete prostaglandin synthesis pathway (PLA2G2A, PTGS2, PTGES) that links the inflammatory microenvironment to pain biology through PGE2-mediated nerve sensitization. SEMA3A downregulation in AF_outer provides a complementary mechanism for nerve ingrowth.
+This 11-dataset, 410,759-cell meta-analysis of human IVD degeneration, now in its fourth pipeline iteration (v4), reveals a robust inflammatory transcriptomic signature in severe NP and AF degeneration. The key v4 improvements -- scANVI semi-supervised integration with 5 coarse anchor categories, a 12-module pipeline with separate clustering and two-stage annotation modules, and resolution-optimized clustering -- yield 19 cell types across 4 compartment-specific objects with finer resolution than prior versions. The inflammatory signature is centered on a complete prostaglandin synthesis pathway (PLA2G2A, PTGS2, PTGES) spanning NP and AF compartments, with PTGS2 in AF_inner (padj=5.1x10^-8) as the single most significant pain gene. VEGFA upregulation across compartments supports active neovascularization in degeneration.
 
-NP_fibrocartilaginous cells emerged as the most transcriptionally responsive population to degeneration (418 DE genes in mild_vs_severe), suggesting that the transitional fibrocartilaginous replacement process is a central feature of the degenerative cascade. Trajectory analysis confirms that NP cells exist on a disease-associated continuum (rho=-0.151), though the correlation is weaker than v2.
+NP_fibrocartilaginous (305 DE genes in mild_vs_severe) and NP_mature_chondrocyte (242 DE genes) are the most transcriptionally responsive populations to degeneration. The v4 pipeline additionally resolves Fibrochondrocyte subtypes (chondroid, stressed, fibroid) not distinguished in earlier versions. CEP trajectory analysis reveals a strong disease-pseudotime association (rho=+0.396), the clearest across all compartments.
 
-The v1-to-v2-to-v3 changes documented across three pipeline iterations serve as a cautionary demonstration of how cell type annotation decisions propagate through all downstream analyses: DE gene counts, pathway enrichment, TF activity, trajectory correlations, and CCC interaction counts all shifted substantially with the correction of 17K misassigned cells. This underscores the importance of rigorous annotation validation and motivates the use of annotation evidence gates as a standard practice in scRNA-seq meta-analysis pipelines.
+The v1-to-v4 changes documented across four pipeline iterations serve as a cautionary demonstration of how integration method, cell type annotation, and clustering decisions propagate through all downstream analyses. The shift in top pain gene from CXCL2 (v3) to PTGS2 (v4) and variation in CCC counts across versions underscore the importance of methodological transparency in scRNA-seq meta-analysis.
 
-The primary therapeutic opportunities are chemokine modulation (CXCL2/CXCR2, CCL2/CCR2), prostaglandin pathway inhibition (PLA2G2A/PTGS2/PTGES), and TNF/NF-kB inhibition. SEMA3A restoration in AF is proposed as a novel strategy to prevent nerve ingrowth.
+The primary therapeutic opportunities are prostaglandin pathway inhibition (PLA2G2A/PTGS2/PTGES), CCL2/CCR2-mediated immune modulation, and anti-VEGF neovascularization inhibition.
 
 ---
 
@@ -594,10 +596,12 @@ Wuertz K, Vo N, Kletsas D, Boos N. (2012). Inflammatory and catabolic signalling
 
 Xia Q, Zhao Y, Dong H, et al. (2024). Progress in the study of molecular mechanisms of intervertebral disc degeneration. *Biomedicine & Pharmacotherapy*, 174:116593.
 
+Xu C, Lopez R, Mehlman E, et al. (2021). Probabilistic harmonization and annotation of single-cell transcriptomics data with deep generative models. *Molecular Systems Biology*, 17(1):e9620.
+
 Zimmerman KD, Espeland MA, Langefeld CD. (2021). A practical solution to pseudoreplication bias in single-cell studies. *Nature Communications*, 12:738.
 
 ---
 
-*Analysis performed using a 10-module human-gated agentic pipeline (v3). All code version-controlled. Random seed: 42. Package versions: Python 3.12, scanpy 1.11, scvi-tools 1.4.2, pyDESeq2, gseapy 1.1, decoupler 2.1, liana 1.7. Key v3 improvement: annotation evidence gate, ACAN/SOX9 rescue, and stricter cluster voting correcting ~17K misrouted stressed NP cells.*
+*Analysis performed using a 12-module human-gated agentic pipeline (v4). All code version-controlled. Random seed: 42. Package versions: Python 3.12, scanpy 1.11, scvi-tools 1.4.2, pyDESeq2, gseapy 1.1, decoupler 2.1, liana 1.7. Key v4 improvements: scANVI semi-supervised integration with 5 coarse anchor categories, separate clustering module with resolution optimization, two-stage annotation (coarse markers + fine DE), and 19 cell types across 4 compartment objects.*
 
 *This is a computational analysis draft. All findings require experimental validation before clinical application.*

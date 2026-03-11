@@ -2,34 +2,58 @@
 
 ## Current Status
 
-**Pipeline v4 ready.** Scripts restructured from 10-module to 12-module pipeline. Awaiting execution of Module 04+.
+**Pipeline v4 COMPLETE.** All 12 modules executed successfully. scANVI semi-supervised integration with 5 coarse anchor categories.
 
 **Pipeline version:** v4 (spec restructuring + scANVI integration). See `results/THREE_VERSION_SUMMARY.md` for v1-v3 history.
 
 ## Active Step
 
-**Module 04: Coarse Cell Classification — READY TO RUN**
-
-Scripts 04-12 have been updated to match the restructured specs. Modules 01-03 outputs are unchanged from v3.
+**All modules complete.** Awaiting human checkpoint review.
 
 ---
 
-## Pipeline Summary (v4 — planned)
+## Pipeline Summary (v4 — complete)
 
 | Module | Status | Script | Description |
 |--------|--------|--------|-------------|
 | 01: Dataset Discovery | Complete (v1) | 01_dataset_download.py | 11 datasets, ~410K cells, 71 samples |
 | 02: Metadata Harmonization | Complete (v1) | 02_metadata_harmonization.py | Condition mappings finalized |
 | 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 410,759 cells post-QC across 11 datasets |
-| 04: Coarse Classification | Ready | 04_annotation.py | 5 anchor categories + Unknown for scANVI |
-| 05: Integration | Ready | 05_integration.py | Tiered scANVI (semi-supervised) integration |
-| 06: Clustering | Ready | 06_clustering.py | Leiden with resolution optimization |
-| 07: Post-Integration Annotation | Ready | 07_annotation.py | Two-stage: coarse markers → fine DE |
-| 08: Differential Analysis | Ready | 08_differential.py | Composition + pseudobulk DE |
-| 09: Biological Interpretation | Ready | 09_interpretation.py | Pathways, GRN, pain genes |
-| 10: Trajectory Analysis | Ready | 10_trajectory.py | PAGA + DPT pseudotime |
-| 11: Cell-Cell Communication | Ready | 11_communication.py | LIANA ligand-receptor |
-| 12: Final Reporting | Ready | 12_reporting.py | Comprehensive report + supplements |
+| 04: Coarse Classification | Complete (v4) | 04_annotation.py | 5 anchor categories + Unknown for scANVI |
+| 05: Integration | Complete (v4) | 05_integration.py | Tiered scANVI, checkpoint resume support |
+| 06: Clustering | Complete (v4) | 06_clustering.py | Leiden with resolution optimization |
+| 07: Post-Integration Annotation | Complete (v4) | 07_annotation.py | Two-stage: coarse markers → fine DE |
+| 08: Differential Analysis | Complete (v4) | 08_differential.py | 23 powered comparisons, 925+ sig genes |
+| 09: Biological Interpretation | Complete (v4) | 09_interpretation.py | 1,772 enriched pathways, 7 pain genes |
+| 10: Trajectory Analysis | Complete (v4) | 10_trajectory.py | PAGA + DPT pseudotime, 3 compartments |
+| 11: Cell-Cell Communication | Complete (v4) | 11_communication.py | 39K healthy vs 37K degenerated interactions |
+| 12: Final Reporting | Complete (v4) | 12_reporting.py | Report + 27 supplementary tables |
+
+### v4 Key Results
+
+**Cell type annotations (Module 07):**
+- NP: 10 cell types (NP_mature_chondrocyte, NP_fibrocartilaginous, Fibrochondrocyte_chondroid, NP_notochordal, ...)
+- AF: 2 cell types (AF_outer, AF_inner)
+- CEP: 3 cell types (EP_hyaline, Fibroblast_like, Fibrochondrocyte_chondroid)
+- all_cells: 19 cell types total
+
+**Clustering (Module 06):**
+- NP: 56 mesenchymal (res=1.0) + 6 non-mesenchymal (res=0.5) = 62 clusters
+- AF: 14 mesenchymal (res=0.2) = 14 clusters (56 non-mesenchymal cells, too few for tier)
+- CEP: 9 mesenchymal (res=0.2) = 9 clusters (89 non-mesenchymal cells, too few for tier)
+- all_cells: 62 mesenchymal (res=1.0) + 8 non-mesenchymal (res=0.7) = 70 clusters
+
+**Differential expression (Module 08):**
+- 23 powered comparisons across cell types
+- Key: NP_fibrocartilaginous mild_vs_severe: 305 sig genes; NP_mature_chondrocyte mild_vs_severe: 242 sig genes
+
+**Trajectory (Module 10):**
+- CEP: rho=0.396 (degenerated at later pseudotime)
+- Trajectory-associated genes found in all 3 compartments
+
+**Cell-cell communication (Module 11):**
+- Healthy: 39,236 interactions; Degenerated: 37,013 (fewer in degeneration)
+- 3,184 pain-relevant interactions flagged
 
 ### v4 Key Changes from v3
 
@@ -112,13 +136,18 @@ Workflow: train scVI (max_epochs=200) → initialize scANVI from scVI → train 
 
 ## Version History
 
-### v4 (2026-03-11): Spec restructuring + scANVI
+### v4 (2026-03-11): Spec restructuring + scANVI — COMPLETE
 - Pipeline restructured from 10 to 12 modules (clustering and annotation split from integration)
 - Module 04: 5 coarse anchor categories replace binary classification
-- Module 05: scANVI (semi-supervised) replaces scVI (unsupervised)
-- Module 07: Two-stage post-integration annotation (coarse → fine)
-- Modules 01-03 unchanged
-- Scripts updated, ready for execution
+- Module 05: scANVI (semi-supervised) replaces scVI (unsupervised); checkpoint resume added
+- Module 06: Leiden clustering with resolution optimization; adaptive resolution count for large datasets
+- Module 07: Two-stage post-integration annotation (coarse → fine); 10 NP types, 2 AF types, 3 CEP types
+- Module 08: 23 powered DE comparisons; 925+ significant genes
+- Module 09: 1,772 enriched pathways; 7 pain-related DE genes
+- Module 10: Pseudotime in NP/AF/CEP; CEP rho=0.396
+- Module 11: 39K healthy vs 37K degenerated CCC interactions
+- Module 12: Final report + 27 supplementary tables
+- Modules 01-03 unchanged from v1
 
 ### v3 (2026-03-10): Annotation fix
 - Three fixes to Module 04 classification (evidence gate, ACAN/SOX9 rescue, 85% voting)

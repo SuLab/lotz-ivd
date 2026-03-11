@@ -1,17 +1,7 @@
 cluster	n_cells	de_novo_label	celltypist_majority	celltypist_agreement_pct	concordant
-8	1295	Pericyte_SMC	Fibroblasts	99.6	False
-3	2139	Macrophage	Endothelial cells	99.9	False
-1	3297	T_cell	Tcm/Naive helper T cells	30.2	True
-10	1136	T_cell	Macrophages	63.9	False
-9	1210	unassigned	Classical monocytes	99.6	False
-5	1648	T_cell	Classical monocytes	55.0	False
-13	269	Macrophage	Fibroblasts	82.5	False
-12	388	B_cell	Naive B cells	99.7	True
-7	1342	Macrophage	Macrophages	98.8	True
-0	4952	unassigned	Classical monocytes	100.0	False
-4	1929	unassigned	Classical monocytes	99.2	False
-6	1483	unassigned	Classical monocytes	99.7	False
-2	2633	unassigned	Classical monocytes	88.2	False
-14	192	B_cell	Plasma cells	100.0	True
-11	414	B_cell	Small pre-B cells	40.8	True
-15	93	T_cell	pDC	100.0	False
+0	917	unassigned	Endothelial cells	100.0	False
+1	859	unassigned	Classical monocytes	100.0	False
+2	638	unassigned	Classical monocytes	100.0	False
+3	610	unassigned	CD16+ NK cells	37.0	False
+4	325	Macrophage_M2	Macrophages	85.5	True
+5	60	Pericyte_SMC	Fibroblasts	96.7	False

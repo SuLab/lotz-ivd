@@ -354,8 +354,8 @@ def run_scanvi(adata, batch_key='study', labels_key='coarse_label',
 
     # Ensure unlabeled_category is used for cells without coarse_label
     if labels_key in adata.obs.columns:
+        adata.obs[labels_key] = adata.obs[labels_key].astype(str).replace('nan', unlabeled_category)
         adata.obs[labels_key] = adata.obs[labels_key].fillna(unlabeled_category)
-        adata.obs[labels_key] = adata.obs[labels_key].astype(str)
     else:
         adata.obs[labels_key] = unlabeled_category
 
@@ -363,6 +363,31 @@ def run_scanvi(adata, batch_key='study', labels_key='coarse_label',
     print(f"    Label distribution:")
     for lbl, cnt in label_counts.items():
         print(f"      {lbl}: {cnt:,}")
+
+    embedding_key = f'X_scanvi_{label}'
+
+    # ── Check for saved scANVI model (checkpoint resume) ─────────────────
+    if model_dir is not None:
+        scanvi_save_path = model_dir / f"scanvi_{label}"
+        if scanvi_save_path.exists():
+            print(f"  Loading saved scANVI model from {scanvi_save_path}...")
+            try:
+                scvi_module.model.SCANVI.setup_anndata(
+                    adata, layer='counts', batch_key=batch_key,
+                    labels_key=labels_key, unlabeled_category=unlabeled_category,
+                )
+                scanvi_model = scvi_module.model.SCANVI.load(
+                    str(scanvi_save_path), adata=adata,
+                )
+                adata.obsm[embedding_key] = scanvi_model.get_latent_representation()
+                print(f"    Loaded! Latent representation stored in obsm['{embedding_key}']")
+                sc.pp.neighbors(adata, use_rep=embedding_key)
+                sc.tl.umap(adata)
+                adata.obsm[f'X_umap_scanvi_{label}'] = adata.obsm['X_umap'].copy()
+                return scanvi_model, embedding_key
+            except Exception as e:
+                print(f"    Failed to load saved model: {e}")
+                print(f"    Retraining from scratch...")
 
     # ── Step 1: Train scVI (unsupervised base) ────────────────────────────
     print(f"  Step 1: Training scVI base model (max_epochs={scvi_max_epochs})...")
@@ -411,7 +436,6 @@ def run_scanvi(adata, batch_key='study', labels_key='coarse_label',
     print(f"    scANVI complete: {scanvi_epochs} epochs")
 
     # Extract latent representation
-    embedding_key = f'X_scanvi_{label}'
     adata.obsm[embedding_key] = scanvi_model.get_latent_representation()
     print(f"    Latent representation stored in obsm['{embedding_key}']")
 
