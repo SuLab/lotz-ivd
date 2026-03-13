@@ -10,9 +10,11 @@
 This report provides a detailed, decision-by-decision comparison of the two single-cell RNA-seq analysis workflows under consideration for the IVD atlas project:
 
 - **Workflow A** — Hannah's validated R/Seurat workflow (`single_nuclei_r/`), developed for single-nuclei synovium analysis
-- **Workflow B** — The current IVD pipeline (`scripts/03_preprocessing.py`, `scripts/05_integration.py`), built in Python/Scanpy with scVI integration
+- **Workflow B** — The current IVD pipeline (v4, completed 2026-03-11), built in Python/Scanpy with scANVI semi-supervised integration across a 12-module architecture
 
-The goal is to evaluate each methodological choice on its merits, identify where one approach is clearly superior, where it's a toss-up, and where context matters. We explicitly aim to avoid blindly adopting either workflow.
+The IVD pipeline has gone through 4 iterations (v1–v4). The current v4 uses scANVI (semi-supervised) integration with 5 coarse anchor labels, adaptive resolution-optimized clustering, and two-stage annotation — resolving 19 cell types across 4 integrated objects (NP, AF, CEP, all-cells). Key findings (e.g., PTGS2 in AF inner cells, CXCL2 in fibrocartilaginous NP) have been stable across all four versions.
+
+The goal of this report is to evaluate each methodological choice on its merits, identify where one approach is clearly superior, where it's a toss-up, and where context matters. We explicitly aim to avoid blindly adopting either workflow.
 
 ---
 
@@ -53,7 +55,7 @@ Library-size normalization followed by log(x+1) transform. The standard scanpy a
 - Simple, fast, well-understood
 - Language-agnostic (works identically in any framework)
 - Does not distort the data in unexpected ways — what you see is what you get
-- For scVI integration (which models raw counts directly), the normalization of .X is only used for HVG selection and visualization — the integration model uses `.layers['counts']` anyway
+- For scANVI integration (which models raw counts directly), the normalization of .X is only used for HVG selection and visualization — the integration model uses `.layers['counts']` anyway
 
 **Disadvantages:**
 - log-normalization introduces known biases: it inflates variance of lowly-detected genes and compresses variance of highly-expressed genes
@@ -65,7 +67,7 @@ Library-size normalization followed by log(x+1) transform. The standard scanpy a
 
 **SCTransform is the better normalization method in general.** The statistical arguments are well-established. However, the practical impact depends on what happens downstream:
 
-- **If integration uses raw counts (scVI):** The normalization of `.X` matters primarily for HVG selection, PCA visualization, and marker gene testing. scVI re-learns the generative model from raw counts regardless. The impact of normalization choice is attenuated.
+- **If integration uses raw counts (scANVI/scVI):** The normalization of `.X` matters primarily for HVG selection, PCA visualization, and marker gene testing. scANVI re-learns the generative model from raw counts regardless. The impact of normalization choice is attenuated.
 - **If integration uses CCA on normalized data (Seurat):** The normalization directly feeds into the integration. Here, SCTransform makes a much larger difference.
 - **If the downstream analysis stays in R/Seurat:** SCTransform is clearly preferred.
 
@@ -73,7 +75,7 @@ Library-size normalization followed by log(x+1) transform. The standard scanpy a
 
 ---
 
-## Decision 2: Integration Method — Seurat CCA vs. scVI
+## Decision 2: Integration Method — Seurat CCA vs. scANVI
 
 ### Workflow A (Hannah): Seurat CCA with SCT
 
@@ -103,54 +105,66 @@ Canonical Correlation Analysis identifies shared sources of variation across dat
 - Does not explicitly model platform-specific effects (10x vs. BD Rhapsody vs. Singleron) — these are treated the same as any batch
 - Creates a "corrected" expression matrix that is a mathematical construction, not real expression values. Using this for DE analysis is inappropriate (Seurat docs themselves warn against this)
 
-### Workflow B (Current): scVI
+### Workflow B (Current v4): scANVI (semi-supervised)
 
 ```python
+# Step 1: Train scVI base model (unsupervised)
 scvi.model.SCVI.setup_anndata(adata, layer='counts', batch_key='study')
-model = scvi.model.SCVI(adata, n_latent=20, dispersion='gene-batch', gene_likelihood='nb')
-model.train(max_epochs=200, early_stopping=True)
-embedding = model.get_latent_representation()
+base_model = scvi.model.SCVI(adata, n_latent=20, dispersion='gene-batch', gene_likelihood='nb')
+base_model.train(max_epochs=200, early_stopping=True)
+
+# Step 2: Initialize scANVI from scVI, using coarse anchor labels
+scanvi_model = scvi.model.SCANVI.from_scvi_model(base_model, labels_key='coarse_label',
+                                                   unlabeled_category='Unknown')
+scanvi_model.train(max_epochs=50, early_stopping=True)
+embedding = scanvi_model.get_latent_representation()
 ```
 
-A variational autoencoder that learns a latent representation of each cell while explicitly modeling batch effects and the count distribution.
+A two-stage approach: first train an unsupervised variational autoencoder (scVI) to learn a base latent representation of each cell while explicitly modeling batch effects and count distributions, then initialize scANVI which refines the latent space using 5 coarse biological anchor labels (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) while leaving "Unknown" cells free to be positioned by transcriptomic similarity.
+
+**Important context:** The pipeline evolved through 4 versions — v1 benchmarked 4 integration methods (scVI, scANVI, Harmony, BBKNN), v2 simplified to scVI-only, v3 fixed annotation issues, and v4 implemented the full scANVI semi-supervised approach with coarse anchors from a dedicated classification module (Module 04). The current v4 has been run end-to-end, producing 19 resolved cell types and 23 powered DE comparisons.
 
 **Advantages:**
 - Models raw counts directly with a proper count distribution (negative binomial) — does not require normalized data as input
 - Explicitly models batch effects as a covariate, separately from biological variation
 - `dispersion='gene-batch'` allows different technical noise per gene per batch — ideal for multi-platform data (10x, BD Rhapsody, Singleron)
+- **Semi-supervised**: scANVI uses coarse anchor labels to guide integration, conceptually similar to CCA's anchor approach but in a probabilistic framework. This constrains the latent space with biological priors without imposing fine-grained cell type identity
 - Scales well to large datasets (GPU acceleration available)
 - Produces a probabilistic generative model that can be used for imputation, differential expression, and other downstream tasks
-- scANVI extension (in the spec, not yet implemented) can use semi-supervised labels to guide integration
-- Recent benchmarks (Luecken et al. 2022) rank scVI among the top methods for atlas-level integration
+- Recent benchmarks (Luecken et al. 2022) rank scVI/scANVI among the top methods for atlas-level integration
+- **Already validated on IVD data**: v4 results show 19 cell types resolved, key findings stable across 4 pipeline versions, and 246 TF-activity associations recovered (vs. 5 in v3 with unsupervised scVI)
 
 **Disadvantages:**
-- Black-box latent space — harder to interpret what the 20 dimensions represent
+- Latent space is harder to interpret than CCA dimensions (though the semi-supervised anchors partially address this)
 - Sensitive to hyperparameters (n_latent, n_epochs, learning rate, batch_size). Poor choices can lead to underfitting or overfitting
 - Requires more computational resources (GPU recommended)
 - Less mature ecosystem for post-integration analysis compared to Seurat
 - The latent representation is not an expression matrix — cannot be used directly for gene-level analysis without going back to the decoder
 - Reproducibility can be an issue (different random seeds → somewhat different embeddings)
-- Training stability: model can sometimes fail to converge or produce degenerate solutions
+- Quality of integration depends on the quality of the coarse anchor labels from the upstream classification step
 
 ### Verdict
 
-**This is the most consequential choice and genuinely a toss-up — context matters.**
+**This is the most consequential choice, and both approaches have genuine strengths in different contexts.**
 
 **Arguments for CCA (Workflow A):**
 - More transparent and interpretable
 - Hannah's team has direct experience validating CCA results
 - For 16 samples of the same tissue/platform (Hannah's synovium study), CCA is excellent
 - Produces a corrected expression matrix usable for many downstream analyses
+- No dependency on a upstream classification step for anchor labels
 
-**Arguments for scVI (Workflow B):**
+**Arguments for scANVI (Workflow B):**
 - Better theoretical fit for the IVD atlas: 12 studies, 3 platforms (10x, BD Rhapsody, Singleron), ~423K cells
 - `dispersion='gene-batch'` explicitly models platform-specific technical effects — CCA does not
 - Scales better to atlas-size data
 - The probabilistic framework allows proper uncertainty quantification
+- Semi-supervised approach uses biological priors (like CCA anchors) but within a generative model
+- Already run end-to-end on the IVD data with stable, biologically coherent results
 
-**The critical question is whether the IVD integration challenges are due to the normalization feeding into the integration, or the integration method itself.** A fair test would be: run CCA on SCT-normalized data AND run scVI on raw counts for the same dataset, compare results.
+**The critical question is whether the IVD integration challenges are due to the normalization feeding into the integration, or the integration method itself.** A fair test would be: run CCA on SCT-normalized data AND run scANVI on raw counts for the same dataset, compare results. Note that scANVI's semi-supervised approach makes this a fairer comparison than the earlier scVI-only versions — both CCA and scANVI now use biological priors to guide integration.
 
-**Recommendation:** Run both on a single IVD dataset (e.g., GSE230809, which has the most samples and NP+AF compartments) and compare integration quality metrics before committing.
+**Recommendation:** Run both on a single IVD dataset (e.g., GSE230809, which has the most samples and NP+AF compartments) and compare integration quality metrics before committing. The IVD pipeline's v4 scANVI results provide a baseline to compare against.
 
 ---
 
@@ -244,11 +258,28 @@ Hannah's second script (`Silhouette_Modularity_Scoring.R`) implements a rigorous
 - The equal weighting of silhouette and modularity is arbitrary — why not 60/40 or use a different combination?
 - Neither metric directly measures biological relevance (a perfect technical clustering may not correspond to real cell types)
 
-### Workflow B: Multiple resolutions stored, working resolution 0.5
+### Workflow B (v4): Adaptive resolution optimization with silhouette scoring
 
-Clusters at 5 resolutions (0.2, 0.5, 0.8, 1.0, 1.5), stores all, uses 0.5 as default. The spec mentions silhouette + modularity scoring for post-integration clustering but it's not yet implemented.
+The v4 pipeline (`scripts/06_clustering.py`) implements adaptive resolution optimization that scales the search based on dataset size:
+- 300K+ cells: Test 3 resolutions (0.4, 0.8, 1.0)
+- 200K–300K cells: Test 6 resolutions (0.2, 0.4, 0.6, 0.8, 1.0, 1.5)
+- 50K–200K cells: Test 10 resolutions (0.2–2.0 in 0.2 steps)
+- <50K cells: Test 20 resolutions (0.1–2.0 in 0.1 steps)
 
-**Verdict:** Workflow A's approach is clearly more rigorous for resolution selection. **This should be adopted regardless of other choices.** The only caveat is that optimal resolution should be evaluated in the context of known biology (e.g., do the resulting clusters correspond to expected cell types?), not purely on mathematical metrics.
+Uses silhouette scoring on the scANVI embedding to select the optimal resolution. Modularity scoring is skipped for objects >100K cells (too expensive).
+
+**Advantages:**
+- Adapts to dataset size (avoids wasting compute on huge objects)
+- Silhouette scoring is data-driven
+
+**Disadvantages:**
+- Only uses silhouette, not the combined silhouette + modularity metric that Hannah's approach uses
+- Fewer resolution candidates for large objects (3 options for 300K+ cells is quite coarse)
+- No subsampling strategy documented — may be memory-limited for large objects
+
+### Verdict
+
+Both workflows now implement data-driven resolution selection, which is good. **Workflow A's combined silhouette + modularity approach is more rigorous** — the two metrics capture complementary aspects of cluster quality (geometric separation vs. graph community structure). Workflow B's adaptive scaling is pragmatic but loses information by dropping modularity for large objects and testing fewer resolutions. **The ideal would be to combine both: Hannah's dual-metric scoring with Workflow B's adaptive scaling for computational feasibility.** The only caveat is that optimal resolution should be evaluated in the context of known biology (e.g., do the resulting clusters correspond to expected cell types?), not purely on mathematical metrics.
 
 ---
 
@@ -265,16 +296,18 @@ markers <- FindAllMarkers(object, logfc.threshold = 0.25, min.pct = 0.1,
 
 Uses Seurat's Wilcoxon test on SCT-corrected counts. `PrepSCTFindMarkers` recorrects the SCT residuals for proper comparison.
 
-### Workflow B (planned): Pseudobulk DESeq2
+### Workflow B (v4): Two-stage marker detection + Pseudobulk DESeq2
 
-The spec calls for DESeq2 pseudobulk for differential expression (Module 08), which aggregates cells per sample before testing — treating samples (not cells) as replicates.
+The v4 pipeline uses two complementary approaches:
+1. **Marker discovery** (Module 07, `scripts/07_annotation.py`): Two-stage annotation — first assign coarse types via canonical markers, then discover fine-grained subtypes via DE within each coarse group. Uses scanpy's `rank_genes_groups` (Wilcoxon) for marker identification.
+2. **Condition DE** (Module 08, `scripts/08_differential.py`): DESeq2 pseudobulk for differential expression between conditions (healthy vs. degenerated, mild vs. severe), aggregating cells per sample to properly account for biological replication. This is fully implemented and has produced 23 powered comparisons with 772 unique DE genes in v4.
 
 **Verdict:** These address different questions.
 
 - **FindAllMarkers (Workflow A):** Answers "which genes distinguish cluster X from all others?" — a marker discovery step. Treats each cell as an independent observation, which inflates significance but is standard for marker identification.
 - **Pseudobulk DESeq2 (Workflow B):** Answers "which genes differ between conditions?" — a proper statistical test for differential expression. Correctly accounts for biological replication.
 
-**Both are needed.** Marker discovery (FindAllMarkers or scanpy's rank_genes_groups) identifies cluster-defining genes. Pseudobulk DE tests for condition effects. These are complementary steps, not alternatives. Workflow B's plan for pseudobulk DE is statistically superior for condition comparisons.
+**Both are needed.** Marker discovery (FindAllMarkers or scanpy's rank_genes_groups) identifies cluster-defining genes. Pseudobulk DE tests for condition effects. These are complementary steps, not alternatives. Workflow B's pseudobulk DE is statistically superior for condition comparisons and has already produced results on the IVD data.
 
 ---
 
@@ -333,13 +366,13 @@ This is not a technical decision per se but has practical implications.
 | Decision | Recommendation | Confidence |
 |----------|---------------|------------|
 | Normalization | SCTransform is better; adopt from Workflow A | **High** |
-| Integration method | Test both CCA and scVI head-to-head on one dataset | **Medium** — context-dependent |
+| Integration method | Test CCA vs. scANVI head-to-head on one dataset; scANVI has strong IVD results already | **Medium** — context-dependent |
 | MT cutoff | Protocol-aware (5% nuclear, 10-15% cell), not a single threshold | **High** |
 | Count/gene filters | Combine both approaches (more thorough) | **High** |
 | Doublet detection | Keep Scrublet/DoubletFinder (Workflow B) | **High** |
 | PCA dims | Minor difference; 30-50 is fine | **Low** impact |
-| Resolution selection | Adopt silhouette + modularity (Workflow A) | **High** |
-| Marker detection | Both needed; keep pseudobulk DE for conditions | **High** |
+| Resolution selection | Combine: Hannah's dual-metric scoring + Workflow B's adaptive scaling | **High** |
+| Marker detection | Both needed; pseudobulk DE (already implemented) for conditions | **High** |
 | Tiered integration | Keep (Workflow B, IVD-specific) | **High** |
 | Framework | Follow team expertise; R has less friction for downstream | **Medium** |
 
@@ -347,28 +380,42 @@ This is not a technical decision per se but has practical implications.
 
 ## Proposed Validation Experiment
 
-Before committing to either approach for the full atlas:
+The v4 pipeline has already been run end-to-end, so we have baseline results to compare against. The validation question is: **does switching normalization and/or integration method improve the results?**
+
+**Option 1: Targeted normalization test (fastest)**
+
+The clearest gap between the workflows is normalization (SCTransform vs. log-normalization). Since scANVI models raw counts, the normalization primarily affects HVG selection and per-dataset QC/visualization. Test whether SCTransform-derived HVGs produce a better scANVI integration:
+
+1. Take one multi-sample IVD dataset (e.g., GSE230809, 24 samples across NP+AF)
+2. Run SCTransform per sample in R, extract the top 3000 variable features
+3. Feed those HVGs (plus raw counts) into the existing scANVI pipeline
+4. Compare integration metrics against the current v4 results for this dataset
+
+**Option 2: Full head-to-head comparison (more thorough)**
 
 1. **Select one IVD dataset** from our own lab (e.g., from GSE230809 or whichever dataset Hannah's team can validate against known results)
 2. **Run both workflows** on this dataset:
    - Workflow A: SCTransform → CCA (adapted for single study, multi-sample)
-   - Workflow B: normalize_total + log1p → scVI
+   - Workflow B: Current v4 pipeline (normalize_total + log1p → scANVI)
+   - Workflow C (hybrid): SCTransform → scANVI (best normalization + best integration for multi-platform)
 3. **Compare:**
    - Cluster number and composition
    - Known cell type recovery (do both find the expected populations?)
    - Marker gene overlap
    - UMAP structure
-   - Integration metrics (if multi-sample)
+   - Integration metrics (iLISI, batch-ASW, condition-ASW)
 4. **Use the results** to make an informed choice, then scale to the full atlas
 
-This validation step is fast (one dataset, a few hours of compute) and eliminates guesswork.
+This comparison also tests whether the integration challenges are primarily a normalization issue or an integration method issue — or both.
 
 ---
 
 ## Questions for Discussion
 
 1. Does Hannah's team have a dataset where the "ground truth" cell types are well-established, so we can validate against known biology?
-2. Is the team comfortable maintaining an R-based pipeline, or should we aim for a hybrid (R for preprocessing/integration, Python for atlas-scale downstream)?
-3. For the tiered integration: should we tier within CCA as well (separate FindIntegrationAnchors for mesenchymal vs. non-mesenchymal)?
-4. The IVD atlas includes 3 non-10x platforms (BD Rhapsody, Singleron). Does Hannah's team have experience integrating across platforms with CCA, or has the synovium work been 10x-only?
-5. Should we consider Seurat v5's newer integration methods (e.g., IntegrateLayers with CCA or Harmony) which scale better than v4's pairwise anchor approach?
+2. The v4 pipeline has produced 19 cell types and stable findings across 4 versions. **What specifically are the integration challenges** that motivated this review? Are there specific cell types that aren't separating, studies that don't mix, or biological signals that seem lost? Understanding the specific failure modes will help us target the right fix rather than overhauling the entire pipeline.
+3. Is the team comfortable maintaining an R-based pipeline, or should we aim for a hybrid (R for preprocessing, Python for integration/downstream)? A hybrid approach (SCTransform in R → export counts/HVGs → scANVI in Python) could combine the best of both.
+4. For the tiered integration: should we tier within CCA as well (separate FindIntegrationAnchors for mesenchymal vs. non-mesenchymal)?
+5. The IVD atlas includes 3 non-10x platforms (BD Rhapsody, Singleron). Does Hannah's team have experience integrating across platforms with CCA, or has the synovium work been 10x-only? This is a key consideration — scANVI's `dispersion='gene-batch'` explicitly models platform-specific technical effects, while CCA treats all batches identically.
+6. Should we consider Seurat v5's newer integration methods (e.g., IntegrateLayers with CCA or Harmony) which scale better than v4's pairwise anchor approach?
+7. The v4 pipeline already implements silhouette-based resolution optimization. Would adopting Hannah's combined silhouette + modularity scoring (from `Silhouette_Modularity_Scoring.R`) as an upgrade to the existing approach be a quick win everyone agrees on?
