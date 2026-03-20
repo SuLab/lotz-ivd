@@ -2,7 +2,7 @@
 
 ## Objective
 
-Assign each cell a coarse label from 5 anchor categories — chondrocyte-like, fibroblast-like, immune, endothelial, pericyte/SMC — or "Unknown" if the cell doesn't clearly fit any category. These coarse labels serve as seed labels for scANVI semi-supervised integration in Module 05. Fine-grained cell type annotation happens *after* integration and clustering (in Module 07), not here.
+Assign each cell a coarse label from 5 anchor categories — chondrocyte-like, fibroblast-like, immune, endothelial, pericyte/SMC — or "Unknown" if the cell doesn't clearly fit any category. These coarse labels serve as seed labels for semi-supervised integration in Module 05 Workflows B (scANVI) and C (STACAS). Workflow A (CCA) does not require these labels but they are still computed for comparison and downstream use. Fine-grained cell type annotation happens *after* integration and clustering (in Module 07), not here.
 
 ## Rationale
 

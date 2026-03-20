@@ -6,8 +6,10 @@ Cluster the integrated objects from Module 05 to identify cell populations. Each
 
 ## Inputs
 
-- Integrated AnnData objects from Module 05: `data/integrated/NP.h5ad`, `data/integrated/AF.h5ad`, `data/integrated/CEP.h5ad`, `data/integrated/all_cells.h5ad`
-- Each object contains two tiers with scANVI embeddings (`X_scanvi_mesenchymal`, `X_scanvi_non_mesenchymal`)
+- Integrated objects from the selected Module 05 workflow: `data/integrated/{wf}/NP.rds`, `data/integrated/{wf}/AF.rds`, `data/integrated/{wf}/CEP.rds`, `data/integrated/{wf}/all_cells.rds` (where `{wf}` is `cca`, `scanvi`, or `stacas` — determined at Module 05 human checkpoint)
+- If Workflow A (CCA) was selected: single integrated embedding per object (CCA reduction)
+- If Workflow B (scANVI) was selected: two tier embeddings per object (`X_scanvi_mesenchymal`, `X_scanvi_non_mesenchymal`)
+- If Workflow C (STACAS) was selected: single integrated embedding per object (STACAS reduction)
 
 ## Outputs
 
@@ -27,7 +29,7 @@ Contains:
 
 ## Method
 
-Leiden clustering on the scANVI neighbor graph, with resolution selected by multi-metric optimization.
+Leiden clustering on the integration neighbor graph (from whichever workflow was selected in Module 05), with resolution selected by multi-metric optimization.
 
 ### Resolution optimization
 

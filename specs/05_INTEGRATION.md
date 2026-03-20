@@ -2,9 +2,9 @@
 
 ## Objective
 
-Integrate cells across studies into shared representations using tiered scANVI. Clustering (Module 06) and annotation (Module 07) are separate steps.
+Integrate cells across studies into shared representations using three parallel integration strategies, then compare results to select the best approach. Clustering (Module 06) and annotation (Module 07) are separate steps.
 
-Four integrated objects are produced, each clustered and annotated independently:
+Four integrated objects are produced per workflow, each clustered and annotated independently:
 1. **NP** — nucleus pulposus cells from studies with clearly separated NP tissue
 2. **AF** — annulus fibrosus cells from studies with clearly separated AF tissue
 3. **CEP** — cartilaginous endplate cells
@@ -12,11 +12,27 @@ Four integrated objects are produced, each clustered and annotated independently
 
 The all-cells object serves as a whole IVD atlas. IVD subcompartments (NP, AF, CEP) are related tissues with overlapping cell compositions — not distinct organs — so a combined analysis is biologically meaningful for understanding the full IVD cellular landscape and cross-compartment relationships.
 
+### Three Integration Workflows
+
+| | A: Seurat CCA | B: scANVI | C: STACAS | Notes |
+|---|---|---|---|---|
+| Language | R only | R + Python | R only | Prefer A or C to avoid Python dependency |
+| Cell labels? | No | Yes (coarse) | Yes (coarse; optional) | Same coarse labels shared across B and C |
+| Tiered integration? | Yes (test flat vs tiered) | Via batch hierarchy | Yes (compatible) | |
+| Best for | Standard multi-lab; primary analysis | Large atlases; probabilistic cell type transfer | R-native label-guided; strong bio-conservation | |
+
+**Workflow A is the primary workflow.** Workflows B and C are run for comparison. The human checkpoint selects which workflow to carry forward.
+
 ## Rationale
 
-Module 04 assigns coarse anchor labels (5 categories + Unknown) that are reliable across datasets but deliberately avoid fine-grained distinctions. This module uses those anchors for semi-supervised integration (scANVI), then clusters the result and discovers fine cell types from the integrated data. The coarse labels guide integration without imposing the final atlas identity.
+Running three integration strategies guards against method-specific artifacts and provides the reviewer with an informed choice:
 
-Within each object, mesenchymal and non-mesenchymal cells are integrated separately (tiered integration) because they have fundamentally different transcriptomic profiles. Integrating them together would force the model to spend latent capacity on that major axis of variation rather than on subtler differences within each group.
+- **Workflow A (CCA)** is label-free — it finds shared correlation structure across datasets without requiring any prior cell type information. This avoids any risk of circular annotation influencing integration.
+- **Workflows B (scANVI) and C (STACAS)** leverage the coarse anchor labels from Module 04 for semi-supervised correction, which can improve batch correction across platforms (10x, BD Rhapsody, Singleron) at the cost of depending on those labels.
+
+Module 04 assigns coarse anchor labels (5 categories + Unknown) that are reliable across datasets but deliberately avoid fine-grained distinctions. Workflows B and C use those anchors. Fine cell types emerge from post-integration clustering and annotation (Modules 06–07), not from the integration step.
+
+Within Workflows B and C, mesenchymal and non-mesenchymal cells are integrated separately (tiered integration) because they have fundamentally different transcriptomic profiles. Integrating them together would force the model to spend latent capacity on that major axis of variation rather than on subtler differences within each group. Workflow A tests both flat and tiered approaches.
 
 ## Study and Sample Assignments
 
@@ -99,7 +115,7 @@ Generate `results/integration/study_caveats.tsv` documenting per-study caveats f
 
 | Study | Caveat | Impact | Mitigation |
 |-------|--------|--------|------------|
-| GSE165722 (Tu 2022) | BD Rhapsody platform (not 10x) | Different capture efficiency, gene detection | Platform-aware batch correction via scVI study-level batch key |
+| GSE165722 (Tu 2022) | BD Rhapsody platform (not 10x) | Different capture efficiency, gene detection | Platform-aware batch correction via study-level batch key |
 | GSE205535 (Li 2022) | BD Rhapsody platform; published corrigenda | See above; potential data quality issues | Monitor for outlier behavior in integration |
 | CNP0002664 (Han 2022) | Singleron Matrix platform (not 10x) | Different capture efficiency | Same as above |
 | GSE242443 (Kuchynsky 2024) | Culture-expanded CEP cells | Culture alters cell states; may not reflect in vivo biology | Caveat in all CEP results; compare with non-expanded CEP from GSE160756 |
@@ -110,45 +126,131 @@ Generate `results/integration/study_caveats.tsv` documenting per-study caveats f
 
 ## Inputs
 
-- Processed AnnData objects from `data/processed/{accession}.h5ad` with `coarse_label` and `cell_class` from Module 04
+- Processed Seurat objects / AnnData objects from Module 03 (per-dataset, QC'd, SCTransform-normalized)
+- `coarse_label` and `cell_class` from Module 04 — **required for Workflows B and C; not required for Workflow A**
 - `metadata/sample_metadata.tsv`
 
 ## Outputs
 
-- `data/integrated/NP.h5ad` — integrated NP cells
-- `data/integrated/AF.h5ad` — integrated AF cells
-- `data/integrated/CEP.h5ad` — integrated CEP cells
-- `data/integrated/all_cells.h5ad` — integrated all IVD cells
-- `data/integrated/integration_metrics.tsv` — quantitative integration assessment
+Per workflow (`{wf}` = `cca`, `scanvi`, `stacas`):
+- `data/integrated/{wf}/NP.rds` (or `.h5ad`) — integrated NP cells
+- `data/integrated/{wf}/AF.rds` — integrated AF cells
+- `data/integrated/{wf}/CEP.rds` — integrated CEP cells
+- `data/integrated/{wf}/all_cells.rds` — integrated all IVD cells
+- `data/integrated/{wf}/integration_metrics.tsv` — quantitative integration assessment
+
+Shared outputs (generated once):
 - `results/integration/inclusion_summary.tsv` — study × object inclusion table
 - `results/integration/inclusion_summary.html` — formatted version for manuscript supplement
 - `results/integration/study_caveats.tsv` — per-study caveats for supplement
-- `results/integration_report.html` — visualization of integration, clustering, and annotation results
-- Updated `analysis_plan.md` with integration parameters and metrics
+- `results/integration/workflow_comparison.tsv` — side-by-side metrics across all three workflows
+- `results/integration/workflow_comparison_report.html` — visual comparison of workflows
+- Updated `analysis_plan.md` with integration parameters, metrics, and workflow selection
 
 ### Notebook: `notebooks/05_integration.ipynb`
 
 Contains:
 - Inclusion summary table (studies × objects)
-- UMAP panels per object, colored by: study, condition, compartment
-- Integration quality metrics (batch mixing, biological conservation)
+- Per-workflow UMAP panels per object, colored by: study, condition, compartment
+- Side-by-side UMAP comparison across workflows
+- Integration quality metrics per workflow (batch mixing, biological conservation)
+- Workflow comparison table and plots
 - Study caveats table
 
-**Manuscript mapping:** Supplementary Table S1: Study inclusion and caveats. Supplementary Figure S3: Integration benchmarking. Methods section on integration.
+**Manuscript mapping:** Supplementary Table S1: Study inclusion and caveats. Supplementary Figure S3: Integration benchmarking and workflow comparison. Methods section on integration.
 
-## Part 1: Tiered Integration with scANVI
+## Shared Integration Parameters
 
-For each of the four objects (NP, AF, CEP, all-cells), perform tiered integration using scANVI with the coarse anchor labels from Module 04.
+All three workflows share these parameters (from Shared Parameters):
+- **Normalization:** SCTransform per sample, regressing out percent.mt
+- **HVGs:** 3,000 selected across all datasets (`SelectIntegrationFeatures(nfeatures = 3000)`)
+- **Dimensionality:** 50 PCs for all PCA, neighbor graph, and integration steps
+- **Clustering:** Resolutions 0.1–2.0 at 0.1 increments; select via silhouette + modularity
+- **Markers:** SCT assay; `PrepSCTFindMarkers()` before `FindAllMarkers()`
+- **DE:** RNA assay; `JoinLayers()` first; correct for study (batch) and IVD score (continuous covariate)
 
-### Integration method: scANVI (semi-supervised)
+---
 
-scANVI uses labeled cells as anchors to align similar cells across studies while leaving "Unknown" cells free to be positioned by transcriptomic similarity. This produces better batch correction than unsupervised scVI, especially across platforms (10x, BD Rhapsody, Singleron).
+## Workflow A (Primary): Seurat v5 CCA Integration
 
-**Workflow per tier:**
-1. Train scVI first (unsupervised) to learn a base latent representation
-2. Initialize scANVI from the trained scVI model
-3. Feed `coarse_label` as `labels_key`, with "Unknown" as `unlabeled_category`
-4. scANVI refines the latent space using the anchor labels
+**Framework:** R / Seurat v5. Use this as the main workflow for all results.
+
+CCA (Canonical Correlation Analysis) finds shared correlation structure across datasets without requiring cell type labels. This makes it the most assumption-free approach — integration quality depends only on the data, not on the accuracy of prior annotations.
+
+### Step 1 — Merge and prepare
+
+1. Merge all Seurat objects for the given compartment object (NP, AF, CEP, or all-cells)
+2. Split layers by sample — do NOT call `JoinLayers()` here (it is needed later for DE)
+
+### Step 2 — Integration
+
+Run CCA integration:
+```r
+IntegrateLayers(method = CCAIntegration, normalization.method = "SCT", dims = 1:50)
+```
+
+### Step 3 — Flat vs Tiered comparison
+
+Test both approaches and compare results:
+- **Flat:** Integrate all samples at once (single CCA pass)
+- **Tiered:** Integrate within-study first, then integrate across studies
+
+Compare using integration quality metrics (see below). Select the better approach at the human checkpoint.
+
+### Step 4 — Dimensionality reduction and clustering
+
+1. `RunPCA(npcs = 50)` on the integrated assay
+2. `RunUMAP(dims = 1:50)`
+3. `FindNeighbors(dims = 1:50)`
+4. `FindClusters()` at resolutions 0.1–2.0 (step 0.1); select resolution via silhouette + modularity
+
+### Step 5 — Marker genes and DE
+
+- Markers: `PrepSCTFindMarkers()` then `FindAllMarkers()` on SCT assay
+- DE: RNA assay; `JoinLayers()` first; correct for study + IVD score as continuous covariate
+
+---
+
+## Workflow B (Alternative): scANVI Semi-supervised Integration
+
+**Framework:** R (preprocessing) + Python (integration via scvi-tools). Use when label-guided integration is desired or as a comparison to Workflow A.
+
+### Rationale
+
+scANVI is a semi-supervised deep generative model (VAE-based) that incorporates coarse cell type labels to guide integration, helping preserve biologically meaningful structure that purely unsupervised methods may over-correct. It operates on raw counts, so SCTransform normalization does not affect the integration itself — only HVG selection upstream.
+
+### Step 1 — Upstream processing in R (same as Workflow A)
+
+1. Apply QC filters: percent.mt < 5%, nCount_RNA 1,000–25,000
+2. Run `SCTransform()` per sample (regress percent.mt) — for HVG selection only
+3. Select 3,000 HVGs using `SelectIntegrationFeatures(nfeatures = 3000)`
+
+### Step 2 — Coarse pre-annotation (from Module 04)
+
+Labels are assigned per-cell using marker gene scoring, not cluster-based annotation. This avoids circular dependencies between clustering and annotation.
+
+- Score each cell using `sc.tl.score_genes()` for:
+  - Chondrocyte markers: COL2A1, ACAN, SOX9
+  - Fibroblast markers: COL1A1, COL1A2, DCN, LUM
+  - Non-mesenchymal markers: PTPRC, PECAM1, VWF, CDH5, RGS5, PDGFRB — checked against per-gene top-10th-percentile expression thresholds
+- Assign coarse labels using a hierarchical first-match-wins rule:
+  1. **Immune** — PTPRC in top 10th percentile, or ≥2 immune supporting markers (unless ACAN/SOX9 co-expressed — rescue rule)
+  2. **Endothelial** — PECAM1/VWF/CDH5, same rescue rule
+  3. **Pericyte_SMC** — RGS5 + PDGFRB co-expression, same rescue rule
+  4. **Chondrocyte_like** — chondrocyte score > 2× fibroblast score and > 0
+  5. **Fibroblast_like** — fibroblast score > 2× chondrocyte score and > 0
+  6. **Unknown** — everything else
+- Apply cluster-level smoothing: compute Leiden clusters (resolution 0.5); if >85% of cells in a cluster share the same label, assign that label to the entire cluster
+- The "Unknown" category is intentionally generous (~20–30% of mesenchymal cells), capturing fibrochondrocytes and transitional cells; scANVI positions these by transcriptomic similarity
+- Derive `cell_class`: mesenchymal (Chondrocyte_like, Fibroblast_like), non_mesenchymal (Immune, Endothelial, Pericyte_SMC), unknown (Unknown)
+
+### Step 3 — Integration in Python (scvi-tools)
+
+1. Load AnnData; subset to the 3,000 HVGs selected in R; store raw counts in `adata.layers["counts"]`
+2. Train scVI first (unsupervised VAE) using batch = sample ID; then initialize scANVI from the scVI model using the coarse cell type labels
+3. Extract the scANVI latent embedding; compute neighbors and UMAP in Python (scanpy), or export the embedding back to R for downstream clustering
+
+**scANVI operates on raw counts — do not pass log-normalized or SCT-corrected values as model input.**
 
 **Parameters:**
 - `batch_key='study'`
@@ -157,72 +259,137 @@ scANVI uses labeled cells as anchors to align similar cells across studies while
 - scANVI: `max_epochs=50`, `early_stopping=True`, `early_stopping_patience=5`
 - `n_top_genes=3000`
 
-### Tier A: Mesenchymal cells
+### Tiered integration
 
-**Anchor labels used:** Chondrocyte_like, Fibroblast_like, Unknown
-**scANVI unlabeled_category:** "Unknown"
+**Tier A — Mesenchymal cells:**
+- Anchor labels: Chondrocyte_like, Fibroblast_like, Unknown
+- scANVI `unlabeled_category`: "Unknown"
+- Subset cells with `cell_class == 'mesenchymal'` or `cell_class == 'unknown'` (include Unknown-class cells that may be fibrochondrocytes)
+- Concatenate across datasets → re-identify HVGs (n_top_genes=3000) → train scVI → initialize scANVI → extract embedding → compute neighbors/UMAP
 
-**Steps:**
-1. Subset cells with `cell_class == 'mesenchymal'` or `cell_class == 'unknown'` for the relevant studies/samples (include Unknown-class cells that may be fibrochondrocytes or other transitional mesenchymal types)
-2. Concatenate across datasets
-3. Re-identify HVGs on the concatenated object (n_top_genes=3000)
-4. Train scVI → initialize scANVI with coarse_label anchors
-5. Extract scANVI latent representation
-6. Compute neighbors and UMAP on scANVI embedding
-7. Proceed to clustering (Part 2) and annotation (Part 3)
+**Tier B — Non-mesenchymal cells:**
+- Anchor labels: Immune, Endothelial, Pericyte_SMC
+- scANVI `unlabeled_category`: "Unknown" (should be very few in this tier)
+- Same workflow as Tier A. These populations have strong, discrete transcriptomic identities.
 
-### Tier B: Non-mesenchymal cells
+**Merging tiers:** After independent integration of each tier, merge back into a single object per compartment. Store tier-specific embeddings in `obsm` (e.g., `X_scanvi_mesenchymal`, `X_scanvi_non_mesenchymal`).
 
-**Anchor labels used:** Immune, Endothelial, Pericyte_SMC
-**scANVI unlabeled_category:** "Unknown" (should be very few in this tier)
+### Step 4 — Downstream in R
 
-Same workflow as Tier A. These populations have strong, discrete transcriptomic identities — scANVI should integrate them cleanly.
+Import scANVI embedding into Seurat as a custom DimReduc object; proceed with `FindNeighbors()`, `FindClusters()`, and marker/DE steps as in Workflow A.
 
-### Merging tiers
+### Key notes
 
-After independent integration, clustering, and annotation of each tier, merge them back into a single AnnData per object for downstream analysis. Store tier-specific embeddings in `obsm` (e.g., `X_scanvi_mesenchymal`, `X_scanvi_non_mesenchymal`).
+- "Unknown" cells are handled natively; scANVI supports partially labeled data
+- Required Python packages: scvi-tools (≥ 1.0), scanpy, anndata
+- The rescue rule prevents stressed IVD cells with upregulated immune markers from being misclassified as non-mesenchymal
 
-### Integration Quality Metrics
+---
 
-For each integrated object/tier, compute:
+## Workflow C (Alternative): STACAS Semi-supervised Integration
+
+**Framework:** R only (Seurat v5 + STACAS package). Use when staying fully within R is preferred and coarse cell type priors are available.
+
+### Rationale
+
+STACAS is an anchor-based integration method (similar in spirit to Seurat CCA) that uses prior cell type labels to weight anchors, reducing overcorrection while preserving biological variability. Fully R-native, scalable to large datasets, and robust to imprecise or incomplete labels. Recent benchmarks show it outperforms both unsupervised methods and scANVI for within-species, multi-lab integration when even rough annotations are available.
+
+### Step 1 — Upstream processing in R (same as Workflow A)
+
+Apply QC filters and per-sample `SCTransform()` (regress percent.mt). Select 3,000 HVGs using `SelectIntegrationFeatures(nfeatures = 3000)`.
+
+### Step 2 — Coarse pre-annotation in R (same as Workflow B, Step 2)
+
+Use the same per-cell marker scoring approach described in Workflow B Step 2. Store resulting labels in a metadata column (e.g., `cell_type_coarse`).
+
+### Step 3 — STACAS Integration
+
+Install: `remotes::install_github("carmonalab/STACAS")`
+
+Run semi-supervised integration:
+```r
+SampleIntegration(seurat_list, dims = 1:50, cell.labels = "cell_type_coarse")
+```
+
+STACAS returns an integrated Seurat object. Tiered integration is compatible: run within-study integration first, then across studies, applying cell labels at both steps.
+
+### Step 4 — Downstream steps
+
+1. `RunPCA(npcs = 50)` → `RunUMAP()` → `FindNeighbors(dims = 1:50)` → `FindClusters()`
+2. Cluster resolution selection: silhouette + modularity at 0.1–2.0 (same as Workflow A)
+3. Marker genes and DE: identical to Workflow A — SCT assay with `PrepSCTFindMarkers()`; RNA assay for DE with `JoinLayers()` and study correction
+
+### Key notes
+
+- STACAS is natively compatible with Seurat v5; no Python required
+- Cells can be labeled "Unknown" — STACAS still improves integration over the unsupervised baseline
+
+---
+
+## Workflow Comparison
+
+After all three workflows complete, compare them to inform the human checkpoint decision.
+
+### Metrics (computed per workflow, per object)
 
 1. **Batch mixing:**
    - iLISI (integration LISI) — higher is better mixing
    - Batch-ASW — should be near 0
 
 2. **Biological conservation:**
+   - cLISI (cell-type LISI) — lower is better preservation
    - Condition-ASW — conditions should remain distinguishable
    - Condition classifier accuracy — can we still distinguish healthy from degenerated?
 
-3. **Continuum preservation (mesenchymal only):**
+3. **Continuum preservation (mesenchymal cells only):**
    - Compare cluster count at resolution 0.5 before and after integration (large reduction suggests overcorrection)
    - Verify that the integrated object does not collapse into a single blob
+   - Spread of mesenchymal cells in embedding space
+
+### Comparison outputs
+
+- `results/integration/workflow_comparison.tsv` — all metrics side-by-side
+- `results/integration/workflow_comparison_report.html` — side-by-side UMAPs and metric plots
+- Summary recommendation (but final decision is made at human checkpoint)
+
+### Selection criteria
+
+Workflow A (CCA) is used unless it clearly underperforms on batch mixing or biological conservation. If CCA performs adequately, prefer it because it is label-free and avoids any circular dependency between annotation and integration. If CCA underperforms, the comparison informs which alternative to select.
 
 ## Automated Validation
 
+Per workflow:
 - [ ] All four integrated objects are saved (NP, AF, CEP, all_cells)
-- [ ] Inclusion summary table is generated
-- [ ] Study caveats table is generated
 - [ ] No integration result collapses all cells into a single cluster at resolution 0.5 (blob check)
 - [ ] No integration result has study identity perfectly predicting cluster identity (ARI < 1.0)
 - [ ] Integration metrics are recorded per object
+
+Shared:
+- [ ] Inclusion summary table is generated
+- [ ] Study caveats table is generated
+- [ ] Workflow comparison table and report are generated
+- [ ] At least one workflow passes all integration quality checks per object
 
 ## Human Checkpoint
 
 ### Review materials
 - Inclusion summary table (which studies/samples in which objects)
 - Study caveats table
-- UMAP per object colored by study, condition, compartment
-- Integration quality metrics per object (iLISI, batch-ASW, condition-ASW)
-- Continuum preservation check (mesenchymal tier): cluster count comparison before/after integration
+- Per-workflow UMAP per object colored by study, condition, compartment
+- Side-by-side workflow comparison (UMAPs and metrics)
+- Integration quality metrics per workflow per object (iLISI, batch-ASW, condition-ASW)
+- Continuum preservation check (mesenchymal cells): cluster count comparison before/after integration
 
 ### Questions for the reviewer
 1. Does the integration look reasonable? Are studies mixing well on the UMAP?
-2. Is there evidence of overcorrection (biological signal lost)?
-3. Are the study caveats adequately documented for the supplement?
-4. Should integration parameters be adjusted for any object/tier?
+2. Is there evidence of overcorrection (biological signal lost) in any workflow?
+3. **Which workflow should be carried forward for downstream analysis (Modules 06–12)?**
+4. For the selected workflow: should integration parameters be adjusted for any object/tier?
+5. Are the study caveats adequately documented for the supplement?
 
 ### Potential plan revisions
-- If batch effects persist, consider adjusting scANVI parameters or adding covariates
-- If the mesenchymal continuum collapses into a blob, reduce integration strength or use alternative methods
-- If a specific study is an outlier, consider excluding it and re-integrating
+- If Workflow A (CCA) performs adequately, proceed with it as the primary result — it is label-free and avoids circular annotation risk
+- If CCA underperforms on batch mixing (especially across platforms), select the best-performing alternative (B or C)
+- If the mesenchymal continuum collapses into a blob in any workflow, reduce integration strength or exclude that workflow
+- If a specific study is an outlier in all workflows, consider excluding it and re-integrating
+- If batch effects persist across all workflows, consider adding covariates or restricting to within-study comparisons
