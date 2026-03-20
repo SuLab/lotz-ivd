@@ -165,9 +165,6 @@ All three workflows share these parameters (from Shared Parameters):
 - **Normalization:** SCTransform per sample, regressing out percent.mt
 - **HVGs:** 3,000 selected across all datasets (`SelectIntegrationFeatures(nfeatures = 3000)`)
 - **Dimensionality:** 50 PCs for all PCA, neighbor graph, and integration steps
-- **Clustering:** Resolutions 0.1–2.0 at 0.1 increments; select via silhouette + modularity
-- **Markers:** SCT assay; `PrepSCTFindMarkers()` before `FindAllMarkers()`
-- **DE:** RNA assay; `JoinLayers()` first; correct for study (batch) and IVD score (continuous covariate)
 
 ---
 
@@ -180,7 +177,7 @@ CCA (Canonical Correlation Analysis) finds shared correlation structure across d
 ### Step 1 — Merge and prepare
 
 1. Merge all Seurat objects for the given compartment object (NP, AF, CEP, or all-cells)
-2. Split layers by sample — do NOT call `JoinLayers()` here (it is needed later for DE)
+2. Split layers by sample
 
 ### Step 2 — Integration
 
@@ -197,17 +194,11 @@ Test both approaches and compare results:
 
 Compare using integration quality metrics (see below). Select the better approach at the human checkpoint.
 
-### Step 4 — Dimensionality reduction and clustering
+### Step 4 — Dimensionality reduction
 
 1. `RunPCA(npcs = 50)` on the integrated assay
 2. `RunUMAP(dims = 1:50)`
 3. `FindNeighbors(dims = 1:50)`
-4. `FindClusters()` at resolutions 0.1–2.0 (step 0.1); select resolution via silhouette + modularity
-
-### Step 5 — Marker genes and DE
-
-- Markers: `PrepSCTFindMarkers()` then `FindAllMarkers()` on SCT assay
-- DE: RNA assay; `JoinLayers()` first; correct for study + IVD score as continuous covariate
 
 ---
 
@@ -248,7 +239,7 @@ Labels are assigned per-cell using marker gene scoring, not cluster-based annota
 
 1. Load AnnData; subset to the 3,000 HVGs selected in R; store raw counts in `adata.layers["counts"]`
 2. Train scVI first (unsupervised VAE) using batch = sample ID; then initialize scANVI from the scVI model using the coarse cell type labels
-3. Extract the scANVI latent embedding; compute neighbors and UMAP in Python (scanpy), or export the embedding back to R for downstream clustering
+3. Extract the scANVI latent embedding; compute neighbors and UMAP in Python (scanpy), or export the embedding back to R
 
 **scANVI operates on raw counts — do not pass log-normalized or SCT-corrected values as model input.**
 
@@ -274,9 +265,9 @@ Labels are assigned per-cell using marker gene scoring, not cluster-based annota
 
 **Merging tiers:** After independent integration of each tier, merge back into a single object per compartment. Store tier-specific embeddings in `obsm` (e.g., `X_scanvi_mesenchymal`, `X_scanvi_non_mesenchymal`).
 
-### Step 4 — Downstream in R
+### Step 4 — Export to R
 
-Import scANVI embedding into Seurat as a custom DimReduc object; proceed with `FindNeighbors()`, `FindClusters()`, and marker/DE steps as in Workflow A.
+Import scANVI embedding into Seurat as a custom DimReduc object; proceed with `FindNeighbors()` to build the neighbor graph.
 
 ### Key notes
 
@@ -313,11 +304,9 @@ SampleIntegration(seurat_list, dims = 1:50, cell.labels = "cell_type_coarse")
 
 STACAS returns an integrated Seurat object. Tiered integration is compatible: run within-study integration first, then across studies, applying cell labels at both steps.
 
-### Step 4 — Downstream steps
+### Step 4 — Dimensionality reduction
 
-1. `RunPCA(npcs = 50)` → `RunUMAP()` → `FindNeighbors(dims = 1:50)` → `FindClusters()`
-2. Cluster resolution selection: silhouette + modularity at 0.1–2.0 (same as Workflow A)
-3. Marker genes and DE: identical to Workflow A — SCT assay with `PrepSCTFindMarkers()`; RNA assay for DE with `JoinLayers()` and study correction
+`RunPCA(npcs = 50)` → `RunUMAP()` → `FindNeighbors(dims = 1:50)`
 
 ### Key notes
 
