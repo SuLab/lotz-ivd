@@ -132,7 +132,10 @@ ivd-analysis/
 │   ├── 02_metadata.ipynb
 │   ├── 03_qc.ipynb
 │   ├── 04_classification.ipynb
-│   ├── 05_integration.ipynb
+│   ├── 05a_integration_cca.ipynb
+│   ├── 05b_integration_scanvi.ipynb
+│   ├── 05c_integration_stacas.ipynb
+│   ├── 05d_integration_comparison.ipynb
 │   ├── 06_clustering.ipynb
 │   ├── 07_annotation.ipynb
 │   ├── 08_differential.ipynb
@@ -163,7 +166,8 @@ Each notebook corresponds to one or more manuscript figures and tables. This map
 | 02_metadata.ipynb | Methods: Study design | Table 1 (continued): Sample metadata summary |
 | 03_qc.ipynb | Supplementary | Fig S1: QC metrics per dataset |
 | 04_classification.ipynb | Supplementary | Fig S2: Coarse classification QC |
-| 05_integration.ipynb | Methods: Integration | Fig S3: Integration benchmarking |
+| 05a–c_integration_{cca,scanvi,stacas}.ipynb | Methods: Integration | Per-workflow integration results |
+| 05d_integration_comparison.ipynb | Methods: Integration | Fig S3: Integration benchmarking and workflow comparison |
 | 06_clustering.ipynb | Supplementary | Fig S3 (cont.): Resolution optimization |
 | 07_annotation.ipynb | Results: IVD cell atlas | Fig 1: UMAP atlas, marker dot plots, proportions |
 | 08_differential.ipynb | Results: Disease-associated changes | Fig 2: Composition changes; Fig 3: DE volcano/heatmaps; Table 2: Top DE genes |

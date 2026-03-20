@@ -147,15 +147,39 @@ Shared outputs (generated once):
 - `results/integration/workflow_comparison_report.html` — visual comparison of workflows
 - Updated `analysis_plan.md` with integration parameters, metrics, and workflow selection
 
-### Notebook: `notebooks/05_integration.ipynb`
+### Notebooks
 
-Contains:
-- Inclusion summary table (studies × objects)
-- Per-workflow UMAP panels per object, colored by: study, condition, compartment
-- Side-by-side UMAP comparison across workflows
-- Integration quality metrics per workflow (batch mixing, biological conservation)
-- Workflow comparison table and plots
+#### `notebooks/05a_integration_cca.ipynb` — Workflow A results
+
+- UMAP panels per object (NP, AF, CEP, all-cells), colored by: study, condition, compartment
+- Integration quality metrics (iLISI, batch-ASW, condition-ASW)
+- Flat vs tiered comparison (side-by-side UMAPs and metrics)
+- Batch mixing assessment: per-study cell density on UMAP
+- Continuum preservation check: mesenchymal cell spread in embedding space
+
+#### `notebooks/05b_integration_scanvi.ipynb` — Workflow B results
+
+- UMAP panels per object per tier (mesenchymal, non-mesenchymal), colored by: study, condition, coarse_label
+- Integration quality metrics per tier
+- scANVI training diagnostics (loss curves, convergence)
+- Tier merge visualization: combined UMAP with tier of origin overlay
+- Continuum preservation check
+
+#### `notebooks/05c_integration_stacas.ipynb` — Workflow C results
+
+- UMAP panels per object, colored by: study, condition, coarse_label
+- Integration quality metrics
+- Batch mixing assessment
+- Continuum preservation check
+
+#### `notebooks/05d_integration_comparison.ipynb` — Workflow comparison
+
+- Side-by-side UMAP panels: same object across all three workflows
+- Integration metrics comparison table and bar plots (iLISI, batch-ASW, cLISI, condition-ASW per workflow per object)
+- Continuum preservation comparison across workflows
+- Inclusion summary table (studies × objects) — shared across workflows
 - Study caveats table
+- Summary recommendation for human checkpoint
 
 **Manuscript mapping:** Supplementary Table S1: Study inclusion and caveats. Supplementary Figure S3: Integration benchmarking and workflow comparison. Methods section on integration.
 
