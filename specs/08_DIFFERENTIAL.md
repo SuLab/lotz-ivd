@@ -96,12 +96,17 @@ DESeq2 and propeller are R packages. Use standalone R scripts (in `scripts/`) ca
 
 **Why pseudobulk:** Single-cell DE methods (Wilcoxon, MAST) treat each cell as an independent observation, inflating sample sizes and producing false positives. Pseudobulk aggregates cells per sample per cell type, producing one expression profile per sample, which is the correct replicate unit.
 
+**Assay and layer setup:**
+- DE analysis must use the RNA assay (raw counts), NOT the SCT assay
+- In R/Seurat: call `JoinLayers()` before running DE to merge split count layers
+- In Python: use raw counts from `.layers['counts']`
+
 **Steps:**
 1. For each cell type and each comparison:
    a. Subset cells to the relevant cell type and conditions
    b. Aggregate raw counts per sample (sum across cells within each sample for each gene)
    c. Filter genes: retain genes detected in at least 10% of cells in at least one condition
-   d. Run DESeq2 with design: `~ condition + study` (include study as covariate if samples come from multiple studies)
+   d. Run DESeq2 with design: `~ condition + study + ivd_score` (include study as batch covariate; include IVD score as a continuous covariate)
    e. Extract results: log2 fold change, adjusted p-value (BH correction), base mean expression
    f. Filter significant DE genes: |log2FC| > 0.5 AND adjusted p-value < 0.05
 2. Save results to `results/differential/de_results/{cell_type}_{comparison}.tsv`

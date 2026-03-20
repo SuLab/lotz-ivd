@@ -57,8 +57,9 @@ Calculate per-cell metrics:
 **Default QC thresholds** (apply per-sample, not per-dataset, to account for sample-level variation):
 - Remove cells with `n_genes_by_counts` < 200
 - Remove cells with `n_genes_by_counts` > 6000 (potential doublets)
-- Remove cells with `pct_counts_mt` > 20%
-- Remove cells with `total_counts` < 500
+- Remove cells with `pct_counts_mt` > 5%
+- Remove cells with `total_counts` < 1000
+- Remove cells with `total_counts` > 25000
 
 **Doublet detection:**
 - Run Scrublet (or DoubletFinder equivalent) per sample
@@ -72,34 +73,38 @@ Record the number of cells and genes before and after each filter step.
 
 ### Step 3: Normalization
 
-- Normalize to 10,000 counts per cell (`sc.pp.normalize_total(target_sum=1e4)`)
-- Log-transform (`sc.pp.log1p()`)
 - Store raw counts in `.layers['counts']` before normalization (needed for DE analysis and scVI)
+- Run SCTransform per sample; regress out `pct_counts_mt`
+  - In R/Seurat: `SCTransform(object, vars.to.regress = "percent.mt")`
+  - In Python: use `sctransform` package or equivalent scanpy workflow (`sc.experimental.pp.normalize_pearson_residuals()`)
+- SCTransform replaces the separate normalize → log → scale steps and produces variance-stabilized residuals
 
 ### Step 4: Feature selection
 
-- Identify highly variable genes (HVGs) using `sc.pp.highly_variable_genes()`
-  - Method: `seurat_v3` (uses raw counts, preferred for count data)
-  - `n_top_genes`: 3000 (default; may be adjusted)
-  - If dataset has multiple samples, use `batch_key='sample_id'` to identify HVGs that are variable across batches
+- Select 3,000 HVGs across all datasets
+  - In R/Seurat: `SelectIntegrationFeatures(nfeatures = 3000)`
+  - In Python: `sc.pp.highly_variable_genes()` with `n_top_genes=3000`, method `seurat_v3` (uses raw counts), and `batch_key='sample_id'` if multiple samples are present
 
 ### Step 5: Dimensionality reduction
 
-- Scale to unit variance (`sc.pp.scale(max_value=10)`) — compute transiently for PCA input only, do not overwrite `.X` or store the scaled matrix
-- PCA: compute 50 components
-- Determine effective dimensionality: use elbow method or variance explained > 90% cumulative. Record the number of PCs used.
-- Compute neighbor graph using the selected number of PCs (`sc.pp.neighbors()`)
+- PCA: compute 50 components (use all 50 PCs for all downstream steps — neighbors, integration, etc.)
+  - If using SCTransform residuals: PCA runs directly on the SCT-normalized data (no additional scaling needed)
+  - If using log-normalized data: scale to unit variance transiently for PCA input only (`sc.pp.scale(max_value=10)`), do not overwrite `.X`
+- Compute neighbor graph using 50 PCs (`sc.pp.neighbors(n_pcs=50)`)
 - UMAP embedding (`sc.tl.umap()`)
 
 ### Step 6: Clustering
 
-- Leiden clustering at multiple resolutions: 0.2, 0.5, 0.8, 1.0, 1.5
+- Leiden clustering at resolutions 0.1 to 2.0 in steps of 0.1 (regardless of cell number)
 - Store each in `.obs['leiden_res_{resolution}']`
-- The "working" resolution for initial analysis: 0.5 (default; adjusted per dataset at human checkpoint)
+- Select optimal resolution using both silhouette score and modularity score
+- The "working" resolution for initial analysis: select the resolution that maximizes both metrics (default starting point 0.5; adjusted per dataset at human checkpoint)
 
 ### Step 7: Marker genes
 
-- For the working resolution clustering, compute marker genes using Wilcoxon rank-sum test (`sc.tl.rank_genes_groups()`)
+- For the working resolution clustering, compute marker genes on the SCT assay
+  - In R/Seurat: run `PrepSCTFindMarkers()` before `FindAllMarkers()`
+  - In Python: use Wilcoxon rank-sum test (`sc.tl.rank_genes_groups()`) on SCTransform-normalized data
 - Record top 50 markers per cluster
 - Save to `results/annotations/{accession}_markers.tsv`
 
@@ -162,7 +167,7 @@ Cross-dataset:
 - `qc_summary.tsv`
 
 ### Questions for the reviewer
-1. Are QC thresholds appropriate for each dataset? Some datasets (e.g., from tissue digestion) may need different mitochondrial thresholds.
+1. Are QC thresholds appropriate for each dataset? The default 5% mitochondrial threshold is stringent — some datasets (e.g., from tissue digestion) may need a higher threshold.
 2. Do the preliminary cell type labels make sense? Are expected cell types present where they should be (e.g., endothelial cells in tissue-derived but not in sorted NP cell datasets)?
 3. Are there datasets where quality is too low to include in downstream analysis?
 4. Do any datasets show strong batch effects between samples within the same study that need correction?

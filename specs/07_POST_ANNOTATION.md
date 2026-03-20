@@ -70,6 +70,10 @@ Each cluster receives a `coarse_cell_type` label (e.g., "Chondrocyte-like", "Fib
 
 Within each coarse category, compute DE genes between the clusters of that category to find what distinguishes them. This determines *what state or subtype* the cell is in.
 
+**Marker gene discovery should use the SCT assay:**
+- In R/Seurat: run `PrepSCTFindMarkers()` before `FindAllMarkers()` on the SCT assay
+- In Python: use `sc.tl.rank_genes_groups()` on SCTransform-normalized data
+
 For example, if there are 5 chondrocyte-like clusters:
 1. Run `sc.tl.rank_genes_groups()` comparing only those 5 clusters against each other
 2. Extract the top 20-50 DE markers per cluster
