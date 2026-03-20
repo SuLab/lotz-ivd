@@ -345,7 +345,11 @@ def run_deseq2(counts_df, sample_df, cell_type, comparison_name):
         return None, f"Too few genes after filtering: {counts_filtered.shape[1]}"
 
     # Prepare metadata
-    clinical = sample_df.set_index('sample_id')[['group', 'study']].copy()
+    # DE: RNA assay; correct for study (batch) and IVD score (continuous covariate)
+    cols_to_keep = ['group', 'study']
+    if 'ivd_score' in sample_df.columns:
+        cols_to_keep.append('ivd_score')
+    clinical = sample_df.set_index('sample_id')[cols_to_keep].copy()
 
     # If all samples from same study, don't include study in design
     n_studies = clinical['study'].nunique()
@@ -353,6 +357,15 @@ def run_deseq2(counts_df, sample_df, cell_type, comparison_name):
         design_factors = ['group', 'study']
     else:
         design_factors = ['group']
+
+    # Include ivd_score as continuous covariate when available and variable
+    if 'ivd_score' in clinical.columns:
+        ivd_vals = pd.to_numeric(clinical['ivd_score'], errors='coerce')
+        if ivd_vals.notna().sum() >= 2 and ivd_vals.nunique() > 1:
+            clinical['ivd_score'] = ivd_vals
+            design_factors.append('ivd_score')
+        else:
+            clinical = clinical.drop(columns=['ivd_score'])
 
     try:
         dds = DeseqDataSet(

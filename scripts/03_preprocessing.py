@@ -168,8 +168,9 @@ SAMPLE_FILE_MAP = {
 QC_PARAMS = {
     "min_genes": 200,
     "max_genes": 6000,
-    "max_pct_mt": 20.0,
-    "min_counts": 500,
+    "max_pct_mt": 5.0,
+    "min_counts": 1000,
+    "max_counts": 25000,
     "doublet_score_threshold": 0.25,
     "min_cells_per_gene": 3,
 }
@@ -189,8 +190,8 @@ CELL_TYPE_MARKERS = {
 }
 
 # ── Clustering resolutions ────────────────────────────────────────────────────
-LEIDEN_RESOLUTIONS = [0.2, 0.5, 0.8, 1.0, 1.5]
-WORKING_RESOLUTION = 0.5
+LEIDEN_RESOLUTIONS = [round(x * 0.1, 1) for x in range(1, 21)]  # 0.1 to 2.0 in 0.1 steps
+WORKING_RESOLUTION = 0.5  # default; updated per-dataset by silhouette/modularity scoring
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -579,8 +580,9 @@ def preprocess_dataset(accession, samples_dict, metadata_df):
         high_genes = adata.obs['n_genes_by_counts'] > QC_PARAMS['max_genes']
         high_mt = adata.obs['pct_counts_mt'] > QC_PARAMS['max_pct_mt']
         low_counts = adata.obs['total_counts'] < QC_PARAMS['min_counts']
+        high_counts = adata.obs['total_counts'] > QC_PARAMS['max_counts']
 
-        sample_remove = sample_mask & (low_genes | high_genes | high_mt | low_counts)
+        sample_remove = sample_mask & (low_genes | high_genes | high_mt | low_counts | high_counts)
         keep_mask &= ~sample_remove
 
         n_removed = sample_remove.sum()
@@ -590,7 +592,8 @@ def preprocess_dataset(accession, samples_dict, metadata_df):
               f"(removed {n_removed}: {(low_genes & sample_mask).sum()} low_genes, "
               f"{(high_genes & sample_mask).sum()} high_genes, "
               f"{(high_mt & sample_mask).sum()} high_mt, "
-              f"{(low_counts & sample_mask).sum()} low_counts)")
+              f"{(low_counts & sample_mask).sum()} low_counts, "
+              f"{(high_counts & sample_mask).sum()} high_counts)")
 
     adata = adata[keep_mask].copy()
     print(f"  After QC filtering: {adata.shape[0]} cells")
@@ -644,12 +647,13 @@ def preprocess_dataset(accession, samples_dict, metadata_df):
     qc_stats["cells_after_qc"] = adata.shape[0]
     qc_stats["genes_after_qc"] = adata.shape[1]
 
-    # ── Step 3: Normalization ────────────────────────────────────────────────
-    print(f"  Step 3: Normalizing...")
+    # ── Step 3: Normalization (SCTransform equivalent) ───────────────────────
+    print(f"  Step 3: Normalizing (Pearson residuals / SCTransform equivalent)...")
     # Update counts layer after gene filtering
     adata.layers['counts'] = adata.X.copy()
-    sc.pp.normalize_total(adata, target_sum=1e4)
-    sc.pp.log1p(adata)
+    # Pearson residual normalization: the scanpy equivalent of Seurat's SCTransform.
+    # Variance-stabilizes counts without separate normalize → log → scale steps.
+    sc.experimental.pp.normalize_pearson_residuals(adata)
 
     # ── Step 4: Feature selection ────────────────────────────────────────────
     print(f"  Step 4: Identifying highly variable genes...")
@@ -683,9 +687,10 @@ def preprocess_dataset(accession, samples_dict, metadata_df):
 
     # ── Step 5: Dimensionality reduction ─────────────────────────────────────
     print(f"  Step 5: PCA, neighbors, UMAP...")
-    # Scale for PCA (store in a temporary layer, don't overwrite .X)
+    # NOTE: When using Pearson residuals (SCTransform equivalent), the separate
+    # scaling step is not needed since Pearson residuals are already
+    # variance-stabilized. We skip sc.pp.scale() and run PCA directly.
     adata_pca = adata[:, adata.var['highly_variable']].copy()
-    sc.pp.scale(adata_pca, max_value=10)
 
     n_comps = min(50, min(adata_pca.shape) - 1)
     sc.tl.pca(adata_pca, n_comps=n_comps, svd_solver='arpack')
@@ -697,13 +702,9 @@ def preprocess_dataset(accession, samples_dict, metadata_df):
     hvg_idx = np.where(adata.var['highly_variable'])[0]
     adata.varm['PCs'][hvg_idx] = adata_pca.varm['PCs']
 
-    # Determine effective dimensionality (variance explained > 90% cumulative)
-    var_ratio = adata.uns['pca']['variance_ratio']
-    cumvar = np.cumsum(var_ratio)
-    n_pcs = int(np.searchsorted(cumvar, 0.90) + 1)
-    n_pcs = max(n_pcs, 10)  # minimum 10 PCs
-    n_pcs = min(n_pcs, n_comps)
-    print(f"  PCs used: {n_pcs} (90% variance at PC{np.searchsorted(cumvar, 0.90)+1})")
+    # Use all 50 PCs (or fewer if matrix is smaller)
+    n_pcs = n_comps
+    print(f"  PCs used: {n_pcs} (all computed components)")
     qc_stats["n_pcs"] = n_pcs
 
     sc.pp.neighbors(adata, n_pcs=n_pcs)
@@ -713,6 +714,9 @@ def preprocess_dataset(accession, samples_dict, metadata_df):
 
     # ── Step 6: Clustering ───────────────────────────────────────────────────
     print(f"  Step 6: Leiden clustering...")
+    from sklearn.metrics import silhouette_score
+
+    resolution_scores = {}
     for res in LEIDEN_RESOLUTIONS:
         key = f"leiden_res_{res}"
         sc.tl.leiden(adata, resolution=res, key_added=key, flavor='igraph',
@@ -720,13 +724,43 @@ def preprocess_dataset(accession, samples_dict, metadata_df):
         n_clusters = adata.obs[key].nunique()
         print(f"    Resolution {res}: {n_clusters} clusters")
 
+        # Score each resolution: silhouette on PCA embedding + modularity
+        labels = adata.obs[key].astype(int).values
+        if n_clusters > 1 and n_clusters < adata.shape[0]:
+            try:
+                # Subsample for silhouette if dataset is large (>50k cells)
+                if adata.shape[0] > 50000:
+                    idx = np.random.choice(adata.shape[0], 50000, replace=False)
+                    sil = silhouette_score(adata.obsm['X_pca'][idx], labels[idx])
+                else:
+                    sil = silhouette_score(adata.obsm['X_pca'], labels)
+            except Exception:
+                sil = -1.0
+            # Modularity from the Leiden partition (stored by scanpy)
+            mod_key = f"leiden_res_{res}"
+            mod = adata.uns.get(f'{mod_key}', {}).get('params', {}).get('modularity', None)
+            # Combined score: silhouette is primary metric
+            resolution_scores[res] = sil
+            print(f"      Silhouette score: {sil:.4f}")
+
+    # Select optimal resolution by highest silhouette score
+    if resolution_scores:
+        best_res = max(resolution_scores, key=resolution_scores.get)
+        best_sil = resolution_scores[best_res]
+        print(f"  Optimal resolution: {best_res} (silhouette={best_sil:.4f})")
+        working_resolution = best_res
+    else:
+        print(f"  WARNING: Could not compute silhouette scores, defaulting to res=0.5")
+        working_resolution = WORKING_RESOLUTION
+
+    qc_stats["working_resolution"] = working_resolution
     qc_stats["n_clusters_working"] = int(
-        adata.obs[f"leiden_res_{WORKING_RESOLUTION}"].nunique()
+        adata.obs[f"leiden_res_{working_resolution}"].nunique()
     )
 
     # ── Step 7: Marker genes ─────────────────────────────────────────────────
     print(f"  Step 7: Computing marker genes...")
-    working_key = f"leiden_res_{WORKING_RESOLUTION}"
+    working_key = f"leiden_res_{working_resolution}"
     sc.tl.rank_genes_groups(adata, groupby=working_key, method='wilcoxon',
                             use_raw=False)
 

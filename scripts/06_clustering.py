@@ -2,7 +2,7 @@
 """Module 06: Clustering with resolution optimization.
 
 Clusters the integrated objects from Module 05 using Leiden clustering
-on scANVI embeddings. Resolution is selected by multi-metric optimization
+on the selected workflow's embeddings. Resolution is selected by multi-metric optimization
 (silhouette, modularity).
 
 Usage:
@@ -242,10 +242,24 @@ def cluster_tier(adata, object_name, tier_name, tier_cfg):
     embedding_key = tier_cfg["embedding_key"]
     cell_class_vals = tier_cfg["cell_class_values"]
 
-    # Check if the embedding exists
+    # Check if the embedding exists; if not, try alternative keys
     if embedding_key not in adata.obsm:
-        print(f"  SKIP: {object_name}/{tier_name} — embedding {embedding_key} not found")
-        return None, None
+        fallback_keys = [f"X_cca_{tier_name}", f"X_stacas_{tier_name}",
+                         f"X_pca_{tier_name}", "X_cca", "X_stacas", "X_pca"]
+        found = False
+        for alt_key in fallback_keys:
+            if alt_key in adata.obsm:
+                print(f"  NOTE: Default embedding {embedding_key} not found; "
+                      f"using fallback {alt_key} for {object_name}/{tier_name}")
+                embedding_key = alt_key
+                found = True
+                break
+        if not found:
+            print(f"  SKIP: {object_name}/{tier_name} — embedding {embedding_key} not found "
+                  f"(also checked fallbacks: {fallback_keys})")
+            return None, None
+    else:
+        print(f"  Using embedding: {embedding_key} for {object_name}/{tier_name}")
 
     # Subset to cells of this tier
     mask = adata.obs['cell_class'].isin(cell_class_vals)

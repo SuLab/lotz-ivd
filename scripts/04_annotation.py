@@ -3,7 +3,7 @@
 
 Classifies cells into 5 anchor categories (Chondrocyte_like, Fibroblast_like,
 Immune, Endothelial, Pericyte_SMC) plus Unknown. These coarse labels serve as
-seed labels for scANVI semi-supervised integration in Module 05.
+seed labels for semi-supervised integration in Module 05 Workflows B (scANVI) and C (STACAS).
 Fine-grained cell type annotation happens after integration (in Module 07).
 
 Usage:
