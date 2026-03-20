@@ -3,7 +3,10 @@
 # Module 05 — Workflow A: CCA Integration (PRIMARY)
 #
 # Integrates cells across studies into four compartment-based objects (NP, AF,
-# CEP, all_cells) using Seurat v5 CCA (Canonical Correlation Analysis).
+# CEP, all_cells) using Seurat CCA (Canonical Correlation Analysis).
+# Follows the integration pattern from single_nuclei_r/Sample_QC_Integration.R:
+# per-sample SCTransform → SelectIntegrationFeatures → PrepSCTIntegration →
+# FindIntegrationAnchors → IntegrateData.
 # CCA is label-free — finds shared correlation structure without requiring
 # prior cell type annotations.
 #
@@ -223,51 +226,94 @@ load_and_build_object <- function(object_name) {
 
 run_cca_flat <- function(seurat_list, object_name) {
   message("\n  Running CCA flat integration for ", object_name, "...")
+  message("  Following pattern: per-sample SCTransform -> SelectIntegrationFeatures ->")
+  message("    PrepSCTIntegration -> FindIntegrationAnchors -> IntegrateData")
 
-  # Merge all objects
-  if (length(seurat_list) == 1) {
-    merged <- seurat_list[[1]]
-  } else {
-    merged <- merge(seurat_list[[1]], y = seurat_list[-1],
-                    add.cell.ids = names(seurat_list))
+  # Step 1: Per-sample SCTransform (if not already done)
+  # Each object should already have SCT from preprocessing, but ensure it
+  for (i in seq_along(seurat_list)) {
+    obj <- seurat_list[[i]]
+    if (!"SCT" %in% names(obj@assays)) {
+      message("    Running SCTransform on ", names(seurat_list)[i], "...")
+      obj[["percent.mt"]] <- PercentageFeatureSet(obj, pattern = "^MT-")
+      obj <- SCTransform(obj, vars.to.regress = c("percent.mt"), verbose = FALSE)
+      obj <- RunPCA(obj, verbose = FALSE)
+      obj <- RunUMAP(obj, reduction = "pca", reduction.name = "rna.umap",
+                     assay = "SCT", dims = 1:50, verbose = FALSE)
+    }
+    DefaultAssay(obj) <- "SCT"
+    seurat_list[[i]] <- obj
   }
-  message("    Merged: ", ncol(merged), " cells x ", nrow(merged), " genes")
 
-  # Split layers by study for integration
-  merged[["RNA"]] <- split(merged[["RNA"]], f = merged$study)
+  # Step 2: Select integration features across all datasets
+  message("    Selecting 3000 integration features...")
+  features <- SelectIntegrationFeatures(object.list = seurat_list, nfeatures = 3000)
 
-  # SCTransform normalization
-  message("    Running SCTransform...")
-  merged <- SCTransform(merged, vars.to.regress = "pct_counts_mt",
-                        verbose = FALSE)
+  # Step 3: Prepare SCT integration
+  message("    Running PrepSCTIntegration...")
+  seurat_list <- PrepSCTIntegration(object.list = seurat_list,
+                                     anchor.features = features)
 
-  # CCA integration
-  message("    Running CCA integration (dims = 1:50)...")
-  merged <- IntegrateLayers(
-    object = merged,
-    method = CCAIntegration,
-    normalization.method = "SCT",
-    dims = 1:50,
-    verbose = FALSE
-  )
+  # Step 4: Find integration anchors (CCA is the default method)
+  message("    Finding integration anchors (CCA, dims = 1:50)...")
+  anchors <- FindIntegrationAnchors(object.list = seurat_list,
+                                     dims = 1:50,
+                                     normalization.method = "SCT",
+                                     anchor.features = features)
 
-  # Rejoin layers after integration
-  merged[["RNA"]] <- JoinLayers(merged[["RNA"]])
+  # Step 5: Integrate data
+  message("    Integrating data (dims = 1:50)...")
+  integrated <- IntegrateData(anchorset = anchors,
+                               dims = 1:50,
+                               normalization.method = "SCT")
 
-  # Dimensionality reduction
-  message("    Running PCA, UMAP, FindNeighbors...")
-  merged <- RunPCA(merged, npcs = 50, verbose = FALSE)
-  merged <- RunUMAP(merged, dims = 1:50, verbose = FALSE)
-  merged <- FindNeighbors(merged, dims = 1:50, verbose = FALSE)
+  # Step 6: Post-integration processing
+  message("    Running PCA, UMAP, FindNeighbors on integrated assay...")
+  DefaultAssay(integrated) <- "integrated"
+  integrated <- RunPCA(integrated, npcs = 50, verbose = FALSE)
+  integrated <- RunUMAP(integrated, reduction = "pca", dims = 1:50, verbose = FALSE)
+  integrated <- FindNeighbors(integrated, reduction = "pca", dims = 1:50, verbose = FALSE)
 
-  message("    CCA flat integration complete: ", ncol(merged), " cells")
-  return(merged)
+  message("    CCA flat integration complete: ", ncol(integrated), " cells")
+  return(integrated)
 }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # CCA INTEGRATION (TIERED)
 # ═══════════════════════════════════════════════════════════════════════════
+
+integrate_tier <- function(seurat_list, tier_name) {
+  # Per-sample SCTransform + SelectIntegrationFeatures + CCA for one tier
+  for (i in seq_along(seurat_list)) {
+    obj <- seurat_list[[i]]
+    if (!"SCT" %in% names(obj@assays)) {
+      obj[["percent.mt"]] <- PercentageFeatureSet(obj, pattern = "^MT-")
+      obj <- SCTransform(obj, vars.to.regress = c("percent.mt"), verbose = FALSE)
+      obj <- RunPCA(obj, verbose = FALSE)
+    }
+    DefaultAssay(obj) <- "SCT"
+    seurat_list[[i]] <- obj
+  }
+
+  features <- SelectIntegrationFeatures(object.list = seurat_list, nfeatures = 3000)
+  seurat_list <- PrepSCTIntegration(object.list = seurat_list,
+                                     anchor.features = features)
+  anchors <- FindIntegrationAnchors(object.list = seurat_list,
+                                     dims = 1:50,
+                                     normalization.method = "SCT",
+                                     anchor.features = features)
+  integrated <- IntegrateData(anchorset = anchors,
+                               dims = 1:50,
+                               normalization.method = "SCT")
+  DefaultAssay(integrated) <- "integrated"
+  integrated <- RunPCA(integrated, npcs = 50, verbose = FALSE)
+  integrated <- RunUMAP(integrated, reduction = "pca", dims = 1:50, verbose = FALSE)
+  integrated <- FindNeighbors(integrated, reduction = "pca", dims = 1:50, verbose = FALSE)
+
+  message("      ", tier_name, " integration complete: ", ncol(integrated), " cells")
+  return(integrated)
+}
 
 run_cca_tiered <- function(seurat_list, object_name) {
   message("\n  Running CCA tiered integration for ", object_name, "...")
@@ -287,21 +333,21 @@ run_cca_tiered <- function(seurat_list, object_name) {
   mes_obj <- NULL
   non_mes_obj <- NULL
 
-  # Tier A: Mesenchymal
+  # Tier A: Mesenchymal — split back into per-sample objects, then integrate
   if (length(mes_cells) >= 50) {
     message("    Tier A: Mesenchymal (", length(mes_cells), " cells)")
-    mes_obj <- subset(merged, cells = colnames(merged)[mes_cells])
-    mes_obj[["RNA"]] <- split(mes_obj[["RNA"]], f = mes_obj$study)
-    mes_obj <- SCTransform(mes_obj, vars.to.regress = "pct_counts_mt",
-                           verbose = FALSE)
-    mes_obj <- IntegrateLayers(
-      object = mes_obj, method = CCAIntegration,
-      normalization.method = "SCT", dims = 1:50, verbose = FALSE
-    )
-    mes_obj[["RNA"]] <- JoinLayers(mes_obj[["RNA"]])
-    mes_obj <- RunPCA(mes_obj, npcs = 50, verbose = FALSE)
-    mes_obj <- RunUMAP(mes_obj, dims = 1:50, verbose = FALSE)
-    mes_obj <- FindNeighbors(mes_obj, dims = 1:50, verbose = FALSE)
+    mes_merged <- subset(merged, cells = colnames(merged)[mes_cells])
+    # Split back into per-study objects for FindIntegrationAnchors
+    mes_list <- SplitObject(mes_merged, split.by = "study")
+    # Remove studies with too few cells
+    mes_list <- mes_list[sapply(mes_list, ncol) >= 30]
+    if (length(mes_list) >= 2) {
+      mes_obj <- integrate_tier(mes_list, "mesenchymal")
+    } else if (length(mes_list) == 1) {
+      message("      Only 1 study in mesenchymal tier, skipping integration")
+      mes_obj <- mes_list[[1]]
+    }
+    rm(mes_merged, mes_list)
   } else {
     message("    Skipping mesenchymal tier: only ", length(mes_cells), " cells")
   }
@@ -309,31 +355,31 @@ run_cca_tiered <- function(seurat_list, object_name) {
   # Tier B: Non-mesenchymal
   if (length(non_mes_cells) >= 200) {
     message("    Tier B: Non-mesenchymal (", length(non_mes_cells), " cells)")
-    non_mes_obj <- subset(merged, cells = colnames(merged)[non_mes_cells])
-    non_mes_obj[["RNA"]] <- split(non_mes_obj[["RNA"]], f = non_mes_obj$study)
-    non_mes_obj <- SCTransform(non_mes_obj, vars.to.regress = "pct_counts_mt",
-                               verbose = FALSE)
-    non_mes_obj <- IntegrateLayers(
-      object = non_mes_obj, method = CCAIntegration,
-      normalization.method = "SCT", dims = 1:50, verbose = FALSE
-    )
-    non_mes_obj[["RNA"]] <- JoinLayers(non_mes_obj[["RNA"]])
-    non_mes_obj <- RunPCA(non_mes_obj, npcs = 50, verbose = FALSE)
-    non_mes_obj <- RunUMAP(non_mes_obj, dims = 1:50, verbose = FALSE)
-    non_mes_obj <- FindNeighbors(non_mes_obj, dims = 1:50, verbose = FALSE)
+    non_mes_merged <- subset(merged, cells = colnames(merged)[non_mes_cells])
+    non_mes_list <- SplitObject(non_mes_merged, split.by = "study")
+    non_mes_list <- non_mes_list[sapply(non_mes_list, ncol) >= 30]
+    if (length(non_mes_list) >= 2) {
+      non_mes_obj <- integrate_tier(non_mes_list, "non_mesenchymal")
+    } else if (length(non_mes_list) == 1) {
+      message("      Only 1 study in non-mesenchymal tier, skipping integration")
+      non_mes_obj <- non_mes_list[[1]]
+    }
+    rm(non_mes_merged, non_mes_list)
   } else {
     message("    Skipping non-mesenchymal tier: only ", length(non_mes_cells), " cells")
   }
 
+  rm(merged)
+  gc()
+
   # Merge tiers back
-  # TODO: Implement tier merging strategy — store tier-specific reductions
-  # in separate DimReduc slots and merge the objects
   if (!is.null(mes_obj) && !is.null(non_mes_obj)) {
-    # For now, merge and re-run PCA/UMAP on the merged object
     result <- merge(mes_obj, non_mes_obj)
+    # Re-run PCA/UMAP on merged for a combined visualization
+    DefaultAssay(result) <- "integrated"
     result <- RunPCA(result, npcs = 50, verbose = FALSE)
-    result <- RunUMAP(result, dims = 1:50, verbose = FALSE)
-    result <- FindNeighbors(result, dims = 1:50, verbose = FALSE)
+    result <- RunUMAP(result, reduction = "pca", dims = 1:50, verbose = FALSE)
+    result <- FindNeighbors(result, reduction = "pca", dims = 1:50, verbose = FALSE)
   } else if (!is.null(mes_obj)) {
     result <- mes_obj
   } else if (!is.null(non_mes_obj)) {

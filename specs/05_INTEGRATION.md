@@ -14,7 +14,7 @@ The all-cells object serves as a whole IVD atlas. IVD subcompartments (NP, AF, C
 
 ### Three Integration Workflows
 
-| | A: Seurat CCA | B: scANVI | C: STACAS | Notes |
+| | A: Seurat CCA (ref pattern) | B: scANVI | C: STACAS | Notes |
 |---|---|---|---|---|
 | Language | R only | R + Python | R only | Prefer A or C to avoid Python dependency |
 | Cell labels? | No | Yes (coarse) | Yes (coarse; optional) | Same coarse labels shared across B and C |
@@ -192,25 +192,32 @@ All three workflows share these parameters (from Shared Parameters):
 
 ---
 
-## Workflow A (Primary): Seurat v5 CCA Integration
+## Workflow A (Primary): Seurat CCA Integration
 
-**Framework:** R / Seurat v5. Use this as the main workflow for all results.
+**Framework:** R / Seurat. Use this as the main workflow for all results.
 
-CCA (Canonical Correlation Analysis) finds shared correlation structure across datasets without requiring cell type labels. This makes it the most assumption-free approach — integration quality depends only on the data, not on the accuracy of prior annotations.
+CCA (Canonical Correlation Analysis) finds shared correlation structure across datasets without requiring cell type labels. This makes it the most assumption-free approach — integration quality depends only on the data, not on the accuracy of prior annotations. This workflow follows the integration pattern from the reference R code in `single_nuclei_r/Sample_QC_Integration.R`.
 
-### Step 1 — Merge and prepare
+### Step 1 — Per-sample SCTransform
 
-1. Merge all Seurat objects for the given compartment object (NP, AF, CEP, or all-cells)
-2. Split layers by sample
+Each sample is processed independently as a separate Seurat object:
+1. `SCTransform(object, vars.to.regress = c("percent.mt"))`
+2. `RunPCA()`
+3. `RunUMAP(reduction = "pca", assay = "SCT", dims = 1:50)`
+4. Save individual objects
 
-### Step 2 — Integration
+### Step 2 — HVG selection and anchor preparation
 
-Run CCA integration:
-```r
-IntegrateLayers(method = CCAIntegration, normalization.method = "SCT", dims = 1:50)
-```
+1. Set `DefaultAssay` to `"SCT"` on all objects
+2. `SelectIntegrationFeatures(object.list, nfeatures = 3000)`
+3. `PrepSCTIntegration(object.list, anchor.features = features)`
 
-### Step 3 — Flat vs Tiered comparison
+### Step 3 — CCA integration
+
+1. `FindIntegrationAnchors(object.list, dims = 1:50, normalization.method = "SCT", anchor.features = features)` — CCA is the default method
+2. `IntegrateData(anchorset, dims = 1:50, normalization.method = "SCT")`
+
+### Step 4 — Flat vs Tiered comparison
 
 Test both approaches and compare results:
 - **Flat:** Integrate all samples at once (single CCA pass)
@@ -218,11 +225,12 @@ Test both approaches and compare results:
 
 Compare using integration quality metrics (see below). Select the better approach at the human checkpoint.
 
-### Step 4 — Dimensionality reduction
+### Step 5 — Dimensionality reduction
 
-1. `RunPCA(npcs = 50)` on the integrated assay
-2. `RunUMAP(dims = 1:50)`
-3. `FindNeighbors(dims = 1:50)`
+1. `DefaultAssay <- "integrated"`
+2. `RunPCA(npcs = 50)`
+3. `RunUMAP(reduction = "pca", dims = 1:50)`
+4. `FindNeighbors(reduction = "pca", dims = 1:50)`
 
 ---
 
