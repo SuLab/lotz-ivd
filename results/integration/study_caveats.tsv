@@ -1,9 +1,0 @@
-study	first_author	caveat	impact	mitigation
-GSE165722	Tu 2022	BD Rhapsody platform (not 10x)	Different capture efficiency, gene detection	Platform-aware batch correction via scANVI study-level batch key
-GSE205535	Li 2022	BD Rhapsody platform; published corrigenda	See above; potential data quality issues	Monitor for outlier behavior in integration
-CNP0002664	Han 2022	Singleron Matrix platform (not 10x)	Different capture efficiency	Same as above
-GSE242443	Kuchynsky 2024	Culture-expanded CEP cells	Culture alters cell states; may not reflect in vivo biology	Caveat in all CEP results; compare with non-expanded CEP from GSE160756
-GSE255768	Shi 2024	Degenerative endplate only; no healthy control	Cannot do healthy vs. degenerated comparison for this study alone	Healthy CEP baseline from GSE160756
-GSE230809	Swahn 2024	All-male donors; age-disease confounded	Cannot separate age from degeneration effects	Note in interpretation; sex-specific effects cannot be assessed
-GSE205535 NNP	Li 2022	11yo spinal cord injury, classified as 'healthy'	Trauma confound	Excluded from DE comparisons
-GSE189916	Jiang 2022	Whole IVD (compartments not separated)	Cannot assign cells to NP/AF/CEP	Included only in all-cells object

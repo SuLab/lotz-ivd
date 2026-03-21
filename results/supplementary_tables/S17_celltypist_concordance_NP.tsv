@@ -1,7 +1,0 @@
-cluster	n_cells	de_novo_label	celltypist_majority	celltypist_agreement_pct	concordant
-0	917	unassigned	Endothelial cells	100.0	False
-1	859	unassigned	Classical monocytes	100.0	False
-2	638	unassigned	Classical monocytes	100.0	False
-3	610	unassigned	CD16+ NK cells	37.0	False
-4	325	Macrophage_M2	Macrophages	85.5	True
-5	60	Pericyte_SMC	Fibroblasts	96.7	False

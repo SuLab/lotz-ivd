@@ -21,19 +21,28 @@
 suppressPackageStartupMessages({
   library(Seurat)
   library(SeuratObject)
-  library(SeuratDisk)
   library(argparse)
   library(dplyr)
   library(ggplot2)
 })
 
+# Allow large objects in future (SCTransform uses future for parallelism)
+options(future.globals.maxSize = 8 * 1024^3)  # 8 GB
+
 # ── Paths ──────────────────────────────────────────────────────────────────
-BASE <- normalizePath(file.path(dirname(sys.frame(1)$ofile %||% "."), ".."),
-                      mustWork = FALSE)
-# Fallback for non-interactive invocation
-if (!dir.exists(BASE)) {
-  BASE <- normalizePath(file.path(getwd(), ".."), mustWork = FALSE)
+# Detect script directory robustly (works with Rscript, nohup, source)
+.get_script_dir <- function() {
+  args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args, value = TRUE)
+  if (length(file_arg) > 0) {
+    return(normalizePath(dirname(sub("^--file=", "", file_arg[1]))))
+  }
+  if (!is.null(sys.frame(1)$ofile)) {
+    return(normalizePath(dirname(sys.frame(1)$ofile)))
+  }
+  return(normalizePath("."))
 }
+BASE <- normalizePath(file.path(.get_script_dir(), ".."), mustWork = FALSE)
 
 PROC_DIR   <- file.path(BASE, "data", "processed")
 INT_DIR    <- file.path(BASE, "data", "integrated", "cca")
@@ -121,17 +130,39 @@ get_study_assignments <- function(object_name) {
 # ═══════════════════════════════════════════════════════════════════════════
 
 load_h5ad_as_seurat <- function(h5ad_path) {
-  # Convert h5ad to h5seurat, then load
-  # TODO: If SeuratDisk is unavailable, use anndata + reticulate as fallback
-  h5seurat_path <- sub("\\.h5ad$", ".h5seurat", h5ad_path)
+  # Use Python bridge to convert h5ad -> mtx + metadata, then load in R
+  bridge_script <- file.path(BASE, "scripts", "h5ad_to_seurat_bridge.py")
+  bridge_dir <- file.path(tempdir(), sub("\\.h5ad$", "", basename(h5ad_path)))
 
-  if (!file.exists(h5seurat_path)) {
-    message("  Converting ", basename(h5ad_path), " to h5seurat...")
-    Convert(h5ad_path, dest = "h5seurat", overwrite = TRUE)
+  if (!dir.exists(bridge_dir) || !file.exists(file.path(bridge_dir, "matrix.mtx"))) {
+    message("  Converting ", basename(h5ad_path), " via bridge...")
+    venv_python <- file.path(BASE, ".venv", "bin", "python3")
+    ret <- system2(venv_python, args = c(bridge_script, h5ad_path, bridge_dir),
+                   stdout = TRUE, stderr = TRUE)
+    if (!file.exists(file.path(bridge_dir, "matrix.mtx"))) {
+      stop("Bridge conversion failed: ", paste(ret, collapse = "\n"))
+    }
   }
 
-  message("  Loading ", basename(h5seurat_path), "...")
-  obj <- LoadH5Seurat(h5seurat_path, assays = "RNA")
+  message("  Loading ", basename(h5ad_path), " from bridge files...")
+  counts <- Matrix::readMM(file.path(bridge_dir, "matrix.mtx"))
+  barcodes <- read.table(file.path(bridge_dir, "barcodes.tsv"), stringsAsFactors = FALSE)[[1]]
+  features <- read.table(file.path(bridge_dir, "features.tsv"), sep = "\t", stringsAsFactors = FALSE)
+
+  # matrix.mtx is genes x cells (Read10X convention)
+  colnames(counts) <- barcodes
+  rownames(counts) <- features[[2]]  # gene names
+  counts <- as(counts, "dgCMatrix")
+
+  obj <- CreateSeuratObject(counts = counts, project = sub("\\.h5ad$", "", basename(h5ad_path)))
+
+  # Add metadata
+  meta <- read.csv(file.path(bridge_dir, "metadata.csv"), row.names = 1,
+                   stringsAsFactors = FALSE)
+  for (col in colnames(meta)) {
+    obj@meta.data[[col]] <- meta[colnames(obj), col]
+  }
+
   return(obj)
 }
 

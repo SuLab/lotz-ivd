@@ -2,73 +2,32 @@
 
 ## Current Status
 
-**Pipeline v4 COMPLETE.** All 12 modules executed successfully. scANVI semi-supervised integration with 5 coarse anchor categories.
+**Pipeline v5 — STARTING.** Fresh run. v4 results archived in `results_v4/`. Processed per-dataset files retained in `data/processed/`; integrated data cleared.
 
-**Pipeline version:** v4 (spec restructuring + scANVI integration). See `results/VERSION_DIFFERENCES_SUMMARY.md` for v1-v4 history.
+**Pipeline version:** v5
 
 ## Active Step
 
-**All modules complete.** Awaiting human checkpoint review.
+**Module 01: Dataset Discovery.** Verify existing downloads and metadata.
 
 ---
 
-## Pipeline Summary (v4 — complete)
+## Pipeline Summary (v5)
 
 | Module | Status | Script | Description |
 |--------|--------|--------|-------------|
-| 01: Dataset Discovery | Complete (v1) | 01_dataset_download.py | 11 datasets, ~410K cells, 71 samples |
+| 01: Dataset Discovery | Complete (v1) | 01_dataset_download.py | 12 datasets downloaded |
 | 02: Metadata Harmonization | Complete (v1) | 02_metadata_harmonization.py | Condition mappings finalized |
-| 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 410,759 cells post-QC across 11 datasets |
-| 04: Coarse Classification | Complete (v4) | 04_annotation.py | 5 anchor categories + Unknown for scANVI |
-| 05: Integration | Complete (v4) | 05_integration.py | Tiered scANVI, checkpoint resume support |
-| 06: Clustering | Complete (v4) | 06_clustering.py | Leiden with resolution optimization |
-| 07: Post-Integration Annotation | Complete (v4) | 07_annotation.py | Two-stage: coarse markers → fine DE |
-| 08: Differential Analysis | Complete (v4) | 08_differential.py | 23 powered comparisons, 925+ sig genes |
-| 09: Biological Interpretation | Complete (v4) | 09_interpretation.py | 1,772 enriched pathways, 7 pain genes |
-| 10: Trajectory Analysis | Complete (v4) | 10_trajectory.py | PAGA + DPT pseudotime, 3 compartments |
-| 11: Cell-Cell Communication | Complete (v4) | 11_communication.py | 39K healthy vs 37K degenerated interactions |
-| 12: Final Reporting | Complete (v4) | 12_reporting.py | Report + 27 supplementary tables |
-
-### v4 Key Results
-
-**Cell type annotations (Module 07):**
-- NP: 10 cell types (NP_mature_chondrocyte, NP_fibrocartilaginous, Fibrochondrocyte_chondroid, NP_notochordal, ...)
-- AF: 2 cell types (AF_outer, AF_inner)
-- CEP: 3 cell types (EP_hyaline, Fibroblast_like, Fibrochondrocyte_chondroid)
-- all_cells: 19 cell types total
-
-**Clustering (Module 06):**
-- NP: 56 mesenchymal (res=1.0) + 6 non-mesenchymal (res=0.5) = 62 clusters
-- AF: 14 mesenchymal (res=0.2) = 14 clusters (56 non-mesenchymal cells, too few for tier)
-- CEP: 9 mesenchymal (res=0.2) = 9 clusters (89 non-mesenchymal cells, too few for tier)
-- all_cells: 62 mesenchymal (res=1.0) + 8 non-mesenchymal (res=0.7) = 70 clusters
-
-**Differential expression (Module 08):**
-- 23 powered comparisons across cell types
-- Key: NP_fibrocartilaginous mild_vs_severe: 305 sig genes; NP_mature_chondrocyte mild_vs_severe: 242 sig genes
-
-**Trajectory (Module 10):**
-- CEP: rho=0.396 (degenerated at later pseudotime)
-- Trajectory-associated genes found in all 3 compartments
-
-**Cell-cell communication (Module 11):**
-- Healthy: 39,236 interactions; Degenerated: 37,013 (fewer in degeneration)
-- 3,184 pain-relevant interactions flagged
-
-### v4 Key Changes from v3
-
-1. **Module 04 restructured:** Binary mesenchymal/non-mesenchymal → 5 coarse anchor categories (Chondrocyte_like, Fibroblast_like, Immune, Endothelial, Pericyte_SMC) + Unknown. Provides richer anchor labels for scANVI.
-
-2. **scANVI replaces scVI:** Semi-supervised integration uses coarse_label anchors from Module 04. Should produce better batch correction, especially across platforms (10x, BD Rhapsody, Singleron).
-
-3. **Module 05 split into 3:** Old monolithic integration+clustering+annotation script split into:
-   - 05: Integration only (scANVI)
-   - 06: Clustering with resolution optimization (NEW)
-   - 07: Two-stage post-integration annotation (NEW)
-
-4. **Downstream modules renumbered:** 06→08, 07→09, 08→10, 09→11, 10→12
-
-5. **Two-stage annotation (Module 07):** Stage 1 assigns coarse identity via canonical markers. Stage 2 refines within coarse groups using cluster DE markers. More principled than v3's single-pass approach.
+| 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 12 per-dataset h5ad files, ~429K cells |
+| 04: Coarse Classification | Complete (v4) | 04_annotation.py | 5 coarse categories + Unknown |
+| 05: Integration | In Progress (v5) | 05_integration.py | 3 parallel workflows: CCA, scANVI, STACAS |
+| 06: Clustering | Pending | 06_clustering.py | |
+| 07: Post-Integration Annotation | Pending | 07_annotation.py | |
+| 08: Differential Analysis | Pending | 08_differential.py | |
+| 09: Biological Interpretation | Pending | 09_interpretation.py | |
+| 10: Trajectory Analysis | Pending | 10_trajectory.py | |
+| 11: Cell-Cell Communication | Pending | 11_communication.py | |
+| 12: Final Reporting | Pending | 12_reporting.py | |
 
 ---
 
@@ -88,14 +47,15 @@
 
 ---
 
-## Integration Approach (v4)
+## Integration Approach (v5 — three parallel workflows)
 
-**Tiered scANVI** (semi-supervised). One scANVI model per tier per compartment object (NP, AF, CEP, all_cells) with `batch_key='study'` and `labels_key='coarse_label'`.
+**Three integration workflows** run in parallel on each compartment object (NP, AF, CEP, all_cells):
 
-- Mesenchymal tier anchors: Chondrocyte_like, Fibroblast_like; Unknown cells are unlabeled (scANVI positions them by similarity)
-- Non-mesenchymal tier anchors: Immune, Endothelial, Pericyte_SMC
+- **Workflow A (Seurat CCA):** R-only, label-free reference pattern. Tests both flat and tiered. **Primary workflow.**
+- **Workflow B (scANVI):** R+Python, semi-supervised with coarse anchor labels from Module 04. Tiered via batch hierarchy.
+- **Workflow C (STACAS):** R-only, label-guided (optional coarse labels). Tiered integration compatible.
 
-Workflow: train scVI (max_epochs=200) → initialize scANVI from scVI → train scANVI (max_epochs=50, early_stopping).
+Human checkpoint selects which workflow to carry forward to Modules 06+. See `specs/05_INTEGRATION.md` for full details.
 
 ---
 
@@ -181,3 +141,4 @@ Workflow: train scVI (max_epochs=200) → initialize scANVI from scVI → train 
 | 2026-03-10 | v2 complete. v3 annotation fix applied. Full rerun Modules 04-10. |
 | 2026-03-10 | v3 complete. Stale files cleaned. Notebooks re-executed. Reports updated. |
 | 2026-03-11 | Spec restructuring: 10→12 modules. scANVI integration. Scripts updated for v4. |
+| 2026-03-21 | v5 initiated. v4 results archived. data/integrated cleared. data/processed retained. |

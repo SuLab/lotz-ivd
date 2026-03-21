@@ -1,5 +1,0 @@
-compartment	embedding	test	rho	pvalue	n	statistic	n_healthy	n_degen	median_healthy	median_degen
-AF	scVI_mesenchymal	pseudotime_vs_condition_ordinal	0.01890851817665533	2.3541611255754275e-05	50000.0					
-AF	scVI_mesenchymal	pseudotime_healthy_vs_degenerated		0.16932407021522522		314691616.0	24771.0	25229.0	0.017874011769890785	0.01789419911801815
-AF	scVI_mesenchymal	pseudotime_vs_condition_AF_inner	0.5810896149930558	0.0	12369.0					
-AF	scVI_mesenchymal	pseudotime_vs_condition_AF_outer	-0.38752872595779897	0.0	37631.0					

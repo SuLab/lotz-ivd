@@ -1,6 +1,0 @@
-compartment	embedding	test	rho	pvalue	n	statistic	n_healthy	n_degen	median_healthy	median_degen
-CEP	scVI_mesenchymal	pseudotime_vs_condition_ordinal	0.39582600577222	0.0	32141.0					
-CEP	scVI_mesenchymal	pseudotime_healthy_vs_degenerated		0.0		76982352.0	20470.0	11671.0	0.08863122016191483	0.3662277162075043
-CEP	scVI_mesenchymal	pseudotime_vs_condition_Fibrochondrocyte_chondroid	0.05341953026692075	0.08706926766839213	1027.0					
-CEP	scVI_mesenchymal	pseudotime_vs_condition_EP_hyaline	0.03737759794929109	6.111550098307665e-06	14632.0					
-CEP	scVI_mesenchymal	pseudotime_vs_condition_Fibroblast_like	0.23936307872404283	1.87001754027479e-213	16482.0					

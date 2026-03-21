@@ -9,6 +9,9 @@ Orchestrates three parallel integration workflows:
 After workflows complete, generates shared outputs (inclusion summary, study
 caveats, workflow comparison) and runs validation.
 
+After the human checkpoint, use --select-workflow to promote the chosen
+workflow's outputs to the canonical data/integrated/ path for Modules 06-12.
+
 Usage:
     python3 scripts/05_integration.py                              # All workflows, all objects
     python3 scripts/05_integration.py --workflow scanvi             # Single workflow
@@ -17,6 +20,8 @@ Usage:
     python3 scripts/05_integration.py --validate-only               # Validation only
     python3 scripts/05_integration.py --force                       # Re-run even if outputs exist
     python3 scripts/05_integration.py --compare-only                # Run comparison only
+    python3 scripts/05_integration.py --select-workflow cca         # Promote CCA to canonical path
+    python3 scripts/05_integration.py --select-workflow scanvi      # Promote scANVI to canonical path
 """
 
 import subprocess
@@ -336,6 +341,79 @@ def validate_all():
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# WORKFLOW SELECTION (post-checkpoint)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def select_workflow(workflow_name, object_name=None):
+    """Promote a selected workflow's outputs to the canonical data/integrated/ path.
+
+    After the human checkpoint chooses a workflow, this copies (scANVI) or
+    converts (CCA/STACAS RDS→h5ad) the workflow outputs so that Modules 06-12
+    can load from the standard data/integrated/{object}.h5ad path.
+    """
+    import shutil
+
+    print("\n" + "=" * 60)
+    print(f"Selecting workflow: {workflow_name}")
+    print(f"Promoting outputs to canonical path: {INT_BASE}/")
+    print("=" * 60)
+
+    objects = [object_name] if object_name else OBJECTS
+
+    if workflow_name == "scanvi":
+        # scANVI outputs are already h5ad — copy directly
+        for obj in objects:
+            src = INT_BASE / "scanvi" / f"{obj}.h5ad"
+            dst = INT_BASE / f"{obj}.h5ad"
+            if not src.exists():
+                print(f"  WARNING: {src} not found, skipping {obj}")
+                continue
+            print(f"  Copying scanvi/{obj}.h5ad -> {obj}.h5ad")
+            shutil.copy2(src, dst)
+
+    elif workflow_name in ("cca", "stacas"):
+        # CCA/STACAS outputs are RDS — convert via R helper
+        cmd = ["Rscript", str(SCRIPTS_DIR / "05_select_workflow.R"),
+               "--workflow", workflow_name]
+        if object_name:
+            cmd += ["--object", object_name]
+
+        print(f"  Converting RDS -> h5ad via: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=False)
+
+        if result.returncode != 0:
+            print(f"  ERROR: RDS->h5ad conversion failed (exit code {result.returncode})")
+            sys.exit(1)
+
+    # Verify outputs exist
+    print("\n  Verifying canonical outputs:")
+    all_ok = True
+    for obj in objects:
+        canonical = INT_BASE / f"{obj}.h5ad"
+        if canonical.exists():
+            size_mb = canonical.stat().st_size / (1024 * 1024)
+            print(f"    OK: {obj}.h5ad ({size_mb:.0f} MB)")
+        else:
+            print(f"    MISSING: {obj}.h5ad")
+            all_ok = False
+
+    if all_ok:
+        print(f"\n  Workflow '{workflow_name}' selected successfully.")
+        print(f"  Modules 06-12 will now use these outputs.")
+    else:
+        print(f"\n  WARNING: Some outputs missing — check errors above.")
+
+    # Write a record of which workflow was selected
+    record_path = INT_BASE / "selected_workflow.txt"
+    record_path.write_text(
+        f"selected_workflow: {workflow_name}\n"
+        f"selected_at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+        f"objects: {', '.join(objects)}\n"
+    )
+    print(f"  Recorded selection in {record_path}")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -345,6 +423,12 @@ def main():
     validate_only = '--validate-only' in args
     compare_only = '--compare-only' in args
     force = '--force' in args
+
+    # Parse --select-workflow
+    select_wf = None
+    for i, a in enumerate(args):
+        if a == '--select-workflow' and i + 1 < len(args):
+            select_wf = args[i + 1]
 
     # Parse --workflow
     workflow = 'all'
@@ -364,10 +448,19 @@ def main():
         print(f"ERROR: Unknown workflow '{workflow}'. Choose from: {valid_workflows}")
         sys.exit(1)
 
+    if select_wf and select_wf not in {'cca', 'scanvi', 'stacas'}:
+        print(f"ERROR: Unknown workflow '{select_wf}'. Choose from: cca, scanvi, stacas")
+        sys.exit(1)
+
     # Validate object choice
     if object_name and object_name not in OBJECTS:
         print(f"ERROR: Unknown object '{object_name}'. Choose from: {OBJECTS}")
         sys.exit(1)
+
+    # Handle --select-workflow (post-checkpoint action)
+    if select_wf:
+        select_workflow(select_wf, object_name)
+        sys.exit(0)
 
     if validate_only:
         passed, _ = validate_all()
