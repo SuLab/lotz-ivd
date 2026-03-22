@@ -2,13 +2,9 @@
 
 ## Current Status
 
-**Pipeline v5 — STARTING.** Fresh run. v4 results archived in `results_v4/`. Processed per-dataset files retained in `data/processed/`; integrated data cleared.
+**Pipeline v5 — Module 05 COMPLETE.** Three integration workflows (CCA, scANVI, STACAS) finished. Awaiting human checkpoint to select workflow for Modules 06-12.
 
 **Pipeline version:** v5
-
-## Active Step
-
-**Module 01: Dataset Discovery.** Verify existing downloads and metadata.
 
 ---
 
@@ -20,7 +16,7 @@
 | 02: Metadata Harmonization | Complete (v1) | 02_metadata_harmonization.py | Condition mappings finalized |
 | 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 12 per-dataset h5ad files, ~429K cells |
 | 04: Coarse Classification | Complete (v4) | 04_annotation.py | 5 coarse categories + Unknown |
-| 05: Integration | Complete (v5) | 05_integration.py | CCA + scANVI complete; STACAS deferred (API change) |
+| 05: Integration | **CHECKPOINT** | 05_integration.py | All 3 workflows complete. Awaiting workflow selection. |
 | 06: Clustering | Pending | 06_clustering.py | |
 | 07: Post-Integration Annotation | Pending | 07_annotation.py | |
 | 08: Differential Analysis | Pending | 08_differential.py | |
@@ -28,6 +24,61 @@
 | 10: Trajectory Analysis | Pending | 10_trajectory.py | |
 | 11: Cell-Cell Communication | Pending | 11_communication.py | |
 | 12: Final Reporting | Pending | 12_reporting.py | |
+
+## Active Step
+
+**Human checkpoint: Select integration workflow for Modules 06-12.**
+
+Review materials:
+- `results/integration/workflow_comparison_report.html` — side-by-side UMAPs and metrics
+- `results/integration/workflow_comparison.tsv` — metrics table
+- `notebooks/05_integration.ipynb` — executed comparison notebook
+
+After review, run: `python3 scripts/05_integration.py --select-workflow <cca|scanvi|stacas>`
+
+---
+
+## v5 Module 05 Integration Results
+
+### Workflow A: CCA (Seurat v5, label-free)
+
+Uses `IntegrateLayers(method = CCAIntegration)` with NormalizeData (log-normalization keeps layers split). Objects >100K cells downsampled uniformly per study before CCA.
+
+| Object | Cells | Clusters (res=0.5) | Method | Time |
+|--------|-------|-------------------|--------|------|
+| NP | 15,000 | 9 | Downsampled (1,875/study) | ~35 min |
+| AF | 84,624 | 23 | Standard CCA | ~80 min |
+| CEP | 50,858 | 14 | Standard CCA | ~35 min |
+| all_cells | 11,000 | 8 | Downsampled (917/study) | ~20 min |
+
+### Workflow B: scANVI (semi-supervised, full cell counts)
+
+Tiered scANVI with 5 coarse anchor categories. All cells integrated (no downsampling).
+
+| Object | Cells | Clusters (res=0.5) | Time |
+|--------|-------|-------------------|------|
+| NP | 262,967 | 29 | ~55 min |
+| AF | 84,568 | 18 | ~15 min |
+| CEP | 50,769 | 13 | ~10 min |
+| all_cells | 410,759 | 29 | ~90 min |
+
+### Workflow C: STACAS (semi-supervised, R-native)
+
+Uses `Run.STACAS()` with coarse_label anchors. Objects >100K cells downsampled.
+
+| Object | Cells | Clusters (res=0.5) | Method |
+|--------|-------|-------------------|--------|
+| NP | 16,000 | 21 | Downsampled (2,000/study) |
+| AF | 84,624 | 23 | Standard |
+| CEP | 50,858 | 15 | Standard |
+| all_cells | 30,000 | — | Downsampled (2,000/study) |
+
+### Key observations
+
+- **CCA and STACAS required downsampling** for NP (260K) and all_cells (410K) due to 62GB RAM constraint. scANVI integrated all cells using GPU acceleration.
+- **Cluster counts are consistent across workflows** for AF (23, 18-23) and CEP (13-15), suggesting stable structure.
+- **NP cluster counts diverge:** CCA 9 (downsampled 15K), scANVI 29 (full 263K), STACAS 21 (downsampled 16K). The difference partly reflects cell count — more cells reveal finer structure.
+- **For the primary analysis**, scANVI provides the most complete integration (full cell counts, GPU-accelerated, proven in v4). CCA provides the label-free comparison.
 
 ---
 
@@ -51,11 +102,11 @@
 
 **Three integration workflows** run in parallel on each compartment object (NP, AF, CEP, all_cells):
 
-- **Workflow A (Seurat CCA, v5):** R-only, label-free. Uses Seurat v5 `IntegrateLayers(method=CCAIntegration)` with sketch-based integration for large objects (>100K cells). **Primary workflow.**
-- **Workflow B (scANVI):** R+Python, semi-supervised with coarse anchor labels from Module 04. Tiered via batch hierarchy.
-- **Workflow C (STACAS):** R-only, label-guided (optional coarse labels). Tiered integration compatible.
+- **Workflow A (Seurat CCA, v5):** R-only, label-free. Seurat v5 `IntegrateLayers(method=CCAIntegration)` with `NormalizeData`. Large objects downsampled uniformly per study.
+- **Workflow B (scANVI):** Python, semi-supervised with coarse anchor labels from Module 04. Tiered (mesenchymal + non-mesenchymal). Full cell counts via GPU.
+- **Workflow C (STACAS):** R-only, `Run.STACAS()` with coarse_label anchors. Large objects downsampled.
 
-Human checkpoint selects which workflow to carry forward to Modules 06+. See `specs/05_INTEGRATION.md` for full details.
+All three workflows complete. Human checkpoint selects which to carry forward. See `specs/05_INTEGRATION.md` for details, `docs/v5_execution_dialogue.md` for execution history.
 
 ---
 
@@ -83,7 +134,9 @@ Human checkpoint selects which workflow to carry forward to Modules 06+. See `sp
 
 - **NGDC datasets excluded:** PRJCA014236 and PRJCA007656 not downloaded. NP already well-covered.
 - **GSE205535 corrigenda:** Published corrections exist — reviewed during preprocessing.
-- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scANVI batch correction.
+- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scANVI batch correction. CCA and STACAS also correct for this via study-level integration.
+- **CCA/STACAS downsampled for large objects:** NP and all_cells were uniformly downsampled to ~15K and ~11-30K cells respectively for CCA and STACAS due to 62GB RAM constraint. scANVI integrated all cells. A 128-256GB machine would enable full-cell CCA.
+- **SeuratDisk incompatible with Seurat v5:** `GetAssayData(slot=...)` removed in SeuratObject 5.0. Workaround: Python bridge (h5ad→mtx+metadata→R `readMM`). See `scripts/h5ad_to_seurat_bridge.py`.
 - **CEP underpowered:** Only 3 CEP datasets (6 samples). Compartment-specific CEP analyses are limited.
 - **GSE242443 culture-expanded:** CEP cells are culture-expanded. Included with caveats.
 - **GSE230809 sex bias:** All 24 samples from male donors. Limits sex-stratified analyses.
@@ -95,6 +148,17 @@ Human checkpoint selects which workflow to carry forward to Modules 06+. See `sp
 ---
 
 ## Version History
+
+### v5 (2026-03-21 to present): Three-workflow integration comparison — IN PROGRESS
+- Spec 05 restructured for three parallel workflows (CCA, scANVI, STACAS)
+- R environment installed: Seurat 5.4.0, STACAS 2.4.1, DESeq2 1.42.1, speckle 0.99.7
+- Module 05 CCA: rewrote for Seurat v5 IntegrateLayers API; NormalizeData replaces SCTransform; downsample for >100K cells
+- Module 05 scANVI: reused v4 approach, all cells integrated on GPU
+- Module 05 STACAS: updated for STACAS v2.4 API (Run.STACAS replaces SampleIntegration); downsample for >100K cells
+- All 3 workflows complete (12/12 object-workflow combinations). Comparison report generated.
+- Modules 01-04 reused from v1/v4 (data/processed unchanged)
+- Awaiting human checkpoint for workflow selection → Modules 06-12
+- See `docs/v5_execution_dialogue.md` for full execution history
 
 ### v4 (2026-03-11): Spec restructuring + scANVI — COMPLETE
 - Pipeline restructured from 10 to 12 modules (clustering and annotation split from integration)
@@ -142,3 +206,7 @@ Human checkpoint selects which workflow to carry forward to Modules 06+. See `sp
 | 2026-03-10 | v3 complete. Stale files cleaned. Notebooks re-executed. Reports updated. |
 | 2026-03-11 | Spec restructuring: 10→12 modules. scANVI integration. Scripts updated for v4. |
 | 2026-03-21 | v5 initiated. v4 results archived. data/integrated cleared. data/processed retained. |
+| 2026-03-21 | R installed (Seurat 5.4.0, STACAS 2.4.1, DESeq2). SeuratDisk broken with v5 — bridge workaround. |
+| 2026-03-21 | scANVI workflow complete (all 4 objects). CCA v4 approach infeasible on 62GB — rewrote for Seurat v5. |
+| 2026-03-22 | CCA v5 complete (all 4 objects, downsampled for NP/all_cells). STACAS v2.4 API fixed, complete. |
+| 2026-03-22 | Module 05 human checkpoint ready. 3-workflow comparison report and notebooks generated. |
