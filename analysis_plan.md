@@ -51,7 +51,7 @@
 
 **Three integration workflows** run in parallel on each compartment object (NP, AF, CEP, all_cells):
 
-- **Workflow A (Seurat CCA):** R-only, label-free reference pattern. Tests both flat and tiered. **Primary workflow.**
+- **Workflow A (Seurat CCA, v5):** R-only, label-free. Uses Seurat v5 `IntegrateLayers(method=CCAIntegration)` with sketch-based integration for large objects (>100K cells). **Primary workflow.**
 - **Workflow B (scANVI):** R+Python, semi-supervised with coarse anchor labels from Module 04. Tiered via batch hierarchy.
 - **Workflow C (STACAS):** R-only, label-guided (optional coarse labels). Tiered integration compatible.
 

@@ -245,7 +245,8 @@ def cluster_tier(adata, object_name, tier_name, tier_cfg):
     # Check if the embedding exists; if not, try alternative keys
     if embedding_key not in adata.obsm:
         fallback_keys = [f"X_cca_{tier_name}", f"X_stacas_{tier_name}",
-                         f"X_pca_{tier_name}", "X_cca", "X_stacas", "X_pca"]
+                         f"X_pca_{tier_name}", "X_integrated.cca", "X_integrated.cca.full",
+                         "X_cca", "X_stacas", "X_pca"]
         found = False
         for alt_key in fallback_keys:
             if alt_key in adata.obsm:

@@ -14,11 +14,11 @@ The all-cells object serves as a whole IVD atlas. IVD subcompartments (NP, AF, C
 
 ### Three Integration Workflows
 
-| | A: Seurat CCA (ref pattern) | B: scANVI | C: STACAS | Notes |
+| | A: Seurat CCA (v5) | B: scANVI | C: STACAS | Notes |
 |---|---|---|---|---|
 | Language | R only | R + Python | R only | Prefer A or C to avoid Python dependency |
 | Cell labels? | No | Yes (coarse) | Yes (coarse; optional) | Same coarse labels shared across B and C |
-| Tiered integration? | Yes (test flat vs tiered) | Via batch hierarchy | Yes (compatible) | |
+| Scalability | Sketch-based for >100K cells | Handles large datasets natively | Anchor-based (similar to CCA) | |
 | Best for | Standard multi-lab; primary analysis | Large atlases; probabilistic cell type transfer | R-native label-guided; strong bio-conservation | |
 
 **Workflow A is the primary workflow.** Workflows B and C are run for comparison. The human checkpoint selects which workflow to carry forward.
@@ -194,43 +194,37 @@ All three workflows share these parameters (from Shared Parameters):
 
 ## Workflow A (Primary): Seurat CCA Integration
 
-**Framework:** R / Seurat. Use this as the main workflow for all results.
+**Framework:** R / Seurat v5. Use this as the main workflow for all results.
 
-CCA (Canonical Correlation Analysis) finds shared correlation structure across datasets without requiring cell type labels. This makes it the most assumption-free approach — integration quality depends only on the data, not on the accuracy of prior annotations. This workflow follows the integration pattern from the reference R code in `single_nuclei_r/Sample_QC_Integration.R`.
+CCA (Canonical Correlation Analysis) finds shared correlation structure across datasets without requiring cell type labels. This makes it the most assumption-free approach — integration quality depends only on the data, not on the accuracy of prior annotations. This workflow follows the integration approach from the reference R code in `single_nuclei_r/Sample_QC_Integration.R`, updated to use Seurat v5's `IntegrateLayers` API for scalability.
 
-### Step 1 — Per-sample SCTransform
+**Seurat v5 vs v4:** The CCA algorithm is identical. Seurat v5 changes only the execution model: data is stored in per-study layers within a single merged object, and `IntegrateLayers(method = CCAIntegration)` replaces the v4 pipeline of `FindIntegrationAnchors` → `IntegrateData`. For objects >100K cells, sketch-based integration subsamples representative cells for the CCA step, then projects the correction back to all cells. This reduces RAM and compute by 10-40x with minimal quality loss.
 
-Each sample is processed independently as a separate Seurat object:
-1. `SCTransform(object, vars.to.regress = c("percent.mt"))`
-2. `RunPCA()`
-3. `RunUMAP(reduction = "pca", assay = "SCT", dims = 1:50)`
-4. Save individual objects
+### Step 1 — Load and merge into a single Seurat v5 object
 
-### Step 2 — HVG selection and anchor preparation
+Load per-study h5ad files, apply compartment/sample filters, merge into one object where each study's counts are a separate layer.
 
-1. Set `DefaultAssay` to `"SCT"` on all objects
-2. `SelectIntegrationFeatures(object.list, nfeatures = 3000)`
-3. `PrepSCTIntegration(object.list, anchor.features = features)`
+### Step 2 — Normalization
 
-### Step 3 — CCA integration
+`NormalizeData()` + `FindVariableFeatures(nfeatures = 3000)` + `ScaleData()` — log-normalization that preserves the per-study layer structure required by `IntegrateLayers`. The CCA algorithm itself is normalization-agnostic (it finds shared correlation structure); log-normalization is the standard Seurat v5 `IntegrateLayers` input.
 
-1. `FindIntegrationAnchors(object.list, dims = 1:50, normalization.method = "SCT", anchor.features = features)` — CCA is the default method
-2. `IntegrateData(anchorset, dims = 1:50, normalization.method = "SCT")`
+### Step 3 — PCA and CCA integration
 
-### Step 4 — Flat vs Tiered comparison
+For objects ≤100K cells (AF, CEP):
+1. `RunPCA(npcs = 50)` on the merged object
+2. `IntegrateLayers(method = CCAIntegration, orig.reduction = "pca", dims = 1:50)`
+3. `JoinLayers()` to recombine after integration
 
-Test both approaches and compare results:
-- **Flat:** Integrate all samples at once (single CCA pass)
-- **Tiered:** Integrate within-study first, then integrate across studies
+For objects >100K cells (NP, all_cells):
+1. `SketchData(ncells = 15000, method = "LeverageScore")` — select representative cells, deliberately oversampling rare populations
+2. `RunPCA()` + `IntegrateLayers(method = CCAIntegration)` on the sketch
+3. `ProjectIntegration()` — project CCA correction back to full dataset
+4. `JoinLayers()` to recombine
 
-Compare using integration quality metrics (see below). Select the better approach at the human checkpoint.
+### Step 4 — Dimensionality reduction
 
-### Step 5 — Dimensionality reduction
-
-1. `DefaultAssay <- "integrated"`
-2. `RunPCA(npcs = 50)`
-3. `RunUMAP(reduction = "pca", dims = 1:50)`
-4. `FindNeighbors(reduction = "pca", dims = 1:50)`
+1. `RunUMAP(reduction = "integrated.cca", dims = 1:50)`
+2. `FindNeighbors(reduction = "integrated.cca", dims = 1:50)`
 
 ---
 

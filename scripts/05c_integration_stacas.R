@@ -28,7 +28,7 @@ suppressPackageStartupMessages({
 })
 
 # Allow large objects in future (SCTransform uses future for parallelism)
-options(future.globals.maxSize = 8 * 1024^3)  # 8 GB
+options(future.globals.maxSize = 16 * 1024^3)  # 16 GB
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 # Detect script directory robustly (works with Rscript, nohup, source)
