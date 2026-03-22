@@ -88,8 +88,6 @@ parser <- ArgumentParser(description = "Module 05C: STACAS Integration")
 parser$add_argument("--object", type = "character", default = NULL,
                     choices = c("NP", "AF", "CEP", "all_cells"),
                     help = "Process a single object (default: all)")
-parser$add_argument("--tiered", action = "store_true", default = FALSE,
-                    help = "Use tiered integration (mesenchymal/non-mesenchymal separately)")
 parser$add_argument("--validate-only", action = "store_true", default = FALSE,
                     help = "Run validation checks only")
 parser$add_argument("--force", action = "store_true", default = FALSE,
@@ -261,134 +259,54 @@ load_and_build_object <- function(object_name) {
 # ═══════════════════════════════════════════════════════════════════════════
 
 run_stacas_flat <- function(seurat_list, object_name) {
-  message("\n  Running STACAS flat integration for ", object_name, "...")
+  n_total <- sum(sapply(seurat_list, ncol))
+  message("\n  Running STACAS flat integration for ", object_name,
+          " (", n_total, " cells, ", length(seurat_list), " studies)...")
 
-  # Normalize each object with SCTransform before integration
-  message("    Running SCTransform on each object...")
+  # For large objects, downsample per study (same approach as CCA v5)
+  DOWNSAMPLE_THRESHOLD <- 100000
+  CELLS_PER_STUDY <- 2000
+  if (n_total > DOWNSAMPLE_THRESHOLD) {
+    message("    Downsampling from ", n_total, " to ~",
+            CELLS_PER_STUDY * length(seurat_list), " cells...")
+    set.seed(42)
+    seurat_list <- lapply(seurat_list, function(obj) {
+      n_take <- min(CELLS_PER_STUDY, ncol(obj))
+      cells <- sample(colnames(obj), n_take)
+      subset(obj, cells = cells)
+    })
+    n_total <- sum(sapply(seurat_list, ncol))
+    message("    Downsampled: ", n_total, " cells")
+  }
+
+  # Normalize each object with NormalizeData (lighter than SCTransform)
+  message("    NormalizeData on each object...")
   seurat_list <- lapply(seurat_list, function(obj) {
-    SCTransform(obj, vars.to.regress = "pct_counts_mt", verbose = FALSE)
+    obj <- NormalizeData(obj, verbose = FALSE)
+    obj <- FindVariableFeatures(obj, nfeatures = 3000, verbose = FALSE)
+    obj
   })
 
-  # Select integration features
-  message("    Selecting integration features (3000 HVGs)...")
-  features <- SelectIntegrationFeatures(seurat_list, nfeatures = 3000)
-
-  # Run STACAS semi-supervised integration with coarse labels
-  message("    Running STACAS::SampleIntegration (dims = 1:50)...")
-  integrated <- STACAS::SampleIntegration(
-    seurat_list,
-    dims = 1:50,
+  # Run.STACAS handles anchor finding + integration in one call
+  # It uses coarse_label for semi-supervised anchor weighting
+  message("    Run.STACAS (dims = 30, anchor.features = 2000)...")
+  integrated <- Run.STACAS(
+    object.list = seurat_list,
+    dims = 30,
+    anchor.features = 2000,
     cell.labels = "coarse_label",
-    anchor.features = features
+    verbose = TRUE
   )
 
-  # Dimensionality reduction
-  message("    Running PCA, UMAP, FindNeighbors...")
+  # Post-integration: PCA on integrated assay, then UMAP
+  message("    Running PCA, UMAP, FindNeighbors on integrated assay...")
+  DefaultAssay(integrated) <- "integrated"
   integrated <- RunPCA(integrated, npcs = 50, verbose = FALSE)
   integrated <- RunUMAP(integrated, dims = 1:50, verbose = FALSE)
   integrated <- FindNeighbors(integrated, dims = 1:50, verbose = FALSE)
 
   message("    STACAS flat integration complete: ", ncol(integrated), " cells")
   return(integrated)
-}
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# STACAS INTEGRATION (TIERED)
-# ═══════════════════════════════════════════════════════════════════════════
-
-run_stacas_tiered <- function(seurat_list, object_name) {
-  message("\n  Running STACAS tiered integration for ", object_name, "...")
-
-  # Merge to split by cell_class
-  if (length(seurat_list) == 1) {
-    merged <- seurat_list[[1]]
-  } else {
-    merged <- merge(seurat_list[[1]], y = seurat_list[-1],
-                    add.cell.ids = names(seurat_list))
-  }
-
-  mes_cells <- which(merged@meta.data$cell_class %in% c("mesenchymal", "unknown"))
-  non_mes_cells <- which(merged@meta.data$cell_class == "non_mesenchymal")
-
-  mes_obj <- NULL
-  non_mes_obj <- NULL
-
-  # Tier A: Mesenchymal
-  if (length(mes_cells) >= 50) {
-    message("    Tier A: Mesenchymal (", length(mes_cells), " cells)")
-    mes_merged <- subset(merged, cells = colnames(merged)[mes_cells])
-
-    # Re-split by study for STACAS
-    mes_list <- SplitObject(mes_merged, split.by = "study")
-
-    # SCTransform each
-    mes_list <- lapply(mes_list, function(obj) {
-      SCTransform(obj, vars.to.regress = "pct_counts_mt", verbose = FALSE)
-    })
-
-    features <- SelectIntegrationFeatures(mes_list, nfeatures = 3000)
-
-    mes_obj <- STACAS::SampleIntegration(
-      mes_list, dims = 1:50,
-      cell.labels = "coarse_label",
-      anchor.features = features
-    )
-    mes_obj <- RunPCA(mes_obj, npcs = 50, verbose = FALSE)
-    mes_obj <- RunUMAP(mes_obj, dims = 1:50, verbose = FALSE)
-    mes_obj <- FindNeighbors(mes_obj, dims = 1:50, verbose = FALSE)
-
-    rm(mes_list, mes_merged)
-  } else {
-    message("    Skipping mesenchymal tier: only ", length(mes_cells), " cells")
-  }
-
-  # Tier B: Non-mesenchymal
-  if (length(non_mes_cells) >= 200) {
-    message("    Tier B: Non-mesenchymal (", length(non_mes_cells), " cells)")
-    non_mes_merged <- subset(merged, cells = colnames(merged)[non_mes_cells])
-
-    non_mes_list <- SplitObject(non_mes_merged, split.by = "study")
-    non_mes_list <- lapply(non_mes_list, function(obj) {
-      SCTransform(obj, vars.to.regress = "pct_counts_mt", verbose = FALSE)
-    })
-    features <- SelectIntegrationFeatures(non_mes_list, nfeatures = 3000)
-
-    non_mes_obj <- STACAS::SampleIntegration(
-      non_mes_list, dims = 1:50,
-      cell.labels = "coarse_label",
-      anchor.features = features
-    )
-    non_mes_obj <- RunPCA(non_mes_obj, npcs = 50, verbose = FALSE)
-    non_mes_obj <- RunUMAP(non_mes_obj, dims = 1:50, verbose = FALSE)
-    non_mes_obj <- FindNeighbors(non_mes_obj, dims = 1:50, verbose = FALSE)
-
-    rm(non_mes_list, non_mes_merged)
-  } else {
-    message("    Skipping non-mesenchymal tier: only ", length(non_mes_cells), " cells")
-  }
-
-  rm(merged)
-  gc()
-
-  # Merge tiers back
-  # TODO: Store tier-specific reductions in separate DimReduc slots
-  if (!is.null(mes_obj) && !is.null(non_mes_obj)) {
-    result <- merge(mes_obj, non_mes_obj)
-    result <- RunPCA(result, npcs = 50, verbose = FALSE)
-    result <- RunUMAP(result, dims = 1:50, verbose = FALSE)
-    result <- FindNeighbors(result, dims = 1:50, verbose = FALSE)
-  } else if (!is.null(mes_obj)) {
-    result <- mes_obj
-  } else if (!is.null(non_mes_obj)) {
-    result <- non_mes_obj
-  } else {
-    message("  ERROR: No tiers processed for ", object_name)
-    return(NULL)
-  }
-
-  message("    STACAS tiered integration complete: ", ncol(result), " cells")
-  return(result)
 }
 
 
@@ -419,7 +337,7 @@ plot_umaps <- function(obj, object_name) {
 # PROCESS ONE OBJECT
 # ═══════════════════════════════════════════════════════════════════════════
 
-process_object <- function(object_name, tiered = FALSE, force = FALSE) {
+process_object <- function(object_name, force = FALSE) {
   output_path <- file.path(INT_DIR, paste0(object_name, ".rds"))
 
   if (file.exists(output_path) && !force) {
@@ -428,8 +346,7 @@ process_object <- function(object_name, tiered = FALSE, force = FALSE) {
   }
 
   message("\n", paste(rep("=", 60), collapse = ""))
-  message("Processing object: ", object_name, " (STACAS ",
-          ifelse(tiered, "tiered", "flat"), ")")
+  message("Processing object: ", object_name, " (STACAS flat)")
   message(paste(rep("=", 60), collapse = ""))
 
   # Load data
@@ -437,11 +354,7 @@ process_object <- function(object_name, tiered = FALSE, force = FALSE) {
   if (is.null(seurat_list)) return(NULL)
 
   # Run integration
-  if (tiered) {
-    result <- run_stacas_tiered(seurat_list, object_name)
-  } else {
-    result <- run_stacas_flat(seurat_list, object_name)
-  }
+  result <- run_stacas_flat(seurat_list, object_name)
 
   if (is.null(result)) return(NULL)
 
@@ -578,7 +491,7 @@ main <- function() {
   # Process each object
   all_metrics <- list()
   for (obj_name in objects_to_process) {
-    output <- process_object(obj_name, tiered = args$tiered, force = args$force)
+    output <- process_object(obj_name, force = args$force)
     if (!is.null(output)) {
       metrics <- compute_metrics(obj_name)
       if (!is.null(metrics)) {
