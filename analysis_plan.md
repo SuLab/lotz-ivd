@@ -20,7 +20,7 @@
 | 02: Metadata Harmonization | Complete (v1) | 02_metadata_harmonization.py | Condition mappings finalized |
 | 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 12 per-dataset h5ad files, ~429K cells |
 | 04: Coarse Classification | Complete (v4) | 04_annotation.py | 5 coarse categories + Unknown |
-| 05: Integration | In Progress (v5) | 05_integration.py | 3 parallel workflows: CCA, scANVI, STACAS |
+| 05: Integration | Complete (v5) | 05_integration.py | CCA + scANVI complete; STACAS deferred (API change) |
 | 06: Clustering | Pending | 06_clustering.py | |
 | 07: Post-Integration Annotation | Pending | 07_annotation.py | |
 | 08: Differential Analysis | Pending | 08_differential.py | |
