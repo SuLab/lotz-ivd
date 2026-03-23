@@ -13,13 +13,10 @@
 # Seurat v5 optimizations:
 #   - IntegrateLayers(method = CCAIntegration) replaces the v4 pipeline of
 #     FindIntegrationAnchors → IntegrateData
-#   - Sketch-based integration for objects >100K cells: subsample
-#     representative cells, integrate the sketch, project back to full data
 #   - Merged object with per-study layers (v5 data model) instead of a list
 #     of separate objects
 #
-# The CCA algorithm itself is identical — these are execution optimizations
-# that reduce RAM and compute time without changing the statistical method.
+# Standard (non-sketch) CCA is used for all objects regardless of size.
 #
 # Usage:
 #   Rscript scripts/05a_integration_cca.R                     # All objects
@@ -64,8 +61,6 @@ dir.create(RESULTS_DIR, recursive = TRUE, showWarnings = FALSE)
 # ── Integration parameters ───────────────────────────────────────────────
 N_HVG       <- 3000   # Number of highly variable genes
 N_DIMS      <- 50     # PCA/CCA dimensions
-SKETCH_SIZE <- 15000  # Cells per sketch (for large objects)
-SKETCH_THRESHOLD <- 100000  # Use sketch if object > this many cells
 
 # ── Study assignments per object ──────────────────────────────────────────
 NP_STUDIES <- list(
@@ -273,7 +268,7 @@ load_and_merge <- function(object_name) {
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# CCA INTEGRATION (Seurat v5 — standard path for smaller objects)
+# CCA INTEGRATION (Seurat v5 — standard CCA for all objects)
 # ═══════════════════════════════════════════════════════════════════════════
 
 integrate_cca_standard <- function(obj, object_name) {
@@ -312,65 +307,6 @@ integrate_cca_standard <- function(obj, object_name) {
 
   message("    Standard CCA complete: ", ncol(obj), " cells")
   return(obj)
-}
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# CCA INTEGRATION (Seurat v5 — sketch path for large objects)
-# ═══════════════════════════════════════════════════════════════════════════
-
-integrate_cca_sketch <- function(obj, object_name) {
-  n_cells <- ncol(obj)
-  n_layers <- length(Layers(obj, search = "counts"))
-  cells_per_layer <- max(500, as.integer(SKETCH_SIZE / n_layers))
-  sketch_n <- min(cells_per_layer * n_layers, n_cells)
-  message("  Running downsampled CCA integration (~", sketch_n, " / ", n_cells, " cells)...")
-  message("    ", n_layers, " layers, ", cells_per_layer, " cells per layer")
-
-  # Downsample: take a random subset of cells per layer (study) instead of
-  # SketchData, which OOMs on the leverage score computation for large objects.
-  # Uniform downsampling is a simpler alternative that still preserves per-study
-  # representation. The CCA integration itself is the key step.
-  message("    Downsampling to ~", cells_per_layer, " cells per study...")
-  set.seed(42)
-  keep_cells <- character(0)
-  for (study_name in unique(obj$study)) {
-    study_cells <- colnames(obj)[obj$study == study_name]
-    n_take <- min(cells_per_layer, length(study_cells))
-    keep_cells <- c(keep_cells, sample(study_cells, n_take))
-  }
-  sub <- subset(obj, cells = keep_cells)
-  message("    Downsampled: ", ncol(sub), " cells")
-
-  # Free full object
-  rm(obj)
-  gc()
-
-  # Standard CCA on the downsampled object
-  message("    NormalizeData + FindVariableFeatures + ScaleData...")
-  sub <- NormalizeData(sub, verbose = FALSE)
-  sub <- FindVariableFeatures(sub, nfeatures = N_HVG, verbose = FALSE)
-  sub <- ScaleData(sub, verbose = FALSE)
-  sub <- RunPCA(sub, npcs = N_DIMS, verbose = FALSE)
-
-  message("    IntegrateLayers (CCA, dims = 1:", N_DIMS, ")...")
-  sub <- IntegrateLayers(
-    object = sub,
-    method = CCAIntegration,
-    orig.reduction = "pca",
-    new.reduction = "integrated.cca",
-    dims = 1:N_DIMS,
-    verbose = FALSE
-  )
-
-  sub <- JoinLayers(sub)
-
-  message("    UMAP + neighbors on integrated reduction...")
-  sub <- RunUMAP(sub, reduction = "integrated.cca", dims = 1:N_DIMS, verbose = FALSE)
-  sub <- FindNeighbors(sub, reduction = "integrated.cca", dims = 1:N_DIMS, verbose = FALSE)
-
-  message("    Downsampled CCA complete: ", ncol(sub), " cells")
-  return(sub)
 }
 
 
@@ -417,24 +353,8 @@ process_object <- function(object_name, force = FALSE) {
   merged <- load_and_merge(object_name)
   if (is.null(merged)) return(NULL)
 
-  n_cells <- ncol(merged)
-
-  # Choose integration path based on cell count
-  if (n_cells > SKETCH_THRESHOLD) {
-    message("  Object has ", n_cells, " cells (> ", SKETCH_THRESHOLD,
-            " threshold) — using sketch-based CCA")
-    result <- tryCatch(
-      integrate_cca_sketch(merged, object_name),
-      error = function(e) {
-        message("  WARNING: Sketch integration failed: ", e$message)
-        message("  Falling back to standard CCA...")
-        integrate_cca_standard(merged, object_name)
-      }
-    )
-  } else {
-    message("  Object has ", n_cells, " cells — using standard CCA")
-    result <- integrate_cca_standard(merged, object_name)
-  }
+  message("  Object has ", ncol(merged), " cells — running standard CCA")
+  result <- integrate_cca_standard(merged, object_name)
 
   rm(merged)
   gc()
@@ -563,9 +483,8 @@ main <- function() {
   message(paste(rep("=", 60), collapse = ""))
   message("Module 05 — Workflow A: CCA Integration (Seurat v5)")
   message("Seurat version: ", as.character(packageVersion("Seurat")))
-  message("Sketch threshold: ", SKETCH_THRESHOLD, " cells")
-  message("Sketch size: ", SKETCH_SIZE, " cells")
   message("HVGs: ", N_HVG, ", Dims: ", N_DIMS)
+  message("Integration: standard CCA for all objects (no sketch)")
   message("Started: ", Sys.time())
   message(paste(rep("=", 60), collapse = ""))
 
