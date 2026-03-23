@@ -18,7 +18,7 @@ The all-cells object serves as a whole IVD atlas. IVD subcompartments (NP, AF, C
 |---|---|---|---|---|
 | Language | R only | R + Python | R only | Prefer A or C to avoid Python dependency |
 | Cell labels? | No | Yes (coarse) | Yes (coarse; optional) | Same coarse labels shared across B and C |
-| Scalability | Sketch-based for >100K cells | Handles large datasets natively | Anchor-based (similar to CCA) | |
+| Scalability | Standard CCA on full data | Handles large datasets natively | Anchor-based (similar to CCA) | |
 | Best for | Standard multi-lab; primary analysis | Large atlases; probabilistic cell type transfer | R-native label-guided; strong bio-conservation | |
 
 **Workflow A is the primary workflow.** Workflows B and C are run for comparison. The human checkpoint selects which workflow to carry forward.
@@ -196,9 +196,9 @@ All three workflows share these parameters (from Shared Parameters):
 
 **Framework:** R / Seurat v5. Use this as the main workflow for all results.
 
-CCA (Canonical Correlation Analysis) finds shared correlation structure across datasets without requiring cell type labels. This makes it the most assumption-free approach — integration quality depends only on the data, not on the accuracy of prior annotations. This workflow follows the integration approach from the reference R code in `single_nuclei_r/Sample_QC_Integration.R`, updated to use Seurat v5's `IntegrateLayers` API for scalability.
+CCA (Canonical Correlation Analysis) finds shared correlation structure across datasets without requiring cell type labels. This makes it the most assumption-free approach — integration quality depends only on the data, not on the accuracy of prior annotations. This workflow follows the integration approach from the reference R code in `single_nuclei_r/Sample_QC_Integration.R`, updated to use Seurat v5's `IntegrateLayers` API.
 
-**Seurat v5 vs v4:** The CCA algorithm is identical. Seurat v5 changes only the execution model: data is stored in per-study layers within a single merged object, and `IntegrateLayers(method = CCAIntegration)` replaces the v4 pipeline of `FindIntegrationAnchors` → `IntegrateData`. For objects >100K cells, sketch-based integration subsamples representative cells for the CCA step, then projects the correction back to all cells. This reduces RAM and compute by 10-40x with minimal quality loss.
+**Seurat v5 vs v4:** The CCA algorithm is identical. Seurat v5 changes only the execution model: data is stored in per-study layers within a single merged object, and `IntegrateLayers(method = CCAIntegration)` replaces the v4 pipeline of `FindIntegrationAnchors` → `IntegrateData`. Standard (non-sketch) CCA is used for all objects regardless of size.
 
 ### Step 1 — Load and merge into a single Seurat v5 object
 
@@ -210,16 +210,10 @@ Load per-study h5ad files, apply compartment/sample filters, merge into one obje
 
 ### Step 3 — PCA and CCA integration
 
-For objects ≤100K cells (AF, CEP):
+For all objects (NP, AF, CEP, all_cells):
 1. `RunPCA(npcs = 50)` on the merged object
 2. `IntegrateLayers(method = CCAIntegration, orig.reduction = "pca", dims = 1:50)`
 3. `JoinLayers()` to recombine after integration
-
-For objects >100K cells (NP, all_cells):
-1. `SketchData(ncells = 15000, method = "LeverageScore")` — select representative cells, deliberately oversampling rare populations
-2. `RunPCA()` + `IntegrateLayers(method = CCAIntegration)` on the sketch
-3. `ProjectIntegration()` — project CCA correction back to full dataset
-4. `JoinLayers()` to recombine
 
 ### Step 4 — Dimensionality reduction
 
