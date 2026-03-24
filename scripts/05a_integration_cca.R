@@ -31,10 +31,17 @@ suppressPackageStartupMessages({
   library(argparse)
   library(dplyr)
   library(ggplot2)
+  library(future)
 })
 
-# Allow large objects in future (SCTransform uses future for parallelism)
-options(future.globals.maxSize = 16 * 1024^3)  # 16 GB
+# ── Parallelism ────────────────────────────────────────────────────────────
+# OpenBLAS (multi-threaded BLAS) handles matrix algebra parallelism for CCA/SVD.
+# future::multicore is enabled only during IntegrateLayers to avoid fork issues
+# during the h5ad bridge conversion (system2 calls).
+N_WORKERS <- min(parallel::detectCores(), 16)
+options(future.globals.maxSize = 200 * 1024^3)  # 200 GB — machine has 247 GB RAM
+message("  Parallelism: workers = ", N_WORKERS,
+        " (activated during integration), BLAS = ", sessionInfo()$BLAS)
 
 # ── Paths ──────────────────────────────────────────────────────────────────
 # Detect script directory robustly (works with Rscript, nohup, source)
@@ -287,7 +294,9 @@ integrate_cca_standard <- function(obj, object_name) {
   obj <- RunPCA(obj, npcs = N_DIMS, verbose = FALSE)
 
   # CCA integration across layers (studies)
-  message("    IntegrateLayers (CCA, dims = 1:", N_DIMS, ")...")
+  # Enable multicore parallelism for anchor-finding, then revert to sequential
+  message("    IntegrateLayers (CCA, dims = 1:", N_DIMS, ", workers = ", N_WORKERS, ")...")
+  plan("multicore", workers = N_WORKERS)
   obj <- IntegrateLayers(
     object = obj,
     method = CCAIntegration,
@@ -296,6 +305,7 @@ integrate_cca_standard <- function(obj, object_name) {
     dims = 1:N_DIMS,
     verbose = FALSE
   )
+  plan("sequential")
 
   # Join layers back after integration (required for downstream operations)
   obj <- JoinLayers(obj)
@@ -485,6 +495,9 @@ main <- function() {
   message("Seurat version: ", as.character(packageVersion("Seurat")))
   message("HVGs: ", N_HVG, ", Dims: ", N_DIMS)
   message("Integration: standard CCA for all objects (no sketch)")
+  message("BLAS: ", sessionInfo()$BLAS)
+  message("Future workers: ", nbrOfWorkers())
+  message("CPUs available: ", parallel::detectCores())
   message("Started: ", Sys.time())
   message(paste(rep("=", 60), collapse = ""))
 

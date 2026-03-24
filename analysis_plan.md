@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Pipeline v5 — Module 05 COMPLETE.** Three integration workflows (CCA, scANVI, STACAS) finished. Awaiting human checkpoint to select workflow for Modules 06-12.
+**Pipeline v5 — Module 05 IN PROGRESS.** CCA re-running without downsampling on 247GB RAM machine. scANVI and STACAS results from prior run retained. CCA NP object (262,967 cells) currently integrating.
 
 **Pipeline version:** v5
 
@@ -16,7 +16,7 @@
 | 02: Metadata Harmonization | Complete (v1) | 02_metadata_harmonization.py | Condition mappings finalized |
 | 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 12 per-dataset h5ad files, ~429K cells |
 | 04: Coarse Classification | Complete (v4) | 04_annotation.py | 5 coarse categories + Unknown |
-| 05: Integration | **CHECKPOINT** | 05_integration.py | All 3 workflows complete. Awaiting workflow selection. |
+| 05: Integration | **IN PROGRESS** | 05_integration.py | CCA re-running full-cell on 247GB machine. scANVI+STACAS done. |
 | 06: Clustering | Pending | 06_clustering.py | |
 | 07: Post-Integration Annotation | Pending | 07_annotation.py | |
 | 08: Differential Analysis | Pending | 08_differential.py | |
@@ -27,14 +27,31 @@
 
 ## Active Step
 
-**Human checkpoint: Select integration workflow for Modules 06-12.**
+**CCA full-cell re-run on 247GB machine (migrated from 62GB instance).**
 
-Review materials:
-- `results/integration/workflow_comparison_report.html` — side-by-side UMAPs and metrics
-- `results/integration/workflow_comparison.tsv` — metrics table
-- `notebooks/05_integration.ipynb` — executed comparison notebook
+CCA previously downsampled NP to 15K and all_cells to 11K due to memory constraints. Now re-running all objects at full cell counts using standard CCA (no sketch, no downsampling).
 
-After review, run: `python3 scripts/05_integration.py --select-workflow <cca|scanvi|stacas>`
+Current progress:
+- NP (262,967 cells) — **Complete** (4.6 GB RDS)
+- AF (84,624 cells) — **Complete** (1.6 GB RDS)
+- CEP (50,858 cells) — **Complete** (809 MB RDS)
+- all_cells (410,759 cells) — **Running** (restarted, see incident log below)
+
+Once CCA completes for all 4 objects, regenerate comparison report and proceed to human checkpoint for workflow selection.
+
+### CCA Run Incident Log (2026-03-24)
+
+1. **Single-threaded NP run killed (03:00 UTC).** Original NP run started 2026-03-23 ~20:50 with reference BLAS (single-threaded) — consumed 6+ hours of CPU time on one core with 31 cores idle. Killed and restarted after compute optimization.
+
+2. **Compute optimization applied (03:03 UTC).** Installed OpenBLAS (multi-threaded BLAS) and added `future::plan("multicore", workers=16)` during `IntegrateLayers`. Reference BLAS replaced system-wide via `update-alternatives`. `future` plan set to sequential during data loading (fork-safety with `system2` bridge calls), multicore only during integration. No functional impact on results — identical linear algebra, parallelized execution only.
+
+3. **First optimized run crashed silently (03:03 UTC).** `future::plan("multicore")` was set globally at script startup. Forked workers conflicted with `system2()` calls in the h5ad-to-Seurat bridge conversion during data loading. Process died with no error output. Fix: moved `plan("multicore")` to activate only during `IntegrateLayers`, reverts to `plan("sequential")` after.
+
+4. **NP, AF, CEP completed successfully (05:19–07:09 UTC).** ~2 hours total for all three objects (vs 6h+ for NP alone single-threaded).
+
+5. **all_cells failed at IntegrateLayers (~ 07:30 UTC).** `future.globals.maxSize` was 16 GB; all_cells exported 16.25 GB of globals to workers. Error: `The total size of the 59 globals exported for future expression ('FUN()') is 16.25 GiB. This exceeds the maximum allowed size 16.00 GiB`. Fix: bumped `future.globals.maxSize` to 200 GB (machine has 247 GB RAM).
+
+6. **all_cells restarted (15:24 UTC).** Running with 200 GB future globals limit, OpenBLAS, 16 workers.
 
 ---
 
@@ -42,14 +59,16 @@ After review, run: `python3 scripts/05_integration.py --select-workflow <cca|sca
 
 ### Workflow A: CCA (Seurat v5, label-free)
 
-Uses `IntegrateLayers(method = CCAIntegration)` with NormalizeData (log-normalization keeps layers split). Objects >100K cells downsampled uniformly per study before CCA.
+Uses `IntegrateLayers(method = CCAIntegration)` with NormalizeData (log-normalization keeps layers split). Standard CCA for all objects — no downsampling (247GB RAM machine).
 
-| Object | Cells | Clusters (res=0.5) | Method | Time |
-|--------|-------|-------------------|--------|------|
-| NP | 15,000 | 9 | Downsampled (1,875/study) | ~35 min |
-| AF | 84,624 | 23 | Standard CCA | ~80 min |
-| CEP | 50,858 | 14 | Standard CCA | ~35 min |
-| all_cells | 11,000 | 8 | Downsampled (917/study) | ~20 min |
+**Re-running full-cell CCA** (previous results used downsampled NP 15K, all_cells 11K on 62GB machine).
+
+| Object | Cells | Status | Prior (downsampled) |
+|--------|-------|--------|---------------------|
+| NP | 262,967 | **Running** — at IntegrateLayers step | Was 15,000 (9 clusters) |
+| AF | 84,624 | Pending | Was 84,624 (23 clusters, no change expected) |
+| CEP | 50,858 | Pending | Was 50,858 (14 clusters, no change expected) |
+| all_cells | 410,759 | Pending | Was 11,000 (8 clusters) |
 
 ### Workflow B: scANVI (semi-supervised, full cell counts)
 
@@ -75,10 +94,10 @@ Uses `Run.STACAS()` with coarse_label anchors. Objects >100K cells downsampled.
 
 ### Key observations
 
-- **CCA and STACAS required downsampling** for NP (260K) and all_cells (410K) due to 62GB RAM constraint. scANVI integrated all cells using GPU acceleration.
+- **CCA re-running at full cell counts** on 247GB machine (previously downsampled on 62GB). This will enable a fair apples-to-apples comparison with scANVI across all objects.
+- **STACAS still downsampled** for NP and all_cells (RAM-bound in R even on 247GB — STACAS memory footprint is higher than CCA).
 - **Cluster counts are consistent across workflows** for AF (23, 18-23) and CEP (13-15), suggesting stable structure.
-- **NP cluster counts diverge:** CCA 9 (downsampled 15K), scANVI 29 (full 263K), STACAS 21 (downsampled 16K). The difference partly reflects cell count — more cells reveal finer structure.
-- **For the primary analysis**, scANVI provides the most complete integration (full cell counts, GPU-accelerated, proven in v4). CCA provides the label-free comparison.
+- **NP cluster counts diverged previously:** CCA 9 (downsampled 15K) vs scANVI 29 (full 263K). Full-cell CCA will clarify whether this was a downsampling artifact or a real methodological difference.
 
 ---
 
@@ -102,11 +121,11 @@ Uses `Run.STACAS()` with coarse_label anchors. Objects >100K cells downsampled.
 
 **Three integration workflows** run in parallel on each compartment object (NP, AF, CEP, all_cells):
 
-- **Workflow A (Seurat CCA, v5):** R-only, label-free. Seurat v5 `IntegrateLayers(method=CCAIntegration)` with `NormalizeData`. Large objects downsampled uniformly per study.
+- **Workflow A (Seurat CCA, v5):** R-only, label-free. Seurat v5 `IntegrateLayers(method=CCAIntegration)` with `NormalizeData`. Standard CCA for all objects (no downsampling on 247GB machine).
 - **Workflow B (scANVI):** Python, semi-supervised with coarse anchor labels from Module 04. Tiered (mesenchymal + non-mesenchymal). Full cell counts via GPU.
 - **Workflow C (STACAS):** R-only, `Run.STACAS()` with coarse_label anchors. Large objects downsampled.
 
-All three workflows complete. Human checkpoint selects which to carry forward. See `specs/05_INTEGRATION.md` for details, `docs/v5_execution_dialogue.md` for execution history.
+scANVI and STACAS complete. CCA re-running at full cell counts on 247GB machine (previously downsampled). Human checkpoint deferred until CCA finishes. See `specs/05_INTEGRATION.md` for details, `docs/v5_execution_dialogue.md` for execution history.
 
 ---
 
@@ -135,7 +154,7 @@ All three workflows complete. Human checkpoint selects which to carry forward. S
 - **NGDC datasets excluded:** PRJCA014236 and PRJCA007656 not downloaded. NP already well-covered.
 - **GSE205535 corrigenda:** Published corrections exist — reviewed during preprocessing.
 - **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scANVI batch correction. CCA and STACAS also correct for this via study-level integration.
-- **CCA/STACAS downsampled for large objects:** NP and all_cells were uniformly downsampled to ~15K and ~11-30K cells respectively for CCA and STACAS due to 62GB RAM constraint. scANVI integrated all cells. A 128-256GB machine would enable full-cell CCA.
+- **CCA re-running full-cell on 247GB machine** (previously downsampled on 62GB). STACAS still downsampled for NP/all_cells.
 - **SeuratDisk incompatible with Seurat v5:** `GetAssayData(slot=...)` removed in SeuratObject 5.0. Workaround: Python bridge (h5ad→mtx+metadata→R `readMM`). See `scripts/h5ad_to_seurat_bridge.py`.
 - **CEP underpowered:** Only 3 CEP datasets (6 samples). Compartment-specific CEP analyses are limited.
 - **GSE242443 culture-expanded:** CEP cells are culture-expanded. Included with caveats.
@@ -155,9 +174,11 @@ All three workflows complete. Human checkpoint selects which to carry forward. S
 - Module 05 CCA: rewrote for Seurat v5 IntegrateLayers API; NormalizeData replaces SCTransform; downsample for >100K cells
 - Module 05 scANVI: reused v4 approach, all cells integrated on GPU
 - Module 05 STACAS: updated for STACAS v2.4 API (Run.STACAS replaces SampleIntegration); downsample for >100K cells
-- All 3 workflows complete (12/12 object-workflow combinations). Comparison report generated.
+- All 3 workflows initially complete (12/12 object-workflow combinations) on 62GB machine
+- 2026-03-23: Migrated to 247GB RAM machine; CCA re-running without downsampling for all objects
+- CCA NP (262,967 cells) in progress; AF, CEP, all_cells pending
 - Modules 01-04 reused from v1/v4 (data/processed unchanged)
-- Awaiting human checkpoint for workflow selection → Modules 06-12
+- Human checkpoint for workflow selection deferred until full-cell CCA completes
 - See `docs/v5_execution_dialogue.md` for full execution history
 
 ### v4 (2026-03-11): Spec restructuring + scANVI — COMPLETE
@@ -210,3 +231,4 @@ All three workflows complete. Human checkpoint selects which to carry forward. S
 | 2026-03-21 | scANVI workflow complete (all 4 objects). CCA v4 approach infeasible on 62GB — rewrote for Seurat v5. |
 | 2026-03-22 | CCA v5 complete (all 4 objects, downsampled for NP/all_cells). STACAS v2.4 API fixed, complete. |
 | 2026-03-22 | Module 05 human checkpoint ready. 3-workflow comparison report and notebooks generated. |
+| 2026-03-23 | Migrated to 247GB RAM machine. CCA script updated to remove downsampling. Re-running CCA full-cell for all objects. |
