@@ -329,8 +329,17 @@ plot_umaps <- function(obj, object_name) {
                         colnames(obj@meta.data))
   if (length(color_by) == 0) return(invisible(NULL))
 
+  n_cells <- ncol(obj)
+  # Rasterize large objects for performance; use larger points + high DPI
+  # to avoid washed-out appearance with hundreds of thousands of cells
+  use_raster <- n_cells > 100000
+  pt <- if (use_raster) 2 else 0.1
+  rdpi <- c(2048, 2048)
+
   plots <- lapply(color_by, function(col) {
-    DimPlot(obj, group.by = col, reduction = "umap", pt.size = 0.1) +
+    DimPlot(obj, group.by = col, reduction = "umap",
+            pt.size = pt, raster = use_raster, raster.dpi = rdpi,
+            shuffle = TRUE, alpha = 1) +
       ggtitle(paste(object_name, "-", col)) +
       theme(legend.position = "right",
             legend.text = element_text(size = 7))
