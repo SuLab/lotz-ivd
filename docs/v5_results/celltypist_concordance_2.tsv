@@ -1,0 +1,6 @@
+Unnamed: 0	cluster	n_cells	de_novo_label	celltypist_majority	celltypist_agreement_pct	concordant
+0	0	1277	Endothelial	Endothelial cells	43.8	True
+1	1	1264	Endothelial	Classical monocytes	67.9	False
+2	2	583	T_cell_CD8	Classical monocytes	46.3	False
+3	3	181	Macrophage_M2	Macrophages	72.4	True
+4	4	104	Endothelial	Endothelial cells	65.4	True

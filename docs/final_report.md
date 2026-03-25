@@ -4,9 +4,9 @@
 
 | Field | Value |
 |-------|-------|
-| Report generated | 2026-03-25 14:08 |
+| Report generated | 2026-03-25 14:23 |
 | Pipeline version | v5 |
-| Git commit | `7c2d700` (branch: `main`) |
+| Git commit | `eabcb1c` (branch: `main`) |
 | Source of truth | `analysis_plan.md` |
 
 ## Contents
@@ -32,6 +32,9 @@
 | Samples | 78 | *[source: `metadata/sample_metadata.tsv`]* |
 | Donors | 57 | *[source: `metadata/sample_metadata.tsv`]* |
 | Compartments | AF, CEP, IVD_mixed, NP | *[source: `metadata/sample_metadata.tsv`]* |
+| Powered DE comparisons | 10 | *[source: `docs/v5_results/de_summary_table.tsv`]* |
+| Significant DE genes (total hits) | 1,198 | *[source: `docs/v5_results/de_summary_table.tsv`]* |
+| L-R interactions (all conditions) | 59,745 | *[source: `docs/v5_results/communication_stats.tsv`]* |
 
 ## 2. Dataset Summary {#datasets}
 
@@ -90,7 +93,44 @@ Three integration workflows were compared. *[source: `analysis_plan.md`]*
 
 ## 4. Clustering & Annotation {#clustering}
 
-Cell type definitions not found. *[source: `results/integration/cell_type_definitions.tsv`]*
+### Cell type definitions
+
+*[source: `docs/v5_results/cell_type_definitions.tsv`]*
+
+| object | cell_type | coarse_cell_type | n_cells | clusters | canonical_markers | confidence_distribution |
+| --- | --- | --- | --- | --- | --- | --- |
+| NP | Endothelial | Endothelial | 2645 | NM0,NM1,NM4 | PECAM1,VWF,CDH5 | high=1381; medium=1264 |
+| NP | Macrophage_M2 | Macrophage | 181 | NM3 | CD163,MRC1,MSR1,TGFB1 | high=181; medium=0 |
+| NP | NP_fibrocartilaginous | Fibroblast_like | 73764 | M2,M3,M4,M5 | COL1A1,COL2A1,VCAN | high=73764; medium=0 |
+| NP | NP_mature_chondrocyte | Chondrocyte_like | 185794 | M0,M1,M6 | ACAN,COL2A1,SOX9,COMP,PRG4 | high=185794; medium=0 |
+| NP | T_cell_CD8 | T_cell | 583 | NM2 | CD8A,CD8B,GZMB,PRF1 | medium=583; high=0 |
+| AF | AF_inner | Chondrocyte_like | 32839 | M0,M8,M9 | COL2A1,ACAN,SOX9 | high=32839 |
+| AF | AF_outer | Fibroblast_like | 51729 | M1,M2,M3,M4,M5,M6,M7 | COL1A1,COL1A2,THY1,DCN,LUM | high=51729 |
+| AF | Endothelial | Endothelial | 22 | NM1 | PECAM1,VWF,CDH5 | high=22 |
+| AF | Macrophage_M2 | Macrophage | 34 | NM0 | CD163,MRC1,MSR1,TGFB1 | high=34 |
+| CEP | EP_hyaline | Chondrocyte_like | 12597 | M1 | COL2A1,COL10A1,SOX9 | high=12597; medium=0 |
+| CEP | Endothelial | Endothelial | 38 | NM0 | PECAM1,VWF,CDH5 | high=38; medium=0 |
+| CEP | Fibroblast_like | Fibroblast_like | 33582 | M0,M3,M4 | COL1A1,COL1A2,DCN,LUM,THY1 | high=33582; medium=0 |
+| CEP | Fibrochondrocyte_chondroid | Fibrochondrocyte_like | 4292 | M2 | COL2A1,ACAN,SOX9 | high=4292; medium=0 |
+| CEP | Fibrochondrocyte_fibroid | Fibrochondrocyte_like | 298 | M5 | COL1A1,COL1A2,DCN | medium=298; high=0 |
+| CEP | NK_cell | NK_cell | 21 | NM2 | NKG7,GNLY | high=21; medium=0 |
+| CEP | Pericyte_SMC | Pericyte_SMC | 30 | NM1 | ACTA2,RGS5,PDGFRB | high=30; medium=0 |
+| all_cells | AF_inner | Chondrocyte_like | 32839 | M0,M1,M2,M3,M4,M5,M6,M7 | COL2A1,ACAN,SOX9 | high=32839; low=0; medium=0 |
+| all_cells | AF_outer | Fibroblast_like | 51729 | M0,M1,M2,M3,M4,M5,M6,M7 | COL1A1,COL1A2,THY1,DCN,LUM | high=51729; low=0; medium=0 |
+| all_cells | Chondrocyte_like | Chondrocyte_like | 8794 | M0,M1,M2,M4,M8 | COL2A1,ACAN,SOX9,COMP,PRG4 | high=6017; medium=2777; low=0 |
+| all_cells | EP_hyaline | Chondrocyte_like | 12597 | M0,M1,M2,M3,M4,M5,M6,M7 | COL2A1,COL10A1,SOX9 | high=12597; low=0; medium=0 |
+| all_cells | Endothelial | Endothelial | 2715 | NM0,NM1,NM2,NM3,NM4 | PECAM1,VWF,CDH5 | high=1451; medium=1264; low=0 |
+| all_cells | Fibroblast_like | Fibroblast_like | 34020 | M0,M1,M2,M3,M4,M5,M6,M7 | COL1A1,COL1A2,DCN,LUM,THY1 | high=33582; medium=438; low=0 |
+| all_cells | Fibrochondrocyte_chondroid | Fibrochondrocyte_like | 4292 | M0,M1,M2,M3,M4,M5,M6,M7 | COL2A1,ACAN,SOX9 | high=4292; low=0; medium=0 |
+| all_cells | Fibrochondrocyte_fibroid | Fibrochondrocyte_like | 298 | M0,M1,M2,M3,M4,M5,M6 | COL1A1,COL1A2,DCN | medium=298; high=0; low=0 |
+| all_cells | Fibrochondrocyte_like | Fibrochondrocyte_like | 3052 | M3,M5,M7 | COL1A1,COL2A1,ACAN,DCN | low=2304; medium=748; high=0 |
+| all_cells | Macrophage | Macrophage | 16 | NM0,NM2 | CD68,CD14,CSF1R,CD163,CD86 | high=16; low=0; medium=0 |
+| all_cells | Macrophage_M2 | Macrophage | 215 | NM0,NM1,NM2,NM3,NM4 | CD163,MRC1,MSR1,TGFB1 | high=215; low=0; medium=0 |
+| all_cells | NK_cell | NK_cell | 21 | NM0,NM1,NM2 | NKG7,GNLY | high=21; low=0; medium=0 |
+| all_cells | NP_fibrocartilaginous | Fibroblast_like | 73764 | M0,M1,M2,M3,M4,M5,M6,M7,M9 | COL1A1,COL2A1,VCAN | high=73764; low=0; medium=0 |
+| all_cells | NP_mature_chondrocyte | Chondrocyte_like | 185794 | M0,M1,M2,M3,M4,M5,M6,M7,M8 | ACAN,COL2A1,SOX9,COMP,PRG4 | high=185794; low=0; medium=0 |
+| all_cells | Pericyte_SMC | Pericyte_SMC | 30 | NM0,NM1,NM4 | ACTA2,RGS5,PDGFRB | high=30; low=0; medium=0 |
+| all_cells | T_cell_CD8 | T_cell | 583 | NM0,NM1,NM2,NM3 | CD8A,CD8B,GZMB,PRF1 | medium=583; high=0; low=0 |
 
 ### Clustering resolution optimization
 
@@ -100,7 +140,24 @@ Cell type definitions not found. *[source: `results/integration/cell_type_defini
 
 ## 5. Differential Expression {#de}
 
-DE summary not found. *[source: `results/differential/de_summary_table.tsv`]*
+**10 powered comparisons**, 1,198 significant genes (460 up, 738 down). Thresholds: |log2FC| > 0.5, padj < 0.05. *[source: `docs/v5_results/de_summary_table.tsv`]*
+
+| cell_type | comparison | n_up | n_down | n_total |
+| --- | --- | --- | --- | --- |
+| AF_inner | healthy_vs_degenerated_severe | 3 | 2 | 5 |
+| AF_outer | healthy_vs_degenerated_all | 0 | 1 | 1 |
+| AF_outer | healthy_vs_degenerated_mild | 4 | 114 | 118 |
+| AF_outer | healthy_vs_degenerated_severe | 15 | 4 | 19 |
+| AF_outer | mild_vs_severe | 3 | 1 | 4 |
+| NP_fibrocartilaginous | healthy_vs_degenerated_all | 20 | 8 | 28 |
+| NP_fibrocartilaginous | healthy_vs_degenerated_mild | 7 | 7 | 14 |
+| NP_fibrocartilaginous | healthy_vs_degenerated_severe | 237 | 319 | 556 |
+| NP_fibrocartilaginous | mild_vs_severe | 138 | 263 | 401 |
+| NP_mature_chondrocyte | mild_vs_severe | 33 | 19 | 52 |
+
+### Skipped comparisons (underpowered)
+
+47 comparisons skipped due to insufficient samples (< 3 per condition per cell type). *[source: `docs/v5_results/skipped_comparisons.tsv`]*
 
 ## 6. Biological Pathways {#pathways}
 
@@ -110,19 +167,80 @@ GSEA results not found. *[source: `results/interpretation/pathway_enrichment/gse
 
 ## 7. Transcription Factor Activity {#tf}
 
-TF activity results not found. *[source: `results/interpretation/tf_activity/tf_activity_results.tsv`]*
+**20 significant TF-condition associations** (padj < 0.05). *[source: `docs/v5_results/tf_activity_top.tsv`]*
+
+**20 unique TFs** with significant activity changes.
+
+| TF | Score | Cell Type | Comparison |
+|----|-------|-----------|------------|
+| PITX1 | -0.062 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| ID1 | 0.041 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| SMAD7 | -0.016 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| SMAD1 | 0.015 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| NFATC2 | 0.013 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| BCL6 | -0.011 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| JUND | 0.011 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| RUNX2 | -0.009 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| KLF4 | 0.008 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| ATF4 | 0.008 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
 
 ## 8. Cell State Trajectories {#trajectory}
 
-Trajectory correlation results not found. *[source: `results/trajectories`]*
+PAGA + diffusion pseudotime (DPT) analysis. *[source: `docs/v5_results/pseudotime_correlations.tsv`]*
+
+| compartment | embedding | test | rho | pvalue | n | statistic | n_healthy | n_degen | median_healthy | median_degen |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| NP | scVI_mesenchymal | pseudotime_vs_condition_ordinal | -0.0882 | 0.0000 | 5.00e+04 | nan | nan | nan | nan | nan |
+| NP | scVI_mesenchymal | pseudotime_healthy_vs_degenerated | nan | 0.0000 | nan | 2.66e+08 | 1.46e+04 | 2.99e+04 | 0.0805 | 0.0503 |
+| NP | scVI_mesenchymal | pseudotime_vs_condition_NP_mature_chondrocyte | -0.0018 | 0.7709 | 2.70e+04 | nan | nan | nan | nan | nan |
+| NP | scVI_mesenchymal | pseudotime_vs_condition_NP_fibrocartilaginous | -0.2017 | 0.0000 | 2.30e+04 | nan | nan | nan | nan | nan |
+| AF | scVI_mesenchymal | pseudotime_vs_condition_ordinal | 0.1947 | 0.0000 | 5.00e+04 | nan | nan | nan | nan | nan |
+| AF | scVI_mesenchymal | pseudotime_healthy_vs_degenerated | nan | 0.0000 | nan | 2.77e+08 | 2.48e+04 | 2.52e+04 | 0.6587 | 0.6587 |
+| AF | scVI_mesenchymal | pseudotime_vs_condition_AF_outer | 0.1096 | 0.0000 | 3.78e+04 | nan | nan | nan | nan | nan |
+| AF | scVI_mesenchymal | pseudotime_vs_condition_AF_inner | 0.2178 | 0.0000 | 1.22e+04 | nan | nan | nan | nan | nan |
+| CEP | scVI_mesenchymal | pseudotime_vs_condition_ordinal | 0.0734 | 0.0000 | 3.21e+04 | nan | nan | nan | nan | nan |
+| CEP | scVI_mesenchymal | pseudotime_healthy_vs_degenerated | nan | 0.0000 | nan | 1.08e+08 | 2.05e+04 | 1.17e+04 | 0.0653 | 0.0662 |
+| CEP | scVI_mesenchymal | pseudotime_vs_condition_Fibrochondrocyte_chondroid | -0.2494 | 0.0000 | 2.21e+03 | nan | nan | nan | nan | nan |
+| CEP | scVI_mesenchymal | pseudotime_vs_condition_EP_hyaline | 0.1373 | 0.0000 | 7.42e+03 | nan | nan | nan | nan | nan |
+| CEP | scVI_mesenchymal | pseudotime_vs_condition_Fibroblast_like | -0.3059 | 0.0000 | 2.24e+04 | nan | nan | nan | nan | nan |
+| CEP | scVI_mesenchymal | pseudotime_vs_condition_Fibrochondrocyte_fibroid | -0.4296 | 0.0000 | 1.62e+02 | nan | nan | nan | nan | nan |
+
+### Trajectory-associated genes
+
+*[source: `docs/v5_results/trajectory_gene_counts.tsv`]*
+
+- **AF:** 500 genes correlated with pseudotime (FDR < 0.05)
+- **CEP:** 500 genes correlated with pseudotime (FDR < 0.05)
+- **NP:** 500 genes correlated with pseudotime (FDR < 0.05)
 
 ## 9. Cell-Cell Communication {#communication}
 
-CCC interaction files not found. *[source: `results/communication`]*
+LIANA rank_aggregate (CellPhoneDB, NATMI, Connectome, SingleCellSignalR, log2FC). *[source: `docs/v5_results/communication_stats.tsv`]*
+
+| Condition | Interactions |
+|-----------|-------------|
+| degenerated | 34,208 |
+| healthy | 25,537 |
 
 ## 10. Pain Biology {#pain}
 
-Pain gene results not found. *[source: `results/interpretation/pain_genes.tsv`]*
+**13 pain-associated DE genes identified.** *[source: `docs/v5_results/pain_genes.tsv`]*
+
+| gene | padj | cell_type | comparison |
+| --- | --- | --- | --- |
+| IL1B | 7.83e-03 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| NTN1 | 0.031 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| PLA2G2A | 7.83e-03 | NP_fibrocartilaginous | healthy_vs_degenerated_all |
+| NTN1 | 1.17e-04 | NP_fibrocartilaginous | healthy_vs_degenerated_severe |
+| NTN4 | 0.045 | NP_fibrocartilaginous | healthy_vs_degenerated_severe |
+| PDGFA | 0.030 | NP_fibrocartilaginous | healthy_vs_degenerated_severe |
+| PENK | 0.044 | NP_fibrocartilaginous | healthy_vs_degenerated_severe |
+| PLA2G2A | 6.65e-03 | NP_fibrocartilaginous | healthy_vs_degenerated_severe |
+| UNC5B | 6.65e-03 | NP_fibrocartilaginous | healthy_vs_degenerated_severe |
+| VEGFA | 0.017 | NP_fibrocartilaginous | healthy_vs_degenerated_severe |
+| IL6 | 5.22e-03 | NP_fibrocartilaginous | mild_vs_severe |
+| CXCL8 | 7.58e-03 | AF_outer | healthy_vs_degenerated_mild |
+| PLA2G2A | 8.62e-03 | AF_outer | healthy_vs_degenerated_mild |
 
 ## 11. Limitations & Caveats {#limitations}
 
@@ -141,13 +259,18 @@ Pain gene results not found. *[source: `results/interpretation/pain_genes.tsv`]*
 - **GSE251686_NP3 excluded:** Corrupt matrix file (5/6 samples retained).
 - **GSE165722 Pfirrmann offset:** GEO says I-IV, paper says II-V. Paper grades used.
 
+### Underpowered comparisons
+
+47 cell type x condition comparisons were skipped due to insufficient sample counts. *[source: `docs/v5_results/skipped_comparisons.tsv`]*
+
 ### Result sensitivity across pipeline versions
 
 Several results are sensitive to upstream methodological choices (integration method, annotation, cell sampling). These are documented here to flag areas requiring cautious interpretation. *[source: `docs/version_history.md`]*
 
-- **Trajectory instability:** Pseudotime-condition correlations have changed sign across pipeline versions, indicating sensitivity to integration method and annotation choices.
+- **Trajectory pseudotime-condition correlations** are sensitive to integration method and root cell choice. In v5 (CCA): 
+  NP rho=-0.088; AF rho=+0.195; CEP rho=+0.073. Prior versions showed sign changes (e.g., CEP: -0.163 in v2, +0.135 in v3, +0.073 in v5), indicating these correlations are not robust to upstream choices.
 
-- **CCC direction sensitivity:** The direction of healthy-vs-degenerated interaction count differences has varied across pipeline versions.
+- **CCC interaction counts** in v5: degenerated: 34,208, healthy: 25,537. The direction of the healthy-vs-degenerated difference has varied across pipeline versions (v1: degenerated > healthy; v2: healthy > degenerated; v3: near-equal), making this result sensitive to cell type definitions and sampling.
 
 - **CellTypist concordance** is limited for IVD-specific cell types. CellTypist lacks IVD reference data, so disagreements with de novo labels are expected for mesenchymal populations. De novo labels are retained as primary annotations; CellTypist is used for immune subtype validation only.
 
@@ -207,7 +330,7 @@ Python 3.12, scanpy, scvi-tools, pyDESeq2, gseapy, decoupler, liana. R: Seurat 5
 
 ## 13. Reproducibility {#reproducibility}
 
-- **Git commit:** `7c2d7004894b4ba2d41944b08d6b2a0e605b1443` (branch: `main`)
+- **Git commit:** `eabcb1c2d89a65322284db0e70d8a1d423c15b12` (branch: `main`)
 - **Random seeds:** 42 (all stochastic operations)
 - **Package versions:** pinned in `requirements.txt`, frozen in `requirements_frozen.txt`
 - **Parameter choices:** documented in `analysis_plan.md`

@@ -1,0 +1,21 @@
+Unnamed: 0	cell_type	comparison	tf	activity	pvalue	n_targets	n_de_targets	concordant_up	concordant_down	padj
+2216	NP_fibrocartilaginous	healthy_vs_degenerated_all	RELA	0.0	0.001159	513	4	2	2	0.035838
+2225	NP_fibrocartilaginous	healthy_vs_degenerated_all	STAT3	0.004988	1e-06	401	6	4	2	0.000355
+2230	NP_fibrocartilaginous	healthy_vs_degenerated_all	NFATC2	0.0125	5.4e-05	80	3	2	1	0.004426
+2231	NP_fibrocartilaginous	healthy_vs_degenerated_all	CEBPB	0.004902	0.000494	408	4	3	1	0.020358
+2232	NP_fibrocartilaginous	healthy_vs_degenerated_all	FOS	0.0	0.000158	302	4	2	2	0.009726
+2236	NP_fibrocartilaginous	healthy_vs_degenerated_all	HBP1	0.0	0.000814	46	2	1	1	0.030207
+2239	NP_fibrocartilaginous	healthy_vs_degenerated_all	JUN	0.005172	1e-06	580	7	5	2	0.000263
+2294	NP_fibrocartilaginous	healthy_vs_degenerated_all	PITX1	-0.0625	0.000393	32	2	0	2	0.017166
+2295	NP_fibrocartilaginous	healthy_vs_degenerated_all	EGR1	0.0	0.000232	334	4	2	2	0.010739
+2308	NP_fibrocartilaginous	healthy_vs_degenerated_all	ATF4	0.008264	0.000184	121	3	2	1	0.009726
+2311	NP_fibrocartilaginous	healthy_vs_degenerated_all	RUNX2	-0.008772	0.0	114	5	2	3	4.5e-05
+2314	NP_fibrocartilaginous	healthy_vs_degenerated_all	IRF8	0.0	0.001292	58	2	1	1	0.038132
+2355	NP_fibrocartilaginous	healthy_vs_degenerated_all	ID1	0.040541	4.3e-05	74	3	3	0	0.003943
+2377	NP_fibrocartilaginous	healthy_vs_degenerated_all	JUND	0.010638	8.7e-05	94	3	2	1	0.005857
+2431	NP_fibrocartilaginous	healthy_vs_degenerated_all	IRF4	0.0	0.000962	50	2	1	1	0.031019
+2439	NP_fibrocartilaginous	healthy_vs_degenerated_all	BCL6	-0.011364	7.1e-05	88	3	1	2	0.005294
+2472	NP_fibrocartilaginous	healthy_vs_degenerated_all	SMAD7	-0.015625	2.7e-05	64	3	1	2	0.0034
+2481	NP_fibrocartilaginous	healthy_vs_degenerated_all	PITX3	0.0	0.000202	23	2	1	1	0.009974
+2493	NP_fibrocartilaginous	healthy_vs_degenerated_all	SMAD1	0.014706	3.3e-05	68	3	2	1	0.003497
+2529	NP_fibrocartilaginous	healthy_vs_degenerated_all	KLF4	0.008475	0.00017	118	3	2	1	0.009726

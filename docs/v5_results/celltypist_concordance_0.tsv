@@ -1,0 +1,3 @@
+Unnamed: 0	cluster	n_cells	de_novo_label	celltypist_majority	celltypist_agreement_pct	concordant
+0	0	34	Macrophage_M2	Fibroblasts	38.2	False
+1	1	22	Endothelial	Endothelial cells	95.5	True

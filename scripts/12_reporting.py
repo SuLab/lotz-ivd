@@ -23,6 +23,7 @@ BASE = Path(__file__).resolve().parent.parent
 RESULTS = BASE / "results"
 META = BASE / "metadata"
 DOCS = BASE / "docs"
+EXTRACTED = DOCS / "v5_results"  # fallback: notebook-extracted results
 SUPP_TABLES = RESULTS / "supplementary_tables"
 
 DOCS.mkdir(parents=True, exist_ok=True)
@@ -50,11 +51,18 @@ def git_version():
         return "unknown", "unknown", "unknown"
 
 
-def read_tsv(path, **kwargs):
-    """Read a TSV file, returning an empty DataFrame if it doesn't exist."""
+def read_tsv(path, fallback=None, **kwargs):
+    """Read a TSV file, trying fallback path if primary doesn't exist."""
+    df = pd.DataFrame()
     if path.exists():
-        return pd.read_csv(path, sep="\t", **kwargs)
-    return pd.DataFrame()
+        df = pd.read_csv(path, sep="\t", **kwargs)
+    elif fallback and fallback.exists():
+        df = pd.read_csv(fallback, sep="\t", **kwargs)
+    # Drop index columns left over from HTML table extraction
+    for col in list(df.columns):
+        if col.startswith("Unnamed:"):
+            df = df.drop(columns=[col])
+    return df
 
 
 def src(path):
@@ -91,8 +99,9 @@ def load_sample_metadata():
 
 def load_cell_type_definitions():
     path = RESULTS / "integration" / "cell_type_definitions.tsv"
-    df = read_tsv(path)
-    return df, path
+    fb = EXTRACTED / "cell_type_definitions.tsv"
+    df = read_tsv(path, fallback=fb)
+    return df, path if path.exists() else fb
 
 
 def load_clustering_resolutions():
@@ -103,36 +112,49 @@ def load_clustering_resolutions():
             tmp = read_tsv(f)
             tmp["_source_file"] = f.name
             frames.append(tmp)
+    # Fallback: single combined file from extraction
+    if not frames:
+        fb = EXTRACTED / "clustering_resolutions.tsv"
+        if fb.exists():
+            tmp = read_tsv(fb)
+            tmp["_source_file"] = "extracted"
+            frames.append(tmp)
+            return pd.concat(frames, ignore_index=True), fb
     df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     return df, cdir
 
 
 def load_de_summary():
     path = RESULTS / "differential" / "de_summary_table.tsv"
-    df = read_tsv(path)
-    return df, path
+    fb = EXTRACTED / "de_summary_table.tsv"
+    df = read_tsv(path, fallback=fb)
+    return df, path if path.exists() else fb
 
 
 def load_de_combined():
     path = RESULTS / "differential" / "de_results_combined.tsv"
+    # No fallback — full combined results not in notebooks (only top genes)
     df = read_tsv(path)
     return df, path
 
 
 def load_skipped_comparisons():
     path = RESULTS / "differential" / "skipped_comparisons.tsv"
-    df = read_tsv(path)
-    return df, path
+    fb = EXTRACTED / "skipped_comparisons.tsv"
+    df = read_tsv(path, fallback=fb)
+    return df, path if path.exists() else fb
 
 
 def load_composition():
     path = RESULTS / "differential" / "composition_analysis.tsv"
-    df = read_tsv(path)
-    return df, path
+    fb = EXTRACTED / "composition_analysis.tsv"
+    df = read_tsv(path, fallback=fb)
+    return df, path if path.exists() else fb
 
 
 def load_enrichment():
     path = RESULTS / "interpretation" / "pathway_enrichment" / "all_enrichment_results.tsv"
+    # No fallback — notebook 09 cells 3/9 had no outputs for ORA/GSEA tables
     df = read_tsv(path)
     return df, path
 
@@ -145,14 +167,16 @@ def load_gsea():
 
 def load_tf_activity():
     path = RESULTS / "interpretation" / "tf_activity" / "tf_activity_results.tsv"
-    df = read_tsv(path)
-    return df, path
+    fb = EXTRACTED / "tf_activity_top.tsv"
+    df = read_tsv(path, fallback=fb)
+    return df, path if path.exists() else fb
 
 
 def load_pain_genes():
     path = RESULTS / "interpretation" / "pain_genes.tsv"
-    df = read_tsv(path)
-    return df, path
+    fb = EXTRACTED / "pain_genes.tsv"
+    df = read_tsv(path, fallback=fb)
+    return df, path if path.exists() else fb
 
 
 def load_trajectory_correlations():
@@ -165,6 +189,11 @@ def load_trajectory_correlations():
             tmp["compartment"] = comp
             tmp["_source_file"] = str(f)
             frames.append(tmp)
+    # Fallback: single combined file from extraction
+    if not frames:
+        fb = EXTRACTED / "pseudotime_correlations.tsv"
+        if fb.exists():
+            return read_tsv(fb), fb
     df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
     return df, tdir
 
@@ -177,6 +206,14 @@ def load_trajectory_genes():
             comp = f.stem.replace("trajectory_genes_", "")
             tmp = read_tsv(f)
             counts[comp] = len(tmp)
+    # Fallback: extracted gene counts
+    if not counts:
+        fb = EXTRACTED / "trajectory_gene_counts.tsv"
+        if fb.exists():
+            tmp = read_tsv(fb)
+            for _, row in tmp.iterrows():
+                counts[row["compartment"]] = int(row["n_genes"])
+            return counts, fb
     return counts, tdir
 
 
@@ -189,6 +226,16 @@ def load_ccc_interactions():
             cond = f.stem.replace("interactions_", "")
             tmp = read_tsv(f)
             counts[cond] = len(tmp)
+    # Fallback: extracted scalar stats
+    if not counts:
+        fb = EXTRACTED / "communication_stats.tsv"
+        if fb.exists():
+            stats = read_tsv(fb)
+            if "_ccc_healthy" in stats.columns:
+                counts["healthy"] = int(stats["_ccc_healthy"].iloc[0])
+            if "_ccc_degenerated" in stats.columns:
+                counts["degenerated"] = int(stats["_ccc_degenerated"].iloc[0])
+            return counts, fb
     return counts, cdir
 
 
@@ -614,12 +661,13 @@ def section_tf(lines, tf_df, tf_path):
         lines.append(f"**{len(tf_df)} TF activity results.** {src(tf_path)}")
     lines.append("")
 
-    if not sig.empty and "source" in sig.columns:
-        tf_col = "source"
-    elif not sig.empty and "TF" in sig.columns:
-        tf_col = "TF"
-    else:
-        tf_col = sig.columns[0] if len(sig.columns) > 0 else None
+    # Detect TF name column — check multiple possible names
+    tf_col = None
+    if not sig.empty:
+        for candidate in ["tf", "TF", "source", "transcription_factor"]:
+            if candidate in sig.columns:
+                tf_col = candidate
+                break
 
     if tf_col and not sig.empty:
         unique_tfs = sig[tf_col].unique()
@@ -831,20 +879,20 @@ def section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path,
                  f"{src(version_history_path)}")
     lines.append("")
 
-    # Trajectory — use v5 data if available, otherwise note from plan
+    # Trajectory — use v5 data if available, filter to overall ordinal correlations
     if not traj_corr_df.empty and "compartment" in traj_corr_df.columns:
+        # Filter to the per-compartment overall correlation (ordinal test)
+        ordinal = traj_corr_df
+        if "test" in traj_corr_df.columns:
+            ordinal = traj_corr_df[
+                traj_corr_df["test"].str.contains("ordinal", case=False, na=False)]
         lines.append("- **Trajectory pseudotime-condition correlations** are sensitive to "
                      "integration method and root cell choice. In v5 (CCA): ")
         parts = []
-        for _, row in traj_corr_df.iterrows():
+        for _, row in ordinal.iterrows():
             comp = row.get("compartment", "")
-            # Try common column names for the correlation coefficient
-            rho = None
-            for col in ["rho", "spearman_rho", "correlation", "statistic"]:
-                if col in row.index and pd.notna(row[col]):
-                    rho = row[col]
-                    break
-            if rho is not None:
+            rho = row.get("rho", None)
+            if pd.notna(rho):
                 parts.append(f"{comp} rho={rho:+.3f}")
             else:
                 parts.append(comp)

@@ -1,0 +1,11 @@
+Unnamed: 0	cell_type	comparison	n_up	n_down	n_total
+0	AF_inner	healthy_vs_degenerated_severe	3	2	5
+1	AF_outer	healthy_vs_degenerated_all	0	1	1
+2	AF_outer	healthy_vs_degenerated_mild	4	114	118
+3	AF_outer	healthy_vs_degenerated_severe	15	4	19
+4	AF_outer	mild_vs_severe	3	1	4
+5	NP_fibrocartilaginous	healthy_vs_degenerated_all	20	8	28
+6	NP_fibrocartilaginous	healthy_vs_degenerated_mild	7	7	14
+7	NP_fibrocartilaginous	healthy_vs_degenerated_severe	237	319	556
+8	NP_fibrocartilaginous	mild_vs_severe	138	263	401
+9	NP_mature_chondrocyte	mild_vs_severe	33	19	52

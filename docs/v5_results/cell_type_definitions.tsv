@@ -1,0 +1,33 @@
+Unnamed: 0	object	cell_type	coarse_cell_type	n_cells	clusters	canonical_markers	confidence_distribution
+0	NP	Endothelial	Endothelial	2645	NM0,NM1,NM4	PECAM1,VWF,CDH5	high=1381; medium=1264
+1	NP	Macrophage_M2	Macrophage	181	NM3	CD163,MRC1,MSR1,TGFB1	high=181; medium=0
+2	NP	NP_fibrocartilaginous	Fibroblast_like	73764	M2,M3,M4,M5	COL1A1,COL2A1,VCAN	high=73764; medium=0
+3	NP	NP_mature_chondrocyte	Chondrocyte_like	185794	M0,M1,M6	ACAN,COL2A1,SOX9,COMP,PRG4	high=185794; medium=0
+4	NP	T_cell_CD8	T_cell	583	NM2	CD8A,CD8B,GZMB,PRF1	medium=583; high=0
+5	AF	AF_inner	Chondrocyte_like	32839	M0,M8,M9	COL2A1,ACAN,SOX9	high=32839
+6	AF	AF_outer	Fibroblast_like	51729	M1,M2,M3,M4,M5,M6,M7	COL1A1,COL1A2,THY1,DCN,LUM	high=51729
+7	AF	Endothelial	Endothelial	22	NM1	PECAM1,VWF,CDH5	high=22
+8	AF	Macrophage_M2	Macrophage	34	NM0	CD163,MRC1,MSR1,TGFB1	high=34
+9	CEP	EP_hyaline	Chondrocyte_like	12597	M1	COL2A1,COL10A1,SOX9	high=12597; medium=0
+10	CEP	Endothelial	Endothelial	38	NM0	PECAM1,VWF,CDH5	high=38; medium=0
+11	CEP	Fibroblast_like	Fibroblast_like	33582	M0,M3,M4	COL1A1,COL1A2,DCN,LUM,THY1	high=33582; medium=0
+12	CEP	Fibrochondrocyte_chondroid	Fibrochondrocyte_like	4292	M2	COL2A1,ACAN,SOX9	high=4292; medium=0
+13	CEP	Fibrochondrocyte_fibroid	Fibrochondrocyte_like	298	M5	COL1A1,COL1A2,DCN	medium=298; high=0
+14	CEP	NK_cell	NK_cell	21	NM2	NKG7,GNLY	high=21; medium=0
+15	CEP	Pericyte_SMC	Pericyte_SMC	30	NM1	ACTA2,RGS5,PDGFRB	high=30; medium=0
+16	all_cells	AF_inner	Chondrocyte_like	32839	M0,M1,M2,M3,M4,M5,M6,M7	COL2A1,ACAN,SOX9	high=32839; low=0; medium=0
+17	all_cells	AF_outer	Fibroblast_like	51729	M0,M1,M2,M3,M4,M5,M6,M7	COL1A1,COL1A2,THY1,DCN,LUM	high=51729; low=0; medium=0
+18	all_cells	Chondrocyte_like	Chondrocyte_like	8794	M0,M1,M2,M4,M8	COL2A1,ACAN,SOX9,COMP,PRG4	high=6017; medium=2777; low=0
+19	all_cells	EP_hyaline	Chondrocyte_like	12597	M0,M1,M2,M3,M4,M5,M6,M7	COL2A1,COL10A1,SOX9	high=12597; low=0; medium=0
+20	all_cells	Endothelial	Endothelial	2715	NM0,NM1,NM2,NM3,NM4	PECAM1,VWF,CDH5	high=1451; medium=1264; low=0
+21	all_cells	Fibroblast_like	Fibroblast_like	34020	M0,M1,M2,M3,M4,M5,M6,M7	COL1A1,COL1A2,DCN,LUM,THY1	high=33582; medium=438; low=0
+22	all_cells	Fibrochondrocyte_chondroid	Fibrochondrocyte_like	4292	M0,M1,M2,M3,M4,M5,M6,M7	COL2A1,ACAN,SOX9	high=4292; low=0; medium=0
+23	all_cells	Fibrochondrocyte_fibroid	Fibrochondrocyte_like	298	M0,M1,M2,M3,M4,M5,M6	COL1A1,COL1A2,DCN	medium=298; high=0; low=0
+24	all_cells	Fibrochondrocyte_like	Fibrochondrocyte_like	3052	M3,M5,M7	COL1A1,COL2A1,ACAN,DCN	low=2304; medium=748; high=0
+25	all_cells	Macrophage	Macrophage	16	NM0,NM2	CD68,CD14,CSF1R,CD163,CD86	high=16; low=0; medium=0
+26	all_cells	Macrophage_M2	Macrophage	215	NM0,NM1,NM2,NM3,NM4	CD163,MRC1,MSR1,TGFB1	high=215; low=0; medium=0
+27	all_cells	NK_cell	NK_cell	21	NM0,NM1,NM2	NKG7,GNLY	high=21; low=0; medium=0
+28	all_cells	NP_fibrocartilaginous	Fibroblast_like	73764	M0,M1,M2,M3,M4,M5,M6,M7,M9	COL1A1,COL2A1,VCAN	high=73764; low=0; medium=0
+29	all_cells	NP_mature_chondrocyte	Chondrocyte_like	185794	M0,M1,M2,M3,M4,M5,M6,M7,M8	ACAN,COL2A1,SOX9,COMP,PRG4	high=185794; low=0; medium=0
+30	all_cells	Pericyte_SMC	Pericyte_SMC	30	NM0,NM1,NM4	ACTA2,RGS5,PDGFRB	high=30; low=0; medium=0
+31	all_cells	T_cell_CD8	T_cell	583	NM0,NM1,NM2,NM3	CD8A,CD8B,GZMB,PRF1	medium=583; high=0; low=0

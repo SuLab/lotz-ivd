@@ -1,0 +1,4 @@
+Unnamed: 0	cluster	n_cells	de_novo_label	celltypist_majority	celltypist_agreement_pct	concordant
+0	0	38	Endothelial	Endothelial cells	100.0	True
+1	1	30	Pericyte_SMC	NK cells	76.7	False
+2	2	21	NK_cell	Classical monocytes	52.4	False

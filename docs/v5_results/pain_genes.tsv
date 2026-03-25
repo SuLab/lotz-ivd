@@ -1,0 +1,14 @@
+Unnamed: 0	gene	cell_type	comparison	log2FC	padj	pain_categories	direction
+78	IL1B	NP_fibrocartilaginous	healthy_vs_degenerated_all	-5.409509	0.007834	Inflammatory_pain	DOWN
+88	NTN1	NP_fibrocartilaginous	healthy_vs_degenerated_all	2.867295	0.030631	Nerve_guidance	UP
+98	PLA2G2A	NP_fibrocartilaginous	healthy_vs_degenerated_all	5.053978	0.007834	Inflammatory_pain	UP
+274	NTN1	NP_fibrocartilaginous	healthy_vs_degenerated_severe	2.973709	0.000117	Nerve_guidance	UP
+275	NTN4	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.676849	0.044704	Nerve_guidance	UP
+281	PDGFA	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.460311	0.030068	Neovascularization	UP
+283	PENK	NP_fibrocartilaginous	healthy_vs_degenerated_severe	3.261984	0.044264	Neuropeptides	UP
+284	PLA2G2A	NP_fibrocartilaginous	healthy_vs_degenerated_severe	5.024151	0.006646	Inflammatory_pain	UP
+300	UNC5B	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.233563	0.006646	Nerve_guidance	UP
+301	VEGFA	NP_fibrocartilaginous	healthy_vs_degenerated_severe	1.0562	0.017298	Neovascularization	UP
+390	IL6	NP_fibrocartilaginous	mild_vs_severe	2.713887	0.005222	Inflammatory_pain	UP
+674	CXCL8	AF_outer	healthy_vs_degenerated_mild	-5.442122	0.007585	Inflammatory_pain	DOWN
+699	PLA2G2A	AF_outer	healthy_vs_degenerated_mild	-9.853912	0.008621	Inflammatory_pain	DOWN
