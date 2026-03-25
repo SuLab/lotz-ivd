@@ -822,12 +822,13 @@ def section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path,
 
     # Cross-version sensitivity — derived from actual v5 data where possible,
     # with context from analysis_plan for historical perspective
+    version_history_path = BASE / "docs" / "version_history.md"
     lines.append("### Result sensitivity across pipeline versions")
     lines.append("")
     lines.append("Several results are sensitive to upstream methodological choices "
                  "(integration method, annotation, cell sampling). These are documented "
                  "here to flag areas requiring cautious interpretation. "
-                 f"{src(plan_path)}")
+                 f"{src(version_history_path)}")
     lines.append("")
 
     # Trajectory — use v5 data if available, otherwise note from plan

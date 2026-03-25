@@ -61,19 +61,7 @@ Three workflows compared with full integration metrics (iLISI, batch_ASW, condit
 
 Now converting CCA RDS → h5ad and running Modules 06-12.
 
-### CCA Run Incident Log (2026-03-24)
-
-1. **Single-threaded NP run killed (03:00 UTC).** Original NP run started 2026-03-23 ~20:50 with reference BLAS (single-threaded) — consumed 6+ hours of CPU time on one core with 31 cores idle. Killed and restarted after compute optimization.
-
-2. **Compute optimization applied (03:03 UTC).** Installed OpenBLAS (multi-threaded BLAS) and added `future::plan("multicore", workers=16)` during `IntegrateLayers`. Reference BLAS replaced system-wide via `update-alternatives`. `future` plan set to sequential during data loading (fork-safety with `system2` bridge calls), multicore only during integration. No functional impact on results — identical linear algebra, parallelized execution only.
-
-3. **First optimized run crashed silently (03:03 UTC).** `future::plan("multicore")` was set globally at script startup. Forked workers conflicted with `system2()` calls in the h5ad-to-Seurat bridge conversion during data loading. Process died with no error output. Fix: moved `plan("multicore")` to activate only during `IntegrateLayers`, reverts to `plan("sequential")` after.
-
-4. **NP, AF, CEP completed successfully (05:19–07:09 UTC).** ~2 hours total for all three objects (vs 6h+ for NP alone single-threaded).
-
-5. **all_cells failed at IntegrateLayers (~ 07:30 UTC).** `future.globals.maxSize` was 16 GB; all_cells exported 16.25 GB of globals to workers. Error: `The total size of the 59 globals exported for future expression ('FUN()') is 16.25 GiB. This exceeds the maximum allowed size 16.00 GiB`. Fix: bumped `future.globals.maxSize` to 200 GB (machine has 247 GB RAM).
-
-6. **all_cells restarted (15:24 UTC).** Running with 200 GB future globals limit, OpenBLAS, 16 workers.
+> CCA operational incident log: see [`docs/version_history.md`](docs/version_history.md#cca-run-incident-log-v5-2026-03-24).
 
 ---
 
@@ -151,15 +139,17 @@ scANVI and STACAS complete. CCA re-running at full cell counts on 247GB machine 
 
 ---
 
-## Items Requiring SME Review
+## Items Requiring SME Review (v5)
 
-1. **Trajectory instability across versions:** Pseudotime-condition correlations change sign between pipeline versions (e.g., CEP went from -0.163 in v2 to +0.135 in v3). This sensitivity to upstream annotation choices means trajectory results should be interpreted cautiously.
+1. **Trajectory results (v5):** NP rho=-0.088, AF rho=+0.195, CEP rho=+0.073. Weak correlations suggest pseudotime does not strongly track degeneration severity in the CCA embedding. This result is sensitive to integration method and root cell choice — correlations changed sign across prior versions.
 
-2. **CellTypist NP disagreements:** 8/13 de novo NP clusters were discordant with CellTypist in v3. CellTypist lacks IVD-specific cell types, so de novo labels are retained, but this should be acknowledged.
+2. **CellTypist concordance (v5):** CellTypist lacks IVD-specific reference types, so disagreements with de novo mesenchymal labels are expected. De novo labels retained as primary; CellTypist used for immune subtype validation only.
 
-3. **CCC direction sensitivity:** v1 showed more interactions in degeneration (53K vs 44K), v2 showed fewer (27K vs 29K), v3 shows near-equal (40K vs 41K). The direction of this result is sensitive to annotation and sampling choices.
+3. **CCC direction (v5):** 25,537 healthy vs 34,208 degenerated interactions (more in degeneration). This direction has varied across pipeline versions and should be treated as uncertain.
 
-4. **AF pseudotime sign:** AF consistently shows positive rho (degenerated at later pseudotime) across v2 and v3, opposite to NP. May reflect genuine AF-specific biology or root cell choice issues.
+4. **AF pseudotime sign (v5):** AF rho=+0.195 (degenerated at later pseudotime), opposite to NP (-0.088). Consistent across all pipeline versions. May reflect AF-specific biology or root cell choice effects.
+
+> Cross-version sensitivity analysis with detailed version-by-version comparisons: see [`docs/version_history.md`](docs/version_history.md#cross-version-sensitivity-observations).
 
 ---
 
@@ -175,8 +165,8 @@ scANVI and STACAS complete. CCA re-running at full cell counts on 247GB machine 
 
 - **NGDC datasets excluded:** PRJCA014236 and PRJCA007656 not downloaded. NP already well-covered.
 - **GSE205535 corrigenda:** Published corrections exist — reviewed during preprocessing.
-- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scANVI batch correction. CCA and STACAS also correct for this via study-level integration.
-- **SeuratDisk incompatible with Seurat v5:** `GetAssayData(slot=...)` removed in SeuratObject 5.0. Workaround: R export to MTX/CSV + Python assembly (`scripts/seurat_to_h5ad_bridge.R` + `scripts/seurat_to_h5ad_assemble.py`).
+- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by CCA batch correction (v5 primary). scANVI and STACAS also tested.
+- **SeuratDisk incompatible with Seurat v5 (implementation):** Workaround in place — R export to MTX/CSV + Python assembly (`scripts/seurat_to_h5ad_bridge.R` + `scripts/seurat_to_h5ad_assemble.py`).
 - **CEP underpowered:** Only 3 CEP datasets (6 samples). Compartment-specific CEP analyses are limited.
 - **GSE242443 culture-expanded:** CEP cells are culture-expanded. Included with caveats.
 - **GSE230809 sex bias:** All 24 samples from male donors. Limits sex-stratified analyses.
@@ -189,69 +179,5 @@ scANVI and STACAS complete. CCA re-running at full cell counts on 247GB machine 
 
 ## Version History
 
-### v5 (2026-03-21 to 2026-03-25): CCA integration — COMPLETE
-- Spec 05 restructured for three parallel workflows (CCA, scANVI, STACAS)
-- R environment installed: Seurat 5.4.0, STACAS 2.4.1, DESeq2 1.42.1, speckle 0.99.7
-- Module 05: CCA selected as primary (label-free, strongest batch mixing iLISI 1.5-3.7)
-- CCA full-cell on 247GB machine (migrated 2026-03-23); scANVI + STACAS retained for comparison
-- Module 06: CCA produces fewer clusters (NP 12 vs v4 62) — smoother embedding
-- Module 07: NP 5 types (mature_chondrocyte 72%, fibrocartilaginous 28%), AF 4, CEP 7, all 16
-- Module 08: 17 powered comparisons, 1,198 sig genes (NP_fibrocartilaginous h→s: 556 genes)
-- Module 09: 2,506 enrichments, 3,301 GSEA, 288 sig TFs, 10 pain genes
-- Module 10: NP rho=-0.088, AF rho=+0.195, CEP rho=+0.073
-- Module 11: 25,537 healthy vs 34,208 degenerated CCC interactions
-- Module 12: 19 supplementary tables, final report
-- Modules 01-04 reused from v1/v4
-
-### v4 (2026-03-11): Spec restructuring + scANVI — COMPLETE
-- Pipeline restructured from 10 to 12 modules (clustering and annotation split from integration)
-- Module 04: 5 coarse anchor categories replace binary classification
-- Module 05: scANVI (semi-supervised) replaces scVI (unsupervised); checkpoint resume added
-- Module 06: Leiden clustering with resolution optimization; adaptive resolution count for large datasets
-- Module 07: Two-stage post-integration annotation (coarse → fine); 10 NP types, 2 AF types, 3 CEP types
-- Module 08: 23 powered DE comparisons; 925+ significant genes
-- Module 09: 1,772 enriched pathways; 7 pain-related DE genes
-- Module 10: Pseudotime in NP/AF/CEP; CEP rho=0.396
-- Module 11: 39K healthy vs 37K degenerated CCC interactions
-- Module 12: Final report + 27 supplementary tables
-- Modules 01-03 unchanged from v1
-
-### v3 (2026-03-10): Annotation fix
-- Three fixes to Module 04 classification (evidence gate, ACAN/SOX9 rescue, 85% voting)
-- Recovered 17K stressed NP cells from non-mesenchymal to mesenchymal
-- Modules 04-10 rerun; Modules 01-03 unchanged
-- All reports, notebooks, supplementary tables regenerated
-
-### v2 (2026-03-09 to 2026-03-10): Pipeline restructure
-- Module 04 narrowed to binary classification; Module 05 expanded to include annotation
-- Four compartment objects (NP, AF, CEP, all_cells) replace two-tier structure
-- scVI-only replaces 4-approach integration benchmark
-- GSE233666 excluded (herniated-only confound)
-- Results archived in `results_v2/` and `results/v2_archive/`
-
-### v1 (2026-02-26 to 2026-03-05): Original pipeline
-- 12 datasets (including GSE233666), two-tier integration (resident/non-resident)
-- 4-approach integration benchmark (scVI, scANVI, Harmony, BBKNN)
-- scANVI chosen as primary, scVI for trajectory sensitivity
-- 17 powered DE comparisons, 5,328 significant genes
-- Results superseded by v2 restructuring
-
-### Key decisions log
-| Date | Decision |
-|------|----------|
-| 2026-02-26 | Specs approved. GSE242443 included. Zhou 2023 deferred. NGDC dropped. |
-| 2026-02-26 | Condition mappings tentatively approved. Revisit before Module 08. |
-| 2026-03-03 | Retroactive checkpoint review of Modules 03-05. No blocking issues. |
-| 2026-03-05 | scANVI primary for v1 (later superseded). Condition mappings finalized. |
-| 2026-03-05 | v1 pipeline complete. All modules 01-10 done. |
-| 2026-03-09 | Spec restructuring. GSE233666 excluded. scVI-only. v2 rerun initiated. |
-| 2026-03-10 | v2 complete. v3 annotation fix applied. Full rerun Modules 04-10. |
-| 2026-03-10 | v3 complete. Stale files cleaned. Notebooks re-executed. Reports updated. |
-| 2026-03-11 | Spec restructuring: 10→12 modules. scANVI integration. Scripts updated for v4. |
-| 2026-03-21 | v5 initiated. v4 results archived. data/integrated cleared. data/processed retained. |
-| 2026-03-21 | R installed (Seurat 5.4.0, STACAS 2.4.1, DESeq2). SeuratDisk broken with v5 — bridge workaround. |
-| 2026-03-21 | scANVI workflow complete (all 4 objects). CCA v4 approach infeasible on 62GB — rewrote for Seurat v5. |
-| 2026-03-22 | CCA v5 complete (all 4 objects, downsampled for NP/all_cells). STACAS v2.4 API fixed, complete. |
-| 2026-03-22 | Module 05 human checkpoint ready. 3-workflow comparison report and notebooks generated. |
-| 2026-03-23 | Migrated to 247GB RAM machine. CCA script updated to remove downsampling. Re-running CCA full-cell for all objects. |
-| 2026-03-25 | CCA full-cell complete (all 4 objects). Metrics computed for all 3 workflows. CCA selected as primary workflow. Modules 06-12 proceeding with CCA. |
+> Full changelog (v1–v5), key decisions log, CCA incident log, and cross-version
+> sensitivity analysis: see [`docs/version_history.md`](docs/version_history.md).

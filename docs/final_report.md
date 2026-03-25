@@ -4,9 +4,9 @@
 
 | Field | Value |
 |-------|-------|
-| Report generated | 2026-03-25 14:00 |
+| Report generated | 2026-03-25 14:08 |
 | Pipeline version | v5 |
-| Git commit | `12cacbf` (branch: `main`) |
+| Git commit | `7c2d700` (branch: `main`) |
 | Source of truth | `analysis_plan.md` |
 
 ## Contents
@@ -132,7 +132,7 @@ Pain gene results not found. *[source: `results/interpretation/pain_genes.tsv`]*
 
 - **NGDC datasets excluded:** PRJCA014236 and PRJCA007656 not downloaded. NP already well-covered.
 - **GSE205535 corrigenda:** Published corrections exist — reviewed during preprocessing.
-- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by study-level batch correction (CCA in v5; scANVI and STACAS also tested).
+- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by CCA batch correction (v5 primary). scANVI and STACAS also tested.
 - **CEP underpowered:** Only 3 CEP datasets (6 samples). Compartment-specific CEP analyses are limited.
 - **GSE242443 culture-expanded:** CEP cells are culture-expanded. Included with caveats.
 - **GSE230809 sex bias:** All 24 samples from male donors. Limits sex-stratified analyses.
@@ -143,7 +143,7 @@ Pain gene results not found. *[source: `results/interpretation/pain_genes.tsv`]*
 
 ### Result sensitivity across pipeline versions
 
-Several results are sensitive to upstream methodological choices (integration method, annotation, cell sampling). These are documented here to flag areas requiring cautious interpretation. *[source: `analysis_plan.md`]*
+Several results are sensitive to upstream methodological choices (integration method, annotation, cell sampling). These are documented here to flag areas requiring cautious interpretation. *[source: `docs/version_history.md`]*
 
 - **Trajectory instability:** Pseudotime-condition correlations have changed sign across pipeline versions, indicating sensitivity to integration method and annotation choices.
 
@@ -207,7 +207,7 @@ Python 3.12, scanpy, scvi-tools, pyDESeq2, gseapy, decoupler, liana. R: Seurat 5
 
 ## 13. Reproducibility {#reproducibility}
 
-- **Git commit:** `12cacbfca220d9c20518af9adea41345fac591b6` (branch: `main`)
+- **Git commit:** `7c2d7004894b4ba2d41944b08d6b2a0e605b1443` (branch: `main`)
 - **Random seeds:** 42 (all stochastic operations)
 - **Package versions:** pinned in `requirements.txt`, frozen in `requirements_frozen.txt`
 - **Parameter choices:** documented in `analysis_plan.md`
