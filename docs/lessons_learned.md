@@ -81,13 +81,14 @@ integration expertise.
 
 ### 3.1 Checkpoint strategy must be an explicit design choice
 
-During v1, the human operator intentionally let the agent run through
-Modules 03–05 without SME review at each checkpoint. This was a deliberate
-decision: get a complete end-to-end first pass quickly so that the SMEs
-could see the full pipeline output and have a concrete artifact to react
-to. It worked — the v1 results stimulated discussion, demonstrated the
-approach's potential, and gave the domain experts something specific to
-critique rather than an abstract plan.
+During v1, the human operator intentionally pushed the agent through the
+entire pipeline — all modules, including manuscript generation — without
+SME review at any checkpoint. This was a deliberate decision: get a
+complete end-to-end result as fast as possible so that the SMEs could see
+the full pipeline output, including a draft manuscript, and have concrete
+artifacts to react to. It worked — the v1 results and manuscript
+stimulated discussion, demonstrated the approach's potential, and gave the
+domain experts something specific to critique rather than an abstract plan.
 
 However, this created a problem for subsequent versions: the pipeline had
 been designed with checkpoints as mandatory gates, but had been operated
