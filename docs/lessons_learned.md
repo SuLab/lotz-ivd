@@ -39,8 +39,16 @@ as shared state was remarkably effective for execution. The agent could:
 - Generate notebooks, run validation, and commit — a complete
   build-test-document cycle per iteration
 
-The v4 pipeline (Modules 06–12) ran in under 2 hours once specs were
-finalized. Raw execution speed was never the bottleneck.
+However, the agent never proactively addressed compute bottlenecks. On
+multiple occasions, the pipeline stalled — running single-threaded for 6+
+hours with 31 cores idle, or silently consuming all available memory — and
+would have remained stalled indefinitely without human intervention. The
+human had to notice the stall, diagnose the cause, and either change the
+compute environment (adding a GPU, quadrupling RAM from 62GB to 247GB) or
+explicitly instruct the agent to investigate and implement parallelization.
+Left to its own devices, the agent would have waited for single-threaded
+jobs to finish or crashed repeatedly without escalating. Compute
+optimization was always human-initiated.
 
 ### 2.2 Specs as the contract between humans and agent
 
