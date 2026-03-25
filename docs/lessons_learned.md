@@ -9,15 +9,18 @@
 
 Over 28 days, an AI agent (Claude Opus 4.6) executed a 12-module scRNA-seq
 meta-analysis pipeline across 5 pipeline versions, processing ~423K cells
-from 12 public datasets of human intervertebral disc tissue. Ben Good
-served as the primary human operator — running the agent loop, monitoring
-execution, diagnosing stalls and crashes, driving compute environment
-changes, and directing the agent through problems it could not resolve on
-its own. Andrew Su initiated the project and ran the first modules. Lisa
-Janssen and Hannah Swahn provided domain expertise through spec revisions
-that triggered the v2 and v5 restructures respectively. The agent authored
-or co-authored 85 of 96 commits; the remaining 11 human commits drove
-every major architectural change.
+from 12 public datasets of human intervertebral disc tissue. Andrew Su
+designed the original system architecture — the agent loop, spec format,
+checkpoint protocol, and module structure. Ben Good served as the primary
+human operator — running the agent loop, monitoring execution, diagnosing
+stalls and crashes, driving compute environment changes, and directing the
+agent through problems it could not resolve on its own. Martin Lotz
+provided subject matter expertise on IVD biology, guiding scientific
+decisions at checkpoints. Lisa Janssen and Hannah Swahn contributed
+bioinformatics domain expertise through spec revisions that triggered the
+v2 and v5 restructures respectively. The agent authored or co-authored 85
+of 96 commits; the remaining 11 human commits drove every major
+architectural change.
 
 The pipeline produced cell type annotations, differential expression results,
 pathway enrichments, trajectory analyses, cell-cell communication networks,
