@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Module 12: Final reporting for IVD scRNA-seq atlas.
 
-Generates a comprehensive HTML report integrating all module results,
-supplementary tables, and a reproducibility record.
+Generates a comprehensive markdown report by reading result files from
+all upstream modules. Every statistic is loaded from its source file and
+annotated with a provenance reference.
+
+Output: docs/final_report.md
 
 Usage:
     python3 scripts/12_reporting.py
@@ -10,6 +13,7 @@ Usage:
 
 import sys
 import os
+import subprocess
 from pathlib import Path
 from datetime import datetime
 
@@ -17,410 +21,1011 @@ import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent
 RESULTS = BASE / "results"
-FIGURES = RESULTS / "figures"
-SUPP_TABLES = RESULTS / "supplementary_tables"
 META = BASE / "metadata"
+DOCS = BASE / "docs"
+SUPP_TABLES = RESULTS / "supplementary_tables"
 
-for d in [FIGURES, SUPP_TABLES]:
-    d.mkdir(parents=True, exist_ok=True)
+DOCS.mkdir(parents=True, exist_ok=True)
+SUPP_TABLES.mkdir(parents=True, exist_ok=True)
 
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def git_version():
+    """Return git commit hash and branch name."""
+    try:
+        sha = subprocess.check_output(
+            ["git", "-C", str(BASE), "rev-parse", "HEAD"],
+            text=True,
+        ).strip()
+        branch = subprocess.check_output(
+            ["git", "-C", str(BASE), "rev-parse", "--abbrev-ref", "HEAD"],
+            text=True,
+        ).strip()
+        short = sha[:7]
+        return short, sha, branch
+    except Exception:
+        return "unknown", "unknown", "unknown"
+
+
+def read_tsv(path, **kwargs):
+    """Read a TSV file, returning an empty DataFrame if it doesn't exist."""
+    if path.exists():
+        return pd.read_csv(path, sep="\t", **kwargs)
+    return pd.DataFrame()
+
+
+def src(path):
+    """Format a source reference relative to the repo root."""
+    try:
+        rel = path.resolve().relative_to(BASE.resolve())
+    except ValueError:
+        rel = path
+    return f"*[source: `{rel}`]*"
+
+
+def safe_int(val):
+    try:
+        return f"{int(val):,}"
+    except (ValueError, TypeError):
+        return str(val)
+
+
+# ---------------------------------------------------------------------------
+# Data loaders — each returns (data_dict, source_path)
+# ---------------------------------------------------------------------------
+
+def load_dataset_registry():
+    path = META / "dataset_registry.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_sample_metadata():
+    path = META / "sample_metadata.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_cell_type_definitions():
+    path = RESULTS / "integration" / "cell_type_definitions.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_clustering_resolutions():
+    cdir = RESULTS / "integration" / "clustering_resolution_optimization"
+    frames = []
+    if cdir.exists():
+        for f in sorted(cdir.glob("*_resolutions.tsv")):
+            tmp = read_tsv(f)
+            tmp["_source_file"] = f.name
+            frames.append(tmp)
+    df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    return df, cdir
+
+
+def load_de_summary():
+    path = RESULTS / "differential" / "de_summary_table.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_de_combined():
+    path = RESULTS / "differential" / "de_results_combined.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_skipped_comparisons():
+    path = RESULTS / "differential" / "skipped_comparisons.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_composition():
+    path = RESULTS / "differential" / "composition_analysis.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_enrichment():
+    path = RESULTS / "interpretation" / "pathway_enrichment" / "all_enrichment_results.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_gsea():
+    path = RESULTS / "interpretation" / "pathway_enrichment" / "gsea_results.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_tf_activity():
+    path = RESULTS / "interpretation" / "tf_activity" / "tf_activity_results.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_pain_genes():
+    path = RESULTS / "interpretation" / "pain_genes.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_trajectory_correlations():
+    frames = []
+    tdir = RESULTS / "trajectories"
+    if tdir.exists():
+        for f in sorted(tdir.glob("pseudotime_correlations_*.tsv")):
+            tmp = read_tsv(f)
+            comp = f.stem.replace("pseudotime_correlations_", "")
+            tmp["compartment"] = comp
+            tmp["_source_file"] = str(f)
+            frames.append(tmp)
+    df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    return df, tdir
+
+
+def load_trajectory_genes():
+    counts = {}
+    tdir = RESULTS / "trajectories"
+    if tdir.exists():
+        for f in sorted(tdir.glob("trajectory_genes_*.tsv")):
+            comp = f.stem.replace("trajectory_genes_", "")
+            tmp = read_tsv(f)
+            counts[comp] = len(tmp)
+    return counts, tdir
+
+
+def load_ccc_interactions():
+    """Load interaction counts per condition."""
+    cdir = RESULTS / "communication"
+    counts = {}
+    if cdir.exists():
+        for f in sorted(cdir.glob("interactions_*.tsv")):
+            cond = f.stem.replace("interactions_", "")
+            tmp = read_tsv(f)
+            counts[cond] = len(tmp)
+    return counts, cdir
+
+
+def load_differential_interactions():
+    path = RESULTS / "communication" / "differential_interactions.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_pain_interactions():
+    path = RESULTS / "communication" / "pain_interactions.tsv"
+    df = read_tsv(path)
+    return df, path
+
+
+def load_celltypist_concordance():
+    cdir = RESULTS / "integration" / "celltypist_validation"
+    frames = []
+    if cdir.exists():
+        for f in sorted(cdir.glob("*_concordance.tsv")):
+            tmp = read_tsv(f)
+            obj = f.stem.replace("_concordance", "")
+            tmp["object"] = obj
+            tmp["_source_file"] = str(f)
+            frames.append(tmp)
+    df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    return df, cdir
+
+
+def load_analysis_plan():
+    path = BASE / "analysis_plan.md"
+    if path.exists():
+        return path.read_text(), path
+    return "", path
+
+
+# ---------------------------------------------------------------------------
+# Report sections
+# ---------------------------------------------------------------------------
+
+def section_header(lines, plan_text):
+    short_sha, full_sha, branch = git_version()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    # Extract pipeline version from analysis_plan
+    version = "unknown"
+    for line in plan_text.splitlines():
+        if line.startswith("**Pipeline version:**"):
+            version = line.split(":**")[1].strip()
+            break
+
+    lines.append("# Human Intervertebral Disc Single-Cell Atlas — Final Report")
+    lines.append("")
+    lines.append("**A comprehensive scRNA-seq meta-analysis of IVD degeneration**")
+    lines.append("")
+    lines.append(f"| Field | Value |")
+    lines.append(f"|-------|-------|")
+    lines.append(f"| Report generated | {now} |")
+    lines.append(f"| Pipeline version | {version} |")
+    lines.append(f"| Git commit | `{short_sha}` (branch: `{branch}`) |")
+    lines.append(f"| Source of truth | `analysis_plan.md` |")
+    lines.append("")
+
+
+def section_toc(lines):
+    lines.append("## Contents")
+    lines.append("")
+    toc_items = [
+        ("summary", "Atlas Summary"),
+        ("datasets", "Dataset Summary"),
+        ("integration", "Integration"),
+        ("clustering", "Clustering & Annotation"),
+        ("de", "Differential Expression"),
+        ("pathways", "Biological Pathways"),
+        ("tf", "Transcription Factor Activity"),
+        ("trajectory", "Cell State Trajectories"),
+        ("communication", "Cell-Cell Communication"),
+        ("pain", "Pain Biology"),
+        ("limitations", "Limitations & Caveats"),
+        ("methods", "Methods"),
+        ("reproducibility", "Reproducibility"),
+    ]
+    for i, (anchor, title) in enumerate(toc_items, 1):
+        lines.append(f"{i}. [{title}](#{anchor})")
+    lines.append("")
+
+
+def section_summary(lines, sample_df, sample_path, de_summary, de_path,
+                    enrichment_df, enrichment_path, ccc_counts, ccc_path):
+    lines.append("## 1. Atlas Summary {#summary}")
+    lines.append("")
+
+    # Compute stats from actual data
+    if not sample_df.empty:
+        # sample_metadata.tsv contains only included samples (no status column)
+        n_samples = len(sample_df)
+        n_donors = sample_df["donor_id"].nunique() if "donor_id" in sample_df.columns else "?"
+        compartments = sorted(sample_df["compartment"].dropna().unique()) if "compartment" in sample_df.columns else []
+        lines.append(f"| Metric | Value | Source |")
+        lines.append(f"|--------|-------|--------|")
+        lines.append(f"| Samples | {n_samples} | {src(sample_path)} |")
+        lines.append(f"| Donors | {n_donors} | {src(sample_path)} |")
+        lines.append(f"| Compartments | {', '.join(compartments)} | {src(sample_path)} |")
+    else:
+        lines.append("| Metric | Value | Source |")
+        lines.append("|--------|-------|--------|")
+        lines.append(f"| Samples | *data not available* | {src(sample_path)} |")
+
+    if not de_summary.empty:
+        n_comparisons = len(de_summary)
+        n_sig = int(de_summary["n_total"].sum()) if "n_total" in de_summary.columns else "?"
+        lines.append(f"| Powered DE comparisons | {n_comparisons} | {src(de_path)} |")
+        lines.append(f"| Significant DE genes (total hits) | {safe_int(n_sig)} | {src(de_path)} |")
+
+    if enrichment_df is not None and not enrichment_df.empty:
+        n_enrichments = len(enrichment_df)
+        lines.append(f"| Enriched pathways (ORA) | {safe_int(n_enrichments)} | {src(enrichment_path)} |")
+
+    total_ccc = sum(ccc_counts.values())
+    if total_ccc > 0:
+        lines.append(f"| L-R interactions (all conditions) | {safe_int(total_ccc)} | {src(ccc_path)} |")
+
+    lines.append("")
+
+
+def section_datasets(lines, registry_df, registry_path, sample_df, sample_path):
+    lines.append("## 2. Dataset Summary {#datasets}")
+    lines.append("")
+
+    if registry_df.empty:
+        lines.append(f"Dataset registry not found. {src(registry_path)}")
+        lines.append("")
+        return
+
+    included = registry_df[registry_df["status"] == "included"].copy()
+    lines.append(f"**{len(included)} datasets included** (of {len(registry_df)} evaluated). "
+                 f"{src(registry_path)}")
+    lines.append("")
+
+    cols = ["accession", "first_author", "year", "compartment", "n_samples",
+            "technology", "conditions"]
+    available_cols = [c for c in cols if c in included.columns]
+    header = "| " + " | ".join(available_cols) + " |"
+    sep = "| " + " | ".join(["---"] * len(available_cols)) + " |"
+    lines.append(header)
+    lines.append(sep)
+    for _, row in included.iterrows():
+        vals = [str(row.get(c, "")) for c in available_cols]
+        lines.append("| " + " | ".join(vals) + " |")
+    lines.append("")
+
+    # Platform breakdown
+    if "technology" in included.columns:
+        platforms = included["technology"].value_counts()
+        non_10x = platforms[~platforms.index.str.contains("10x", case=False, na=False)]
+        if len(non_10x) > 0:
+            lines.append(f"**Platform heterogeneity:** {len(non_10x)} non-10x platform(s) "
+                         f"({', '.join(non_10x.index)}). Batch correction handles platform "
+                         f"differences via study-level integration keys.")
+            lines.append("")
+
+    # Sample demographics summary from sample_metadata
+    if not sample_df.empty:
+        lines.append("### Sample demographics")
+        lines.append("")
+        if "age_years" in sample_df.columns:
+            known_age = sample_df["age_years"].dropna()
+            unknown_age = len(sample_df) - len(known_age)
+            if len(known_age) > 0:
+                lines.append(f"- Age range: {int(known_age.min())}–{int(known_age.max())} years "
+                             f"({unknown_age} samples with unknown age). {src(sample_path)}")
+        if "sex" in sample_df.columns:
+            sex_counts = sample_df["sex"].value_counts()
+            lines.append(f"- Sex distribution: {', '.join(f'{k}={v}' for k, v in sex_counts.items())}. "
+                         f"{src(sample_path)}")
+        lines.append("")
+
+
+def section_integration(lines, plan_text, plan_path, celltypist_df, celltypist_path):
+    lines.append("## 3. Integration {#integration}")
+    lines.append("")
+
+    # Extract integration metrics table from analysis_plan
+    in_metrics = False
+    metrics_lines = []
+    for line in plan_text.splitlines():
+        if "| Object | Workflow |" in line:
+            in_metrics = True
+        if in_metrics:
+            if line.strip().startswith("|"):
+                metrics_lines.append(line)
+            elif metrics_lines and not line.strip().startswith("|"):
+                break
+
+    if metrics_lines:
+        lines.append("### Workflow comparison")
+        lines.append("")
+        lines.append(f"Three integration workflows were compared. {src(plan_path)}")
+        lines.append("")
+        for ml in metrics_lines:
+            lines.append(ml)
+        lines.append("")
+
+    # Extract rationale from analysis_plan
+    in_rationale = False
+    for line in plan_text.splitlines():
+        if "**Rationale for CCA:**" in line:
+            in_rationale = True
+        if in_rationale:
+            if line.strip() == "" and any(l.startswith("-") for l in metrics_lines):
+                continue
+            if line.strip().startswith("Now converting") or line.strip().startswith("---"):
+                break
+            lines.append(line)
+    if in_rationale:
+        lines.append("")
+
+    # CellTypist concordance
+    if not celltypist_df.empty and "concordant" in celltypist_df.columns:
+        lines.append("### CellTypist validation")
+        lines.append("")
+        disc = celltypist_df[celltypist_df["concordant"] == False]
+        conc = celltypist_df[celltypist_df["concordant"] == True]
+        lines.append(f"{len(conc)} concordant, {len(disc)} discordant cluster(s) across all objects. "
+                     f"{src(celltypist_path)}")
+        lines.append("")
+        if len(disc) > 0:
+            lines.append("| Object | Cluster | Cells | De Novo Label | CellTypist Label | Agreement % |")
+            lines.append("|--------|---------|-------|---------------|------------------|-------------|")
+            for _, row in disc.iterrows():
+                obj = row.get("object", "")
+                cluster = row.get("cluster", "")
+                n_cells = safe_int(row.get("n_cells", ""))
+                de_novo = row.get("de_novo_label", "")
+                ct = row.get("celltypist_majority", "")
+                pct = row.get("celltypist_agreement_pct", "")
+                pct_str = f"{pct:.1f}" if isinstance(pct, (int, float)) else str(pct)
+                lines.append(f"| {obj} | {cluster} | {n_cells} | {de_novo} | {ct} | {pct_str}% |")
+            lines.append("")
+            lines.append("De novo labels retained as primary (CellTypist lacks IVD-specific cell types).")
+            lines.append("")
+
+
+def section_clustering(lines, celldefs_df, celldefs_path, clustering_df, clustering_path):
+    lines.append("## 4. Clustering & Annotation {#clustering}")
+    lines.append("")
+
+    if not celldefs_df.empty:
+        lines.append(f"### Cell type definitions")
+        lines.append("")
+        lines.append(f"{src(celldefs_path)}")
+        lines.append("")
+        display_cols = [c for c in celldefs_df.columns if not c.startswith("_")]
+        header = "| " + " | ".join(display_cols) + " |"
+        sep = "| " + " | ".join(["---"] * len(display_cols)) + " |"
+        lines.append(header)
+        lines.append(sep)
+        for _, row in celldefs_df.iterrows():
+            vals = [str(row.get(c, "")) for c in display_cols]
+            lines.append("| " + " | ".join(vals) + " |")
+        lines.append("")
+    else:
+        lines.append(f"Cell type definitions not found. {src(celldefs_path)}")
+        lines.append("")
+
+    # Clustering resolution summary
+    if not clustering_df.empty:
+        lines.append("### Clustering resolution optimization")
+        lines.append("")
+        lines.append(f"{src(clustering_path)}")
+        lines.append("")
+        for sfile, group in clustering_df.groupby("_source_file"):
+            obj_name = sfile.replace("_resolutions.tsv", "")
+            if "resolution" in group.columns and "n_clusters" in group.columns:
+                best = group.loc[group.get("silhouette", pd.Series([0])).idxmax()] if "silhouette" in group.columns else group.iloc[0]
+                lines.append(f"- **{obj_name}:** best resolution {best.get('resolution', '?')}, "
+                             f"{safe_int(best.get('n_clusters', '?'))} clusters "
+                             f"(silhouette={best.get('silhouette', '?'):.3f})" if isinstance(best.get('silhouette'), float) else
+                             f"- **{obj_name}:** resolution data available")
+        lines.append("")
+
+
+def section_de(lines, de_summary, de_path, de_combined, de_combined_path,
+               skipped_df, skipped_path):
+    lines.append("## 5. Differential Expression {#de}")
+    lines.append("")
+
+    if de_summary.empty:
+        lines.append(f"DE summary not found. {src(de_path)}")
+        lines.append("")
+        return
+
+    n_comparisons = len(de_summary)
+    n_total = int(de_summary["n_total"].sum()) if "n_total" in de_summary.columns else 0
+    n_up = int(de_summary["n_up"].sum()) if "n_up" in de_summary.columns else 0
+    n_down = int(de_summary["n_down"].sum()) if "n_down" in de_summary.columns else 0
+
+    lines.append(f"**{n_comparisons} powered comparisons**, {safe_int(n_total)} significant genes "
+                 f"({safe_int(n_up)} up, {safe_int(n_down)} down). "
+                 f"Thresholds: |log2FC| > 0.5, padj < 0.05. {src(de_path)}")
+    lines.append("")
+
+    # Summary table
+    display_cols = [c for c in de_summary.columns if not c.startswith("_")]
+    header = "| " + " | ".join(display_cols) + " |"
+    sep = "| " + " | ".join(["---"] * len(display_cols)) + " |"
+    lines.append(header)
+    lines.append(sep)
+    for _, row in de_summary.iterrows():
+        vals = [str(row.get(c, "")) for c in display_cols]
+        lines.append("| " + " | ".join(vals) + " |")
+    lines.append("")
+
+    # Top DE genes from combined results
+    if not de_combined.empty and "log2FoldChange" in de_combined.columns:
+        lines.append("### Top upregulated genes (by log2FC)")
+        lines.append("")
+        lines.append(f"{src(de_combined_path)}")
+        lines.append("")
+        top_up = de_combined.nlargest(10, "log2FoldChange")
+        lines.append("| Gene | log2FC | padj | Cell Type | Comparison |")
+        lines.append("|------|--------|------|-----------|------------|")
+        for _, row in top_up.iterrows():
+            gene = row.get("gene", row.get("index", ""))
+            lfc = row.get("log2FoldChange", "")
+            lfc_str = f"{lfc:.2f}" if isinstance(lfc, (int, float)) else str(lfc)
+            padj = row.get("padj", "")
+            padj_str = f"{padj:.2e}" if isinstance(padj, (int, float)) else str(padj)
+            ct = row.get("cell_type", "")
+            comp = row.get("comparison", "")
+            lines.append(f"| {gene} | {lfc_str} | {padj_str} | {ct} | {comp} |")
+        lines.append("")
+
+        lines.append("### Top downregulated genes (by log2FC)")
+        lines.append("")
+        top_down = de_combined.nsmallest(10, "log2FoldChange")
+        lines.append("| Gene | log2FC | padj | Cell Type | Comparison |")
+        lines.append("|------|--------|------|-----------|------------|")
+        for _, row in top_down.iterrows():
+            gene = row.get("gene", row.get("index", ""))
+            lfc = row.get("log2FoldChange", "")
+            lfc_str = f"{lfc:.2f}" if isinstance(lfc, (int, float)) else str(lfc)
+            padj = row.get("padj", "")
+            padj_str = f"{padj:.2e}" if isinstance(padj, (int, float)) else str(padj)
+            ct = row.get("cell_type", "")
+            comp = row.get("comparison", "")
+            lines.append(f"| {gene} | {lfc_str} | {padj_str} | {ct} | {comp} |")
+        lines.append("")
+
+    # Skipped comparisons
+    if not skipped_df.empty:
+        lines.append(f"### Skipped comparisons (underpowered)")
+        lines.append("")
+        lines.append(f"{len(skipped_df)} comparisons skipped due to insufficient samples "
+                     f"(< 3 per condition per cell type). {src(skipped_path)}")
+        lines.append("")
+
+
+def section_pathways(lines, enrichment_df, enrichment_path, gsea_df, gsea_path):
+    lines.append("## 6. Biological Pathways {#pathways}")
+    lines.append("")
+
+    if not enrichment_df.empty:
+        n_sig = len(enrichment_df[enrichment_df.get("Adjusted P-value", pd.Series(dtype=float)) < 0.05]) \
+            if "Adjusted P-value" in enrichment_df.columns else len(enrichment_df)
+        lines.append(f"**ORA:** {safe_int(n_sig)} significantly enriched terms (FDR < 0.05). "
+                     f"{src(enrichment_path)}")
+        lines.append("")
+
+        # Top enrichments by library
+        if "Gene_set" in enrichment_df.columns or "library" in enrichment_df.columns:
+            lib_col = "library" if "library" in enrichment_df.columns else "Gene_set"
+            for lib_name, lib_group in enrichment_df.groupby(lib_col):
+                if "Adjusted P-value" in lib_group.columns:
+                    top5 = lib_group.nsmallest(5, "Adjusted P-value")
+                else:
+                    top5 = lib_group.head(5)
+                if len(top5) == 0:
+                    continue
+                lines.append(f"**{lib_name}** (top 5):")
+                lines.append("")
+                for _, row in top5.iterrows():
+                    term = row.get("Term", row.get("term", ""))
+                    pval = row.get("Adjusted P-value", row.get("padj", ""))
+                    pval_str = f"{pval:.2e}" if isinstance(pval, (int, float)) else str(pval)
+                    ct = row.get("cell_type", "")
+                    direction = row.get("direction", "")
+                    lines.append(f"- {term} (padj={pval_str}, {ct} {direction})")
+                lines.append("")
+    else:
+        lines.append(f"ORA results not found. {src(enrichment_path)}")
+        lines.append("")
+
+    if not gsea_df.empty:
+        n_gsea = len(gsea_df)
+        lines.append(f"**GSEA:** {safe_int(n_gsea)} significant terms. {src(gsea_path)}")
+        lines.append("")
+    else:
+        lines.append(f"GSEA results not found. {src(gsea_path)}")
+        lines.append("")
+
+
+def section_tf(lines, tf_df, tf_path):
+    lines.append("## 7. Transcription Factor Activity {#tf}")
+    lines.append("")
+
+    if tf_df.empty:
+        lines.append(f"TF activity results not found. {src(tf_path)}")
+        lines.append("")
+        return
+
+    # Count significant TFs
+    if "p_value" in tf_df.columns:
+        sig = tf_df[tf_df["p_value"] < 0.05]
+        lines.append(f"**{len(sig)} significant TF-condition associations** (p < 0.05). "
+                     f"{src(tf_path)}")
+    elif "padj" in tf_df.columns:
+        sig = tf_df[tf_df["padj"] < 0.05]
+        lines.append(f"**{len(sig)} significant TF-condition associations** (padj < 0.05). "
+                     f"{src(tf_path)}")
+    else:
+        sig = tf_df
+        lines.append(f"**{len(tf_df)} TF activity results.** {src(tf_path)}")
+    lines.append("")
+
+    if not sig.empty and "source" in sig.columns:
+        tf_col = "source"
+    elif not sig.empty and "TF" in sig.columns:
+        tf_col = "TF"
+    else:
+        tf_col = sig.columns[0] if len(sig.columns) > 0 else None
+
+    if tf_col and not sig.empty:
+        unique_tfs = sig[tf_col].unique()
+        lines.append(f"**{len(unique_tfs)} unique TFs** with significant activity changes.")
+        lines.append("")
+        # Show top TFs by score magnitude
+        score_col = None
+        for candidate in ["score", "activity", "estimate", "statistic"]:
+            if candidate in sig.columns:
+                score_col = candidate
+                break
+        if score_col:
+            top_tfs = sig.reindex(sig[score_col].abs().sort_values(ascending=False).index).head(10)
+            lines.append("| TF | Score | Cell Type | Comparison |")
+            lines.append("|----|-------|-----------|------------|")
+            for _, row in top_tfs.iterrows():
+                tf = row.get(tf_col, "")
+                sc = row.get(score_col, "")
+                sc_str = f"{sc:.3f}" if isinstance(sc, (int, float)) else str(sc)
+                ct = row.get("cell_type", row.get("condition", ""))
+                comp = row.get("comparison", "")
+                lines.append(f"| {tf} | {sc_str} | {ct} | {comp} |")
+            lines.append("")
+
+
+def section_trajectory(lines, traj_corr_df, traj_corr_path,
+                       traj_gene_counts, traj_gene_path):
+    lines.append("## 8. Cell State Trajectories {#trajectory}")
+    lines.append("")
+
+    if traj_corr_df.empty:
+        lines.append(f"Trajectory correlation results not found. {src(traj_corr_path)}")
+        lines.append("")
+        return
+
+    lines.append(f"PAGA + diffusion pseudotime (DPT) analysis. {src(traj_corr_path)}")
+    lines.append("")
+
+    # Display correlation results
+    display_cols = [c for c in traj_corr_df.columns if not c.startswith("_")]
+    header = "| " + " | ".join(display_cols) + " |"
+    sep = "| " + " | ".join(["---"] * len(display_cols)) + " |"
+    lines.append(header)
+    lines.append(sep)
+    for _, row in traj_corr_df.iterrows():
+        vals = []
+        for c in display_cols:
+            v = row.get(c, "")
+            if isinstance(v, float):
+                vals.append(f"{v:.4f}" if abs(v) < 1 else f"{v:.2e}")
+            else:
+                vals.append(str(v))
+        lines.append("| " + " | ".join(vals) + " |")
+    lines.append("")
+
+    # Trajectory gene counts
+    if traj_gene_counts:
+        lines.append(f"### Trajectory-associated genes")
+        lines.append("")
+        lines.append(f"{src(traj_gene_path)}")
+        lines.append("")
+        for comp, count in sorted(traj_gene_counts.items()):
+            lines.append(f"- **{comp}:** {count} genes correlated with pseudotime (FDR < 0.05)")
+        lines.append("")
+
+
+def section_ccc(lines, ccc_counts, ccc_path, diff_df, diff_path,
+                pain_inter_df, pain_inter_path):
+    lines.append("## 9. Cell-Cell Communication {#communication}")
+    lines.append("")
+
+    if not ccc_counts:
+        lines.append(f"CCC interaction files not found. {src(ccc_path)}")
+        lines.append("")
+        return
+
+    lines.append(f"LIANA rank_aggregate (CellPhoneDB, NATMI, Connectome, SingleCellSignalR, log2FC). "
+                 f"{src(ccc_path)}")
+    lines.append("")
+    lines.append("| Condition | Interactions |")
+    lines.append("|-----------|-------------|")
+    for cond, count in sorted(ccc_counts.items()):
+        lines.append(f"| {cond} | {safe_int(count)} |")
+    lines.append("")
+
+    if not diff_df.empty:
+        lines.append(f"### Differential interactions")
+        lines.append("")
+        lines.append(f"{src(diff_path)}")
+        lines.append("")
+        if "direction" in diff_df.columns:
+            gained = len(diff_df[diff_df["direction"] == "gained"])
+            lost = len(diff_df[diff_df["direction"] == "lost"])
+            lines.append(f"- Gained in degeneration: {safe_int(gained)}")
+            lines.append(f"- Lost in degeneration: {safe_int(lost)}")
+            lines.append("")
+
+    if not pain_inter_df.empty:
+        lines.append(f"### Pain-relevant interactions")
+        lines.append("")
+        lines.append(f"{len(pain_inter_df)} pain-relevant L-R interactions identified. "
+                     f"{src(pain_inter_path)}")
+        lines.append("")
+
+
+def section_pain(lines, pain_genes_df, pain_path, pain_inter_df, pain_inter_path):
+    lines.append("## 10. Pain Biology {#pain}")
+    lines.append("")
+
+    if pain_genes_df.empty:
+        lines.append(f"Pain gene results not found. {src(pain_path)}")
+        lines.append("")
+        return
+
+    lines.append(f"**{len(pain_genes_df)} pain-associated DE genes identified.** {src(pain_path)}")
+    lines.append("")
+
+    display_cols = [c for c in pain_genes_df.columns if not c.startswith("_")]
+    # Limit to a reasonable set of columns for display
+    preferred = ["gene", "log2FoldChange", "padj", "cell_type", "comparison", "pain_category"]
+    show_cols = [c for c in preferred if c in display_cols] or display_cols[:6]
+
+    header = "| " + " | ".join(show_cols) + " |"
+    sep = "| " + " | ".join(["---"] * len(show_cols)) + " |"
+    lines.append(header)
+    lines.append(sep)
+    for _, row in pain_genes_df.iterrows():
+        vals = []
+        for c in show_cols:
+            v = row.get(c, "")
+            if isinstance(v, float):
+                if abs(v) < 0.01 or abs(v) > 1000:
+                    vals.append(f"{v:.2e}")
+                else:
+                    vals.append(f"{v:.3f}")
+            else:
+                vals.append(str(v))
+        lines.append("| " + " | ".join(vals) + " |")
+    lines.append("")
+
+    if not pain_inter_df.empty:
+        lines.append(f"{len(pain_inter_df)} pain-relevant ligand-receptor interactions from CCC analysis. "
+                     f"{src(pain_inter_path)}")
+        lines.append("")
+
+
+def section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path):
+    lines.append("## 11. Limitations & Caveats {#limitations}")
+    lines.append("")
+
+    # Extract from analysis_plan Known Issues section
+    in_issues = False
+    issues = []
+    for line in plan_text.splitlines():
+        if line.strip() == "## Known Issues":
+            in_issues = True
+            continue
+        if in_issues:
+            if line.startswith("---"):
+                break
+            if line.strip().startswith("- **"):
+                issues.append(line.strip())
+
+    if issues:
+        lines.append(f"From `analysis_plan.md` Known Issues section: {src(plan_path)}")
+        lines.append("")
+        for issue in issues:
+            lines.append(issue)
+        lines.append("")
+
+    # Items requiring SME review
+    in_sme = False
+    sme_items = []
+    for line in plan_text.splitlines():
+        if "## Items Requiring SME Review" in line:
+            in_sme = True
+            continue
+        if in_sme:
+            if line.startswith("---"):
+                break
+            if line.strip():
+                sme_items.append(line.strip())
+
+    if sme_items:
+        lines.append("### Items requiring SME review")
+        lines.append("")
+        lines.append(f"{src(plan_path)}")
+        lines.append("")
+        for item in sme_items:
+            lines.append(item)
+        lines.append("")
+
+    # Skipped comparisons summary
+    if not skipped_df.empty:
+        lines.append(f"### Underpowered comparisons")
+        lines.append("")
+        lines.append(f"{len(skipped_df)} cell type x condition comparisons were skipped "
+                     f"due to insufficient sample counts. {src(skipped_path)}")
+        lines.append("")
+
+
+def section_methods(lines, plan_text, plan_path):
+    lines.append("## 12. Methods {#methods}")
+    lines.append("")
+    lines.append(f"Full parameter choices and rationale documented in `analysis_plan.md`. {src(plan_path)}")
+    lines.append("")
+
+    lines.append("### Data acquisition")
+    lines.append("")
+    lines.append("12 scRNA-seq datasets of human IVD tissue downloaded from GEO and CNGB. "
+                 "Raw count matrices obtained per dataset. "
+                 f"See `metadata/dataset_registry.tsv` for accessions and details. "
+                 "*[source: `scripts/01_dataset_download.py`, `metadata/dataset_registry.tsv`]*")
+    lines.append("")
+
+    lines.append("### Quality control and preprocessing")
+    lines.append("")
+    lines.append("Per-dataset QC: min 200 genes, max 6000 genes, min 500 counts, max 20% "
+                 "mitochondrial reads. Doublet detection with Scrublet (expected rate 5%). "
+                 "Normalization: total-count to 10,000, log1p. HVG selection: top 2000 genes "
+                 "per dataset (Seurat v3 method). "
+                 "*[source: `scripts/03_preprocessing.py`, `specs/03_PREPROCESSING.md`]*")
+    lines.append("")
+
+    lines.append("### Cell classification")
+    lines.append("")
+    lines.append("Coarse classification into 5 anchor categories using marker gene scoring "
+                 "(immune: PTPRC, CD3D, CD68, PECAM1; mesenchymal: COL2A1, COL1A1, ACAN, SOX9). "
+                 "Cluster-level majority voting with 85% threshold. "
+                 "*[source: `scripts/04_annotation.py`, `specs/04_ANNOTATION.md`]*")
+    lines.append("")
+
+    lines.append("### Integration")
+    lines.append("")
+    lines.append("Three workflows compared (CCA, scANVI, STACAS) on four compartment objects "
+                 "(NP, AF, CEP, all_cells). CCA (Seurat v5 `IntegrateLayers(method=CCAIntegration)`) "
+                 "selected as primary: label-free, full cell counts, strongest batch mixing (iLISI). "
+                 "*[source: `scripts/05a_integration_cca.R`, `specs/05_INTEGRATION.md`, `analysis_plan.md`]*")
+    lines.append("")
+
+    lines.append("### Clustering")
+    lines.append("")
+    lines.append("Leiden clustering with multi-resolution optimization. Resolution selected by "
+                 "silhouette score. "
+                 "*[source: `scripts/06_clustering.py`, `specs/06_CLUSTERING.md`]*")
+    lines.append("")
+
+    lines.append("### Post-integration annotation")
+    lines.append("")
+    lines.append("De novo cell type annotation from cluster DE markers and canonical marker panels. "
+                 "CellTypist (Immune_All_Low model) for immune subtype validation. "
+                 "*[source: `scripts/07_annotation.py`, `specs/07_ANNOTATION.md`]*")
+    lines.append("")
+
+    lines.append("### Differential expression")
+    lines.append("")
+    lines.append("Pseudobulk aggregation per sample per cell type. DE with pyDESeq2. "
+                 "Significance: |log2FC| > 0.5, padj < 0.05 (Benjamini-Hochberg). "
+                 "Minimum 3 samples per condition per cell type. "
+                 "*[source: `scripts/08_differential.py`, `specs/08_DIFFERENTIAL.md`]*")
+    lines.append("")
+
+    lines.append("### Pathway enrichment")
+    lines.append("")
+    lines.append("ORA and GSEA using gseapy. Databases: GO Biological Process 2023, KEGG 2021, "
+                 "Reactome 2022, MSigDB Hallmark 2020, custom IVD gene sets. "
+                 "*[source: `scripts/09_interpretation.py`, `specs/09_INTERPRETATION.md`]*")
+    lines.append("")
+
+    lines.append("### TF activity inference")
+    lines.append("")
+    lines.append("CollecTRI regulon network. TF activity scored by Fisher's exact test for "
+                 "enrichment of TF targets among DE genes. "
+                 "*[source: `scripts/09_interpretation.py`]*")
+    lines.append("")
+
+    lines.append("### Trajectory analysis")
+    lines.append("")
+    lines.append("PAGA + diffusion pseudotime (DPT) on mesenchymal embeddings. "
+                 "Root cells defined per compartment (NP: notochordal; AF: AF_inner). "
+                 "Trajectory genes: Spearman correlation with pseudotime, FDR < 0.05. "
+                 "*[source: `scripts/10_trajectory.py`, `specs/10_TRAJECTORY.md`]*")
+    lines.append("")
+
+    lines.append("### Cell-cell communication")
+    lines.append("")
+    lines.append("LIANA rank_aggregate with consensus resource. 5 methods: CellPhoneDB, NATMI, "
+                 "Connectome, SingleCellSignalR, log2FC. 100 permutations. "
+                 "*[source: `scripts/11_communication.py`, `specs/11_COMMUNICATION.md`]*")
+    lines.append("")
+
+    lines.append("### Software")
+    lines.append("")
+    lines.append("Python 3.12, scanpy, scvi-tools, pyDESeq2, gseapy, decoupler, liana. "
+                 "R: Seurat 5.4.0, STACAS 2.4.1. "
+                 "Full environment: `requirements.txt` / `requirements_frozen.txt`.")
+    lines.append("")
+
+
+def section_reproducibility(lines):
+    short_sha, full_sha, branch = git_version()
+
+    lines.append("## 13. Reproducibility {#reproducibility}")
+    lines.append("")
+    lines.append(f"- **Git commit:** `{full_sha}` (branch: `{branch}`)")
+    lines.append("- **Random seeds:** 42 (all stochastic operations)")
+    lines.append("- **Package versions:** pinned in `requirements.txt`, frozen in `requirements_frozen.txt`")
+    lines.append("- **Parameter choices:** documented in `analysis_plan.md`")
+    lines.append("- **Human checkpoint decisions:** recorded in `analysis_plan.md`")
+    lines.append("- **Data provenance:** GEO/CNGB accessions and download dates in `metadata/dataset_registry.tsv`")
+    lines.append("- **File checksums:** `metadata/file_checksums.json`")
+    lines.append("")
+
+
+# ---------------------------------------------------------------------------
+# Supplementary table collection (unchanged from original)
+# ---------------------------------------------------------------------------
 
 def collect_supplementary_tables():
     """Copy key result tables to supplementary_tables/."""
     copies = {
-        'S1_dataset_registry.tsv': META / 'dataset_registry.tsv',
-        'S2_sample_metadata.tsv': META / 'sample_metadata.tsv',
-        'S3_inclusion_summary.tsv': RESULTS / 'integration' / 'inclusion_summary.tsv',
-        'S4_study_caveats.tsv': RESULTS / 'integration' / 'study_caveats.tsv',
-        'S5_composition_analysis.tsv': RESULTS / 'differential' / 'composition_analysis.tsv',
-        'S6_de_summary.tsv': RESULTS / 'differential' / 'de_summary_table.tsv',
-        'S7_de_results_combined.tsv': RESULTS / 'differential' / 'de_results_combined.tsv',
-        'S8_skipped_comparisons.tsv': RESULTS / 'differential' / 'skipped_comparisons.tsv',
-        'S9_enrichment_ORA.tsv': RESULTS / 'interpretation' / 'pathway_enrichment' / 'all_enrichment_results.tsv',
-        'S10_gsea_results.tsv': RESULTS / 'interpretation' / 'pathway_enrichment' / 'gsea_results.tsv',
-        'S11_tf_activity.tsv': RESULTS / 'interpretation' / 'tf_activity' / 'tf_activity_results.tsv',
-        'S12_pain_genes.tsv': RESULTS / 'interpretation' / 'pain_genes.tsv',
-        'S13_trajectory_genes_NP.tsv': RESULTS / 'trajectories' / 'trajectory_genes_NP.tsv',
-        'S14_trajectory_genes_AF.tsv': RESULTS / 'trajectories' / 'trajectory_genes_AF.tsv',
-        'S15_trajectory_genes_CEP.tsv': RESULTS / 'trajectories' / 'trajectory_genes_CEP.tsv',
-        'S16_pain_interactions.tsv': RESULTS / 'communication' / 'pain_interactions.tsv',
-        'S17_celltypist_concordance_NP.tsv': RESULTS / 'integration' / 'celltypist_validation' / 'NP_concordance.tsv',
-        'S18_celltypist_concordance_AF.tsv': RESULTS / 'integration' / 'celltypist_validation' / 'AF_concordance.tsv',
-        'S19_celltypist_concordance_CEP.tsv': RESULTS / 'integration' / 'celltypist_validation' / 'CEP_concordance.tsv',
+        "S1_dataset_registry.tsv": META / "dataset_registry.tsv",
+        "S2_sample_metadata.tsv": META / "sample_metadata.tsv",
+        "S3_inclusion_summary.tsv": RESULTS / "integration" / "inclusion_summary.tsv",
+        "S4_study_caveats.tsv": RESULTS / "integration" / "study_caveats.tsv",
+        "S5_composition_analysis.tsv": RESULTS / "differential" / "composition_analysis.tsv",
+        "S6_de_summary.tsv": RESULTS / "differential" / "de_summary_table.tsv",
+        "S7_de_results_combined.tsv": RESULTS / "differential" / "de_results_combined.tsv",
+        "S8_skipped_comparisons.tsv": RESULTS / "differential" / "skipped_comparisons.tsv",
+        "S9_enrichment_ORA.tsv": RESULTS / "interpretation" / "pathway_enrichment" / "all_enrichment_results.tsv",
+        "S10_gsea_results.tsv": RESULTS / "interpretation" / "pathway_enrichment" / "gsea_results.tsv",
+        "S11_tf_activity.tsv": RESULTS / "interpretation" / "tf_activity" / "tf_activity_results.tsv",
+        "S12_pain_genes.tsv": RESULTS / "interpretation" / "pain_genes.tsv",
+        "S13_trajectory_genes_NP.tsv": RESULTS / "trajectories" / "trajectory_genes_NP.tsv",
+        "S14_trajectory_genes_AF.tsv": RESULTS / "trajectories" / "trajectory_genes_AF.tsv",
+        "S15_trajectory_genes_CEP.tsv": RESULTS / "trajectories" / "trajectory_genes_CEP.tsv",
+        "S16_pain_interactions.tsv": RESULTS / "communication" / "pain_interactions.tsv",
+        "S17_celltypist_concordance_NP.tsv": RESULTS / "integration" / "celltypist_validation" / "NP_concordance.tsv",
+        "S18_celltypist_concordance_AF.tsv": RESULTS / "integration" / "celltypist_validation" / "AF_concordance.tsv",
+        "S19_celltypist_concordance_CEP.tsv": RESULTS / "integration" / "celltypist_validation" / "CEP_concordance.tsv",
     }
 
-    for dest_name, src in copies.items():
-        if src.exists():
+    collected = 0
+    for dest_name, src_path in copies.items():
+        if src_path.exists():
             import shutil
-            shutil.copy2(src, SUPP_TABLES / dest_name)
+            shutil.copy2(src_path, SUPP_TABLES / dest_name)
+            collected += 1
 
-    print(f"  Collected {sum(1 for s in copies.values() if s.exists())} supplementary tables")
+    print(f"  Collected {collected}/{len(copies)} supplementary tables")
+    return collected
 
 
-def generate_final_report():
-    """Generate comprehensive HTML report."""
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
-    # Load key results
-    de_summary = pd.read_csv(RESULTS / 'differential' / 'de_summary_table.tsv', sep='\t') \
-        if (RESULTS / 'differential' / 'de_summary_table.tsv').exists() else pd.DataFrame()
+def generate_report():
+    """Build the full markdown report from result files."""
+    lines = []
 
-    html = []
-    html.append("""<!DOCTYPE html>
-<html>
-<head>
-<title>IVD Single-Cell Atlas — Final Report</title>
-<style>
-  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #333; }
-  h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
-  h2 { color: #34495e; margin-top: 40px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; }
-  h3 { color: #7f8c8d; }
-  table { border-collapse: collapse; width: 100%; margin: 15px 0; }
-  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-  th { background-color: #3498db; color: white; }
-  tr:nth-child(even) { background-color: #f8f9fa; }
-  img { max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
-  .stat-box { background: #ecf0f1; padding: 15px; border-radius: 8px; text-align: center; }
-  .stat-box h3 { margin: 0 0 5px 0; color: #7f8c8d; font-size: 11px; text-transform: uppercase; }
-  .stat-box p { margin: 0; font-size: 28px; font-weight: bold; color: #2c3e50; }
-  .highlight { background: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107; margin: 15px 0; }
-  .finding { background: #d4edda; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745; margin: 15px 0; }
-  .caveat { background: #f8d7da; padding: 15px; border-radius: 5px; border-left: 4px solid #dc3545; margin: 15px 0; }
-  .toc { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
-  .toc a { text-decoration: none; color: #3498db; }
-  .toc ol { line-height: 2; }
-  .methods { background: #f0f3f5; padding: 20px; border-radius: 8px; }
-  .figure-caption { font-style: italic; color: #666; font-size: 0.9em; margin-top: -5px; }
-</style>
-</head>
-<body>
-""")
+    # Load all data sources
+    plan_text, plan_path = load_analysis_plan()
+    registry_df, registry_path = load_dataset_registry()
+    sample_df, sample_path = load_sample_metadata()
+    celldefs_df, celldefs_path = load_cell_type_definitions()
+    clustering_df, clustering_path = load_clustering_resolutions()
+    de_summary, de_path = load_de_summary()
+    de_combined, de_combined_path = load_de_combined()
+    skipped_df, skipped_path = load_skipped_comparisons()
+    enrichment_df, enrichment_path = load_enrichment()
+    gsea_df, gsea_path = load_gsea()
+    tf_df, tf_path = load_tf_activity()
+    pain_df, pain_path = load_pain_genes()
+    traj_corr_df, traj_corr_path = load_trajectory_correlations()
+    traj_gene_counts, traj_gene_path = load_trajectory_genes()
+    ccc_counts, ccc_path = load_ccc_interactions()
+    diff_inter_df, diff_inter_path = load_differential_interactions()
+    pain_inter_df, pain_inter_path = load_pain_interactions()
+    celltypist_df, celltypist_path = load_celltypist_concordance()
 
-    # ── Title ──
-    html.append(f"""
-<h1>Human Intervertebral Disc Single-Cell Atlas</h1>
-<p><strong>A comprehensive scRNA-seq meta-analysis of IVD degeneration</strong></p>
-<p>Report generated: {datetime.now().strftime('%Y-%m-%d %H:%M')} | Pipeline version: 1.0</p>
-""")
+    # Build report
+    section_header(lines, plan_text)
+    section_toc(lines)
+    section_summary(lines, sample_df, sample_path, de_summary, de_path,
+                    enrichment_df, enrichment_path, ccc_counts, ccc_path)
+    section_datasets(lines, registry_df, registry_path, sample_df, sample_path)
+    section_integration(lines, plan_text, plan_path, celltypist_df, celltypist_path)
+    section_clustering(lines, celldefs_df, celldefs_path, clustering_df, clustering_path)
+    section_de(lines, de_summary, de_path, de_combined, de_combined_path,
+               skipped_df, skipped_path)
+    section_pathways(lines, enrichment_df, enrichment_path, gsea_df, gsea_path)
+    section_tf(lines, tf_df, tf_path)
+    section_trajectory(lines, traj_corr_df, traj_corr_path,
+                       traj_gene_counts, traj_gene_path)
+    section_ccc(lines, ccc_counts, ccc_path, diff_inter_df, diff_inter_path,
+                pain_inter_df, pain_inter_path)
+    section_pain(lines, pain_df, pain_path, pain_inter_df, pain_inter_path)
+    section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path)
+    section_methods(lines, plan_text, plan_path)
+    section_reproducibility(lines)
 
-    # ── Summary Stats ──
-    html.append("""
-<div class="stats-grid">
-  <div class="stat-box"><h3>Total cells</h3><p>436,239</p></div>
-  <div class="stat-box"><h3>Datasets</h3><p>12</p></div>
-  <div class="stat-box"><h3>Donors</h3><p>57</p></div>
-  <div class="stat-box"><h3>Samples</h3><p>78</p></div>
-  <div class="stat-box"><h3>Compartments</h3><p>NP / AF / CEP</p></div>
-  <div class="stat-box"><h3>DE genes</h3><p>5,328</p></div>
-  <div class="stat-box"><h3>Enriched pathways</h3><p>1,244</p></div>
-  <div class="stat-box"><h3>L-R interactions</h3><p>97,115</p></div>
-</div>
-""")
-
-    # ── Table of Contents ──
-    html.append("""
-<div class="toc">
-<h3>Contents</h3>
-<ol>
-  <li><a href="#overview">Overview</a></li>
-  <li><a href="#datasets">Dataset Summary</a></li>
-  <li><a href="#integration">Integration</a></li>
-  <li><a href="#de">Differential Expression</a></li>
-  <li><a href="#pathways">Biological Pathways</a></li>
-  <li><a href="#tf">Transcription Factor Activity</a></li>
-  <li><a href="#trajectory">Cell State Trajectories</a></li>
-  <li><a href="#communication">Cell-Cell Communication</a></li>
-  <li><a href="#pain">Pain Biology</a></li>
-  <li><a href="#limitations">Limitations</a></li>
-  <li><a href="#methods">Methods</a></li>
-</ol>
-</div>
-""")
-
-    # ── 1. Overview ──
-    html.append("""
-<h2 id="overview">1. Overview</h2>
-<p>This atlas integrates 12 publicly available single-cell RNA sequencing (scRNA-seq) datasets of human intervertebral disc (IVD) tissue, comprising 436,239 cells from 78 samples (57 donors). The analysis characterizes cell type diversity, transcriptomic changes with degeneration, and intercellular communication in the IVD.</p>
-
-<div class="finding">
-<strong>Key Findings:</strong>
-<ul>
-  <li>IVD resident cells exist on a continuum from notochordal to mature chondrocyte to stressed/degenerative states in the NP, and inner to outer AF</li>
-  <li>Pseudobulk DE analysis identified 5,328 significant genes across 17 powered cell type x condition comparisons</li>
-  <li>CXCL1/2/3, TNF, and CEMIP are consistently upregulated in severe NP degeneration, representing a classical inflammatory/catabolic signature</li>
-  <li>Cell state trajectories correlate with disease condition (pseudotime-condition rho = -0.21 in NP, -0.18 in AF)</li>
-  <li>Degenerated tissue shows increased cell-cell signaling complexity (53K vs 44K interactions)</li>
-  <li>Pain-associated gene analysis identifies TNF and CXCL8 as the primary inflammatory pain mediators produced by disc cells</li>
-</ul>
-</div>
-""")
-
-    # ── 2. Datasets ──
-    html.append("""
-<h2 id="datasets">2. Dataset Summary</h2>
-<table>
-  <tr><th>Dataset</th><th>Year</th><th>Compartment</th><th>Samples</th><th>Cells (post-QC)</th><th>Platform</th><th>Conditions</th></tr>
-  <tr><td>GSE160756</td><td>2021</td><td>NP, AF, CEP</td><td>6</td><td>89,283</td><td>10x</td><td>Healthy</td></tr>
-  <tr><td>GSE165722</td><td>2021</td><td>NP</td><td>10</td><td>9,498</td><td>10x</td><td>Degenerated (Pfirrmann II-V)</td></tr>
-  <tr><td>GSE189916</td><td>2022</td><td>NP</td><td>6</td><td>11,459</td><td>BD Rhapsody</td><td>Neonatal, Aged</td></tr>
-  <tr><td>GSE199866</td><td>2022</td><td>NP</td><td>3</td><td>1,614</td><td>10x</td><td>Healthy, Degenerated</td></tr>
-  <tr><td>GSE205535</td><td>2022</td><td>NP</td><td>2</td><td>9,929</td><td>10x</td><td>Healthy (SCI), Degenerated</td></tr>
-  <tr><td>CNP0002664</td><td>2023</td><td>NP</td><td>8</td><td>52,016</td><td>10x</td><td>Healthy, Degenerated</td></tr>
-  <tr><td>GSE233666</td><td>2023</td><td>NP</td><td>7</td><td>22,658</td><td>10x</td><td>Herniated</td></tr>
-  <tr><td>GSE244889</td><td>2023</td><td>NP, AF</td><td>12</td><td>51,397</td><td>10x</td><td>Healthy, Degenerated</td></tr>
-  <tr><td>GSE251686</td><td>2024</td><td>NP</td><td>5</td><td>13,090</td><td>Singleron</td><td>Herniated</td></tr>
-  <tr><td>GSE255768</td><td>2024</td><td>CEP</td><td>2</td><td>10,023</td><td>10x</td><td>Degenerated</td></tr>
-  <tr><td>GSE230809</td><td>2023</td><td>NP, AF</td><td>24</td><td>105,804</td><td>10x</td><td>Healthy, Degenerated</td></tr>
-  <tr><td>GSE242443</td><td>2024</td><td>CEP</td><td>2</td><td>59,227</td><td>10x</td><td>Healthy, Degenerated (culture-expanded)</td></tr>
-</table>
-""")
-
-    # ── 3. Integration ──
-    html.append("""
-<h2 id="integration">3. Integration Strategy</h2>
-<p><strong>Compartment-specific scVI integration:</strong> Four objects (NP, AF, CEP, all-cells) integrated separately with scVI (n_latent=20, max_epochs=200). Tiered within each object: mesenchymal and non-mesenchymal cells integrated in separate scVI runs to prevent one population from dominating the latent space.</p>
-<p><strong>De novo annotation:</strong> Cell types discovered post-integration from Leiden clustering, cluster DE markers, and canonical marker panels. CellTypist validation for immune subtypes.</p>
-""")
-
-    # CellTypist concordance summary
-    celltypist_dir = RESULTS / 'integration' / 'celltypist_validation'
-    disagreements = []
-    for obj_name in ['NP', 'AF', 'CEP']:
-        conc_path = celltypist_dir / f'{obj_name}_concordance.tsv'
-        if conc_path.exists():
-            conc_df = pd.read_csv(conc_path, sep='\t')
-            disc = conc_df[conc_df['concordant'] == False]
-            for _, row in disc.iterrows():
-                disagreements.append({
-                    'object': obj_name,
-                    'cluster': row['cluster'],
-                    'n_cells': row['n_cells'],
-                    'de_novo': row['de_novo_label'],
-                    'celltypist': row['celltypist_majority'],
-                    'agreement_pct': row['celltypist_agreement_pct'],
-                })
-
-    if disagreements:
-        html.append("""
-<h3>CellTypist Validation Disagreements</h3>
-<p>The following non-mesenchymal clusters had disagreements between de novo annotation (based on cluster DE markers and canonical marker panels) and CellTypist (Immune_All_Low model). These are flagged for human review; de novo labels are retained as primary annotation. See Supplementary Tables S17-S19 for full concordance data.</p>
-<table>
-  <tr><th>Object</th><th>Cluster</th><th>Cells</th><th>De Novo Label</th><th>CellTypist Label</th><th>CellTypist Agreement %</th></tr>
-""")
-        for d in disagreements:
-            html.append(f'  <tr><td>{d["object"]}</td><td>{d["cluster"]}</td><td>{d["n_cells"]}</td>'
-                       f'<td>{d["de_novo"]}</td><td>{d["celltypist"]}</td><td>{d["agreement_pct"]:.1f}%</td></tr>')
-        html.append('</table>')
-    else:
-        html.append('<p>CellTypist validation: all non-mesenchymal clusters concordant.</p>')
-
-    # Integration images
-    for img_name in ['resolution_optimization_NP.png', 'resolution_optimization_AF.png',
-                     'resolution_optimization_CEP.png', 'annotation_dotplots/']:
-        img_path = RESULTS / 'integration' / img_name
-        if img_path.exists() and img_path.is_file():
-            html.append(f'<img src="integration/{img_name}" alt="{img_name}">')
-
-    # ── 4. DE ──
-    html.append("""
-<h2 id="de">4. Differential Expression</h2>
-<p>Pseudobulk DE analysis using pyDESeq2. 17 powered comparisons, 128 skipped (underpowered). |log2FC| > 0.5, padj < 0.05.</p>
-""")
-
-    if not de_summary.empty:
-        html.append('<table><tr><th>Cell Type</th><th>Comparison</th><th>Up</th><th>Down</th><th>Total</th></tr>')
-        for _, row in de_summary.iterrows():
-            html.append(f'<tr><td>{row["cell_type"]}</td><td>{row["comparison"]}</td>'
-                       f'<td>{row["n_up"]}</td><td>{row["n_down"]}</td><td>{row["n_total"]}</td></tr>')
-        html.append('</table>')
-
-    html.append("""
-<div class="finding">
-<strong>Top DE genes in NP severe degeneration:</strong> CXCL1 (+3.75), CXCL3 (+3.72), CXCL2 (+3.13), TNF (+2.45), MDK (+2.72) — classical inflammatory/catabolic IVD signature.
-</div>
-<div class="finding">
-<strong>Top DE genes in AF degeneration:</strong> CEMIP (+2.39, hyaluronidase), KRT16 (+2.84), CXCL8 (-2.19) — ECM degradation and stress markers.
-</div>
-""")
-
-    # Volcano plots
-    for vp in ['volcano_NP_mature_chondrocyte_mild_vs_severe.png',
-               'volcano_AF_outer_healthy_vs_degenerated_severe.png']:
-        img_path = RESULTS / 'differential' / 'volcano_plots' / vp
-        if img_path.exists():
-            html.append(f'<img src="differential/volcano_plots/{vp}">')
-
-    html.append("""
-<div class="caveat">
-<strong>Note:</strong> Herniated comparisons excluded from this analysis — after GSE233666 removal, only GSE251686 contributes herniated samples, making any healthy_vs_herniated comparison fully confounded with study.
-</div>
-""")
-
-    # ── 5. Pathways ──
-    html.append("""
-<h2 id="pathways">5. Biological Pathways</h2>
-<p>ORA: 1,244 significantly enriched terms (FDR < 0.05). GSEA: 1,081 significant terms across GO, KEGG, Reactome, MSigDB Hallmark, and IVD-custom gene sets.</p>
-""")
-
-    for img in ['enrichment_AF_outer_up.png', 'enrichment_NP_mature_chondrocyte_up.png',
-                'gsea_ivd_custom_heatmap.png']:
-        img_path = RESULTS / 'interpretation' / 'pathway_enrichment' / img
-        if img_path.exists():
-            html.append(f'<img src="interpretation/pathway_enrichment/{img}">')
-
-    # ── 6. TF ──
-    html.append("""
-<h2 id="tf">6. Transcription Factor Activity</h2>
-<p>TF activity inferred using CollecTRI regulon overlap with Fisher's exact test. 113 significant TF-condition associations.</p>
-""")
-
-    tf_img = RESULTS / 'interpretation' / 'tf_activity' / 'tf_activity_heatmap.png'
-    if tf_img.exists():
-        html.append('<img src="interpretation/tf_activity/tf_activity_heatmap.png">')
-
-    html.append("""
-<div class="finding">
-<strong>Key TFs:</strong> ATF3/ATF7 (stress response, NP severe), HSF1/HSF2 (heat shock, multiple cell types), NFKBIB (NF-kB pathway, NP stressed), E2F4/TFDP1 (cell cycle, NP severe degeneration).
-</div>
-""")
-
-    # ── 7. Trajectory ──
-    html.append("""
-<h2 id="trajectory">7. Cell State Trajectories</h2>
-<p>PAGA + diffusion pseudotime (DPT) on scVI mesenchymal embeddings. NP: rooted at notochordal cells. AF: rooted at AF_inner. CEP included.</p>
-""")
-
-    for img in ['umap_trajectory_NP.png', 'pseudotime_by_condition_NP.png',
-                'gene_dynamics_NP.png', 'umap_trajectory_AF.png']:
-        img_path = RESULTS / 'trajectories' / img
-        if img_path.exists():
-            html.append(f'<img src="trajectories/{img}">')
-
-    html.append("""
-<div class="finding">
-<strong>Pseudotime correlates with disease:</strong> NP rho = -0.207, AF rho = -0.177 (both p < 10<sup>-100</sup>). Healthy cells at earlier pseudotime, degenerated at later. Sensitivity check with scVI embedding confirms direction (NP rho = -0.132).
-</div>
-<p>500 trajectory-associated genes per compartment. ~55% overlap with DE genes confirms trajectory captures disease-relevant biology, not batch effects.</p>
-""")
-
-    # ── 8. Communication ──
-    html.append("""
-<h2 id="communication">8. Cell-Cell Communication</h2>
-<p>LIANA consensus (CellPhoneDB, NATMI, Connectome, SingleCellSignalR, log2FC) on 20,000 cells per condition.</p>
-""")
-
-    for img in ['interaction_heatmap_healthy.png', 'interaction_heatmap_degenerated.png',
-                'differential_interactions.png']:
-        img_path = RESULTS / 'communication' / 'interaction_plots' / img
-        if img_path.exists():
-            html.append(f'<img src="communication/interaction_plots/{img}">')
-
-    html.append("""
-<div class="finding">
-<strong>Increased signaling in degeneration:</strong> 53,036 interactions (degenerated) vs 44,079 (healthy). Consistent with increased paracrine signaling and immune cell infiltration in degenerative discs.
-</div>
-""")
-
-    # ── 9. Pain ──
-    html.append("""
-<h2 id="pain">9. Pain Biology</h2>
-<p>Cross-reference of DE genes with curated pain gene sets (nociception, neurotrophins, nerve guidance, inflammatory pain, neovascularization).</p>
-
-<div class="highlight">
-<strong>Pain-associated findings:</strong>
-<ul>
-  <li><strong>TNF</strong> significantly upregulated in NP_stressed_degenerative (log2FC=+2.65) and NP_mature_chondrocyte (log2FC=+2.45) in severe degeneration. TNF is a key inflammatory pain mediator that sensitizes nerve endings.</li>
-  <li><strong>CXCL8</strong> significantly downregulated in AF_outer with degeneration (log2FC=-2.19). May reflect altered chemokine balance.</li>
-  <li><strong>Disc cells produce inflammatory mediators (TNF, CXCL1-3) but not nociceptors.</strong> This is consistent with the model that degenerated disc cells create a pro-inflammatory environment that promotes nerve ingrowth and sensitization, rather than directly signaling pain.</li>
-  <li>3,662-4,194 pain-relevant ligand-receptor interactions identified through cell-cell communication analysis, including neurotrophin and VEGF signaling pathways.</li>
-</ul>
-</div>
-""")
-
-    pain_img = RESULTS / 'interpretation' / 'pain_genes_heatmap.png'
-    if pain_img.exists():
-        html.append('<img src="interpretation/pain_genes_heatmap.png">')
-
-    # ── 10. Limitations ──
-    html.append("""
-<h2 id="limitations">10. Limitations</h2>
-<div class="caveat">
-<ul>
-  <li><strong>Cross-study confounding:</strong> Condition and study are partially confounded. Herniated comparisons excluded entirely (single-study confound after GSE233666 removal). Within-study comparisons where possible for remaining conditions.</li>
-  <li><strong>Underpowered comparisons:</strong> 128/145 cell type x comparison combinations skipped due to insufficient samples. CEP compartment entirely underpowered for DE.</li>
-  <li><strong>No RNA velocity:</strong> Spliced/unspliced counts not available in public datasets. Would require reprocessing from BAM files.</li>
-  <li><strong>Age-disease confound:</strong> In GSE230809, healthy donors are 21-27y and diseased are 37-73y. Cannot fully separate age from disease effects.</li>
-  <li><strong>Sex bias:</strong> GSE230809 (largest dataset, 24 samples) is all-male. 30/78 samples have unknown sex.</li>
-  <li><strong>Culture-expanded cells:</strong> GSE242443 CEP cells are culture-expanded, which alters gene expression.</li>
-  <li><strong>Endothelial annotation caveat:</strong> Some endothelial DE genes (ACAN, IBSP) suggest possible misclassification of NP/AF cells.</li>
-  <li><strong>Composition analysis:</strong> No significant changes after FDR correction, though trends are biologically consistent.</li>
-  <li><strong>SCENIC/GRN not run:</strong> Full SCENIC analysis was not performed due to computational requirements. TF activity estimated from CollecTRI regulon overlap instead.</li>
-</ul>
-</div>
-""")
-
-    # ── 11. Methods ──
-    html.append("""
-<h2 id="methods">11. Methods</h2>
-<div class="methods">
-<h3>Data acquisition</h3>
-<p>12 scRNA-seq datasets of human IVD tissue were downloaded from GEO and CNGB (see Table 1). Raw count matrices were obtained for each dataset.</p>
-
-<h3>Quality control and preprocessing</h3>
-<p>Per-dataset QC: min 200 genes, max 6000 genes, min 500 counts, max 20% mitochondrial reads. Doublet detection with Scrublet (expected rate 5%). Normalization: total-count to 10,000, log1p. HVG selection: top 2000 genes per dataset using Seurat v3 method.</p>
-
-<h3>Cell classification</h3>
-<p>Coarse binary classification: mesenchymal vs non-mesenchymal using marker gene scoring (immune: PTPRC, CD3D, CD68, PECAM1; mesenchymal: COL2A1, COL1A1, ACAN, SOX9). Cluster-level majority voting to reduce noise. Adaptive expression thresholds to handle normalization artifacts.</p>
-
-<h3>Integration and annotation</h3>
-<p>Four compartment-specific objects (NP, AF, CEP, all-cells) integrated with scVI (n_latent=20, max_epochs=200, batch_key=study). De novo cell type annotation from cluster DE markers and canonical marker panels post-integration. CellTypist Immune_All_Low model used for validation of immune subtypes (flags disagreements but does not override). All-cells object treated as secondary with annotations transferred from compartment-specific objects.</p>
-
-<h3>Differential expression</h3>
-<p>Pseudobulk aggregation per sample per cell type. DE with pyDESeq2 (Python DESeq2 implementation). Significance: |log2FC| > 0.5, adjusted p-value < 0.05 (Benjamini-Hochberg). Minimum 3 samples per condition per cell type.</p>
-
-<h3>Pathway enrichment</h3>
-<p>Over-representation analysis (ORA) and gene set enrichment analysis (GSEA) using gseapy. Databases: GO Biological Process 2023, KEGG 2021, Reactome 2022, MSigDB Hallmark 2020, custom IVD gene sets.</p>
-
-<h3>TF activity inference</h3>
-<p>CollecTRI regulon network (42,990 interactions, 1,185 TFs). TF activity scored by Fisher's exact test for enrichment of TF targets among DE genes, with concordance scoring for direction.</p>
-
-<h3>Trajectory analysis</h3>
-<p>PAGA + diffusion pseudotime (DPT) on scVI mesenchymal embeddings. 50,000 cells per compartment. Root cells: NP notochordal, AF inner. Trajectory genes: Spearman correlation with pseudotime, FDR < 0.05, top 500.</p>
-
-<h3>Cell-cell communication</h3>
-<p>LIANA rank_aggregate with consensus resource. 5 methods: CellPhoneDB, NATMI, Connectome, SingleCellSignalR, log2FC. 100 permutations. 20,000 cells per condition.</p>
-
-<h3>Software</h3>
-<p>Python 3.12, scanpy 1.11, scvi-tools 1.4.2, pyDESeq2, gseapy 1.1, decoupler 2.1, liana 1.7, harmonypy, bbknn. Full environment: requirements.txt.</p>
-</div>
-""")
-
-    # ── Reproducibility ──
-    html.append("""
-<h2>12. Reproducibility</h2>
-<ul>
-  <li>All scripts version-controlled in git</li>
-  <li>Random seeds: 42 (all stochastic operations)</li>
-  <li>Package versions pinned in requirements.txt</li>
-  <li>All parameter choices documented in analysis_plan.md</li>
-  <li>All human checkpoint decisions recorded</li>
-  <li>Data provenance: GEO/CNGB accessions, download dates in dataset_registry.tsv</li>
-</ul>
-""")
-
-    html.append('</body></html>')
-
-    report_path = RESULTS / "final_report.html"
-    report_path.write_text('\n'.join(html))
+    report_path = DOCS / "final_report.md"
+    report_path.write_text("\n".join(lines))
     print(f"  Final report: {report_path}")
-
-
-def generate_requirements():
-    """Capture current package versions."""
-    import subprocess
-    result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
-    (BASE / 'requirements_frozen.txt').write_text(result.stdout)
-    print("  Requirements frozen: requirements_frozen.txt")
+    return report_path
 
 
 def validate():
@@ -431,42 +1036,39 @@ def validate():
 
     checks = []
 
-    if (RESULTS / "final_report.html").exists():
-        checks.append(('PASS', 'Final report generated'))
+    report_path = DOCS / "final_report.md"
+    if report_path.exists():
+        size_kb = report_path.stat().st_size / 1024
+        checks.append(("PASS", f"Final report generated ({size_kb:.1f} KB)"))
     else:
-        checks.append(('FAIL', 'Final report not found'))
+        checks.append(("FAIL", "Final report not found at docs/final_report.md"))
 
     supp_count = len(list(SUPP_TABLES.glob("S*.tsv")))
     if supp_count > 0:
-        checks.append(('PASS', f'{supp_count} supplementary tables collected'))
+        checks.append(("PASS", f"{supp_count} supplementary tables collected"))
     else:
-        checks.append(('WARN', 'No supplementary tables'))
+        checks.append(("WARN", "No supplementary tables (results/ may not be populated)"))
 
-    if (BASE / 'requirements_frozen.txt').exists():
-        checks.append(('PASS', 'Package versions frozen'))
+    if (BASE / "requirements_frozen.txt").exists():
+        checks.append(("PASS", "Package versions frozen"))
 
-    # Check all module scripts exist
-    for i in range(1, 11):
-        scripts = list(BASE.glob(f"scripts/{i:02d}_*.py"))
-        if scripts:
-            checks.append(('PASS', f'Module {i:02d} script exists'))
-        elif i <= 5:
-            checks.append(('WARN', f'Module {i:02d} script not found (may be pre-pipeline)'))
-
-    # Check all reports exist
-    for report_name, report_path in [
-        ('Integration', RESULTS / 'integration' / 'integration_report.html'),
-        ('Differential', RESULTS / 'differential' / 'differential_report.html'),
-        ('Interpretation', RESULTS / 'interpretation' / 'interpretation_report.html'),
-        ('Trajectory', RESULTS / 'trajectories' / 'trajectory_report.html'),
-        ('Communication', RESULTS / 'communication' / 'communication_report.html'),
-    ]:
-        if report_path.exists():
-            checks.append(('PASS', f'{report_name} report exists'))
+    # Check data sources that were read
+    data_sources = [
+        ("Dataset registry", META / "dataset_registry.tsv"),
+        ("Sample metadata", META / "sample_metadata.tsv"),
+        ("DE summary", RESULTS / "differential" / "de_summary_table.tsv"),
+        ("Enrichment results", RESULTS / "interpretation" / "pathway_enrichment" / "all_enrichment_results.tsv"),
+        ("TF activity", RESULTS / "interpretation" / "tf_activity" / "tf_activity_results.tsv"),
+        ("Pain genes", RESULTS / "interpretation" / "pain_genes.tsv"),
+        ("Cell type definitions", RESULTS / "integration" / "cell_type_definitions.tsv"),
+    ]
+    for name, path in data_sources:
+        if path.exists():
+            checks.append(("PASS", f"{name} found"))
         else:
-            checks.append(('WARN', f'{report_name} report not found'))
+            checks.append(("WARN", f"{name} not found — report section will show placeholder"))
 
-    passed = all(s != 'FAIL' for s, _ in checks)
+    passed = all(s != "FAIL" for s, _ in checks)
     for status, msg in checks:
         print(f"  [{status}] {msg}")
     return passed
@@ -478,23 +1080,28 @@ def main():
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 
-    if '--validate-only' in sys.argv:
+    if "--validate-only" in sys.argv:
         passed = validate()
         sys.exit(0 if passed else 1)
 
     print("\nCollecting supplementary tables...")
     collect_supplementary_tables()
 
-    print("\nGenerating final report...")
-    generate_final_report()
+    print("\nGenerating final report (markdown)...")
+    generate_report()
 
     print("\nFreezing requirements...")
-    generate_requirements()
+    try:
+        result = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
+        (BASE / "requirements_frozen.txt").write_text(result.stdout)
+        print("  Requirements frozen: requirements_frozen.txt")
+    except Exception as e:
+        print(f"  WARN: Could not freeze requirements: {e}")
 
     validate()
 
     print(f"\nCompleted: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("Pipeline complete. Final report at: results/final_report.html")
+    print("Pipeline complete. Final report at: docs/final_report.md")
 
 
 if __name__ == "__main__":
