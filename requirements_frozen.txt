@@ -103,6 +103,7 @@ MarkupSafe==3.0.3
 marsilea==0.5.8
 matplotlib==3.10.8
 matplotlib-inline==0.2.1
+matplotlib-venn==1.1.2
 mdurl==0.1.2
 mistune==3.2.0
 mizani==0.14.4
