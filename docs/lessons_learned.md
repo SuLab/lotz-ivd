@@ -199,8 +199,8 @@ The pipeline ran on four different compute configurations over 28 days:
 
 | Phase | RAM | CPUs | GPU | Trigger for change |
 |-------|-----|------|-----|--------------------|
-| v1 start | 30 GB | 4 | A10G | Initial setup |
-| v1 mid | 62 GB | 16 | A10G | OOM during integration |
+| v1 start | 30 GB | 4 | — | Initial setup (cheap instance) |
+| v1 mid | 62 GB | 16 | A10G | Human saw integration was too slow, added GPU |
 | v5 start | 62 GB | 16 | A10G | CCA required downsampling |
 | v5 mid | 247 GB | 32 | — | Full-cell CCA feasible |
 
