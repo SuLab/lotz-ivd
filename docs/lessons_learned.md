@@ -46,17 +46,6 @@ as shared state was remarkably effective for execution. The agent could:
 - Generate notebooks, run validation, and commit — a complete
   build-test-document cycle per iteration
 
-However, the agent never proactively addressed compute bottlenecks. On
-multiple occasions, the pipeline stalled — running single-threaded for 6+
-hours with 31 cores idle, or silently consuming all available memory — and
-would have remained stalled indefinitely without human intervention. The
-human had to notice the stall, diagnose the cause, and either change the
-compute environment (adding a GPU, quadrupling RAM from 62GB to 247GB) or
-explicitly instruct the agent to investigate and implement parallelization.
-Left to its own devices, the agent would have waited for single-threaded
-jobs to finish or crashed repeatedly without escalating. Compute
-optimization was always human-initiated.
-
 ### 2.2 Specs as the contract between humans and agent
 
 The `specs/` directory served as the authoritative interface between domain
@@ -181,7 +170,7 @@ enough to report as a finding. A future framework should automate this:
 run at least two integration methods and flag any downstream result that
 is not directionally consistent across both.
 
-### 3.5 Computing environment was never adequate at the start
+### 3.5 The agent cannot manage its own compute environment
 
 The pipeline ran on four different compute configurations over 28 days:
 
@@ -192,12 +181,31 @@ The pipeline ran on four different compute configurations over 28 days:
 | v5 start | 62 GB | 16 | A10G | CCA required downsampling |
 | v5 mid | 247 GB | 32 | — | Full-cell CCA feasible |
 
-Additionally:
+Every one of these transitions was human-initiated. The agent never
+proactively identified compute bottlenecks. On multiple occasions, the
+pipeline stalled — running single-threaded for 6+ hours with 31 cores
+idle, or silently consuming all available memory — and would have remained
+stalled indefinitely without human intervention. The human operator had to
+notice the stall, diagnose the cause, and either change the compute
+environment (adding a GPU, quadrupling RAM from 62GB to 247GB) or
+explicitly instruct the agent to investigate and implement parallelization
+(e.g., OpenBLAS, `future::plan("multicore")`). Left to its own devices,
+the agent would have waited for single-threaded jobs to finish or crashed
+repeatedly without escalating.
+
+This is a critical barrier to SME-driven operation. Without someone with
+significant computing experience monitoring execution, the pipeline would
+not have completed successfully — or would have taken an order of magnitude
+longer. A framework intended for use by subject matter experts who are not
+compute specialists must either automate environment management or provide
+clear escalation paths when jobs stall or fail.
+
+Additionally, R and Python library incompatibilities were a recurring
+problem:
 - SeuratDisk was broken with Seurat v5 (required a custom bridge)
 - STACAS v2.4 changed its API (`SampleIntegration` → `Run.STACAS`)
 - Seurat v5 changed its integration API (`FindIntegrationAnchors` →
   `IntegrateLayers`)
-- Single-threaded BLAS wasted 6+ hours on one core with 31 idle
 - `future.globals.maxSize` default of 16 GB was too small for 410K cells
 
 **Lesson:** Computational requirements are unpredictable at the start of an
@@ -205,11 +213,13 @@ analysis. The framework should either (a) provision generously upfront
 (10x the expected peak), (b) use a cloud-native architecture that scales
 on demand, or (c) include an explicit "environment sizing" module that runs
 a subset of the data to estimate resource requirements before committing to
-the full run.
+the full run. The agent should be instrumented to detect stalls (e.g., job
+running >N hours with <X% CPU utilization) and automatically escalate to
+the human operator rather than waiting silently.
 
 R and Python library version conflicts are near-certain. Pin exact versions
-in the spec, test them before committing to a workflow, and have a fallback
-plan (as the MTX/CSV bridge demonstrated).
+in a container image, test them before committing to a workflow, and have
+a fallback plan (as the MTX/CSV bridge demonstrated).
 
 ---
 
