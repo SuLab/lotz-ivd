@@ -46,11 +46,11 @@ for d in [CLUSTER_DIR]:
 # Embedding keys stored in the merged h5ad from Module 05
 TIER_CONFIG = {
     "mesenchymal": {
-        "embedding_key": "X_scanvi_mesenchymal",
+        "embedding_key": "X_integrated",
         "cell_class_values": ["mesenchymal", "unknown"],
     },
     "non_mesenchymal": {
-        "embedding_key": "X_scanvi_non_mesenchymal",
+        "embedding_key": "X_integrated",
         "cell_class_values": ["non_mesenchymal"],
     },
 }

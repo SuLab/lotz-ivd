@@ -2,7 +2,7 @@
 
 ## Current Status
 
-**Pipeline v5 — Module 05 IN PROGRESS.** CCA re-running without downsampling on 247GB RAM machine. scANVI and STACAS results from prior run retained. CCA NP object (262,967 cells) currently integrating.
+**Pipeline v5 — COMPLETE.** CCA integration, all 12 modules finished.
 
 **Pipeline version:** v5
 
@@ -16,28 +16,50 @@
 | 02: Metadata Harmonization | Complete (v1) | 02_metadata_harmonization.py | Condition mappings finalized |
 | 03: Preprocessing | Complete (v1) | 03_preprocessing.py | 12 per-dataset h5ad files, ~429K cells |
 | 04: Coarse Classification | Complete (v4) | 04_annotation.py | 5 coarse categories + Unknown |
-| 05: Integration | **IN PROGRESS** | 05_integration.py | CCA re-running full-cell on 247GB machine. scANVI+STACAS done. |
-| 06: Clustering | Pending | 06_clustering.py | |
-| 07: Post-Integration Annotation | Pending | 07_annotation.py | |
-| 08: Differential Analysis | Pending | 08_differential.py | |
-| 09: Biological Interpretation | Pending | 09_interpretation.py | |
-| 10: Trajectory Analysis | Pending | 10_trajectory.py | |
-| 11: Cell-Cell Communication | Pending | 11_communication.py | |
-| 12: Final Reporting | Pending | 12_reporting.py | |
+| 05: Integration | **COMPLETE** | 05a_integration_cca.R | CCA selected (label-free, full-cell). scANVI+STACAS for comparison. |
+| 06: Clustering | **COMPLETE** | 06_clustering.py | NP 12, AF 12, CEP 9, all_cells 15 clusters |
+| 07: Post-Integration Annotation | **COMPLETE** | 07_annotation.py | NP 5, AF 4, CEP 7, all 16 cell types |
+| 08: Differential Analysis | **COMPLETE** | 08_differential.py | 17 powered comparisons, 1,198 sig genes |
+| 09: Biological Interpretation | **COMPLETE** | 09_interpretation.py | 2,506 enrichments, 288 TFs, 10 pain genes |
+| 10: Trajectory Analysis | **COMPLETE** | 10_trajectory.py | NP rho=-0.088, AF +0.195, CEP +0.073 |
+| 11: Cell-Cell Communication | **COMPLETE** | 11_communication.py | 25K healthy vs 34K degenerated interactions |
+| 12: Final Reporting | **COMPLETE** | 12_reporting.py | 19 supplementary tables, final report |
 
 ## Active Step
 
-**CCA full-cell re-run on 247GB machine (migrated from 62GB instance).**
+**Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration.
 
-CCA previously downsampled NP to 15K and all_cells to 11K due to memory constraints. Now re-running all objects at full cell counts using standard CCA (no sketch, no downsampling).
+### Module 05 Workflow Selection (2026-03-25)
 
-Current progress:
-- NP (262,967 cells) — **Complete** (4.6 GB RDS)
-- AF (84,624 cells) — **Complete** (1.6 GB RDS)
-- CEP (50,858 cells) — **Complete** (809 MB RDS)
-- all_cells (410,759 cells) — **Running** (restarted, see incident log below)
+**Decision: CCA (Seurat v5) selected as primary integration workflow.**
 
-Once CCA completes for all 4 objects, regenerate comparison report and proceed to human checkpoint for workflow selection.
+Three workflows compared with full integration metrics (iLISI, batch_ASW, condition_ASW):
+
+| Object | Workflow | Cells | Clusters | iLISI | batch_ASW | condition_ASW |
+|--------|----------|-------|----------|-------|-----------|---------------|
+| NP | **CCA** | 262,967 | 24 | **3.68** | -0.11 | -0.16 |
+| NP | scANVI | 262,967 | 29 | 1.23 | 0.08 | 0.00 |
+| NP | STACAS | 16,000* | 21 | 2.08 | -0.06 | -0.05 |
+| AF | **CCA** | 84,624 | 22 | **1.49** | -0.12 | 0.05 |
+| AF | scANVI | 84,568 | 18 | 1.01 | 0.16 | 0.02 |
+| AF | STACAS | 84,624 | 23 | 1.06 | 0.05 | 0.01 |
+| CEP | **CCA** | 50,858 | 14 | **1.63** | -0.07 | -0.09 |
+| CEP | scANVI | 50,769 | 13 | 1.03 | 0.21 | 0.04 |
+| CEP | STACAS | 50,858 | 15 | 1.13 | 0.05 | 0.00 |
+| all | **CCA** | 410,759 | 44 | **3.18** | -0.15 | -0.14 |
+| all | scANVI | 410,759 | 29 | 1.23 | 0.07 | -0.02 |
+| all | STACAS | 30,000* | 17 | 2.42 | -0.06 | -0.10 |
+
+*\*STACAS downsampled for NP/all_cells (RAM-bound)*
+
+**Rationale for CCA:**
+- Label-free: no circular annotation risk (does not depend on Module 04 coarse labels)
+- Full cell counts for all 4 objects (no downsampling)
+- Strongest batch mixing (iLISI 1.5-3.7 vs ~1.0-1.2 for scANVI)
+- Smooth embedding topology consistent with mesenchymal continuum hypothesis
+- Negative batch_ASW indicates possible overcorrection, but DE uses pseudobulk on raw counts (not embeddings)
+
+Now converting CCA RDS → h5ad and running Modules 06-12.
 
 ### CCA Run Incident Log (2026-03-24)
 
@@ -154,8 +176,7 @@ scANVI and STACAS complete. CCA re-running at full cell counts on 247GB machine 
 - **NGDC datasets excluded:** PRJCA014236 and PRJCA007656 not downloaded. NP already well-covered.
 - **GSE205535 corrigenda:** Published corrections exist — reviewed during preprocessing.
 - **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scANVI batch correction. CCA and STACAS also correct for this via study-level integration.
-- **CCA re-running full-cell on 247GB machine** (previously downsampled on 62GB). STACAS still downsampled for NP/all_cells.
-- **SeuratDisk incompatible with Seurat v5:** `GetAssayData(slot=...)` removed in SeuratObject 5.0. Workaround: Python bridge (h5ad→mtx+metadata→R `readMM`). See `scripts/h5ad_to_seurat_bridge.py`.
+- **SeuratDisk incompatible with Seurat v5:** `GetAssayData(slot=...)` removed in SeuratObject 5.0. Workaround: R export to MTX/CSV + Python assembly (`scripts/seurat_to_h5ad_bridge.R` + `scripts/seurat_to_h5ad_assemble.py`).
 - **CEP underpowered:** Only 3 CEP datasets (6 samples). Compartment-specific CEP analyses are limited.
 - **GSE242443 culture-expanded:** CEP cells are culture-expanded. Included with caveats.
 - **GSE230809 sex bias:** All 24 samples from male donors. Limits sex-stratified analyses.
@@ -168,18 +189,19 @@ scANVI and STACAS complete. CCA re-running at full cell counts on 247GB machine 
 
 ## Version History
 
-### v5 (2026-03-21 to present): Three-workflow integration comparison — IN PROGRESS
+### v5 (2026-03-21 to 2026-03-25): CCA integration — COMPLETE
 - Spec 05 restructured for three parallel workflows (CCA, scANVI, STACAS)
 - R environment installed: Seurat 5.4.0, STACAS 2.4.1, DESeq2 1.42.1, speckle 0.99.7
-- Module 05 CCA: rewrote for Seurat v5 IntegrateLayers API; NormalizeData replaces SCTransform; downsample for >100K cells
-- Module 05 scANVI: reused v4 approach, all cells integrated on GPU
-- Module 05 STACAS: updated for STACAS v2.4 API (Run.STACAS replaces SampleIntegration); downsample for >100K cells
-- All 3 workflows initially complete (12/12 object-workflow combinations) on 62GB machine
-- 2026-03-23: Migrated to 247GB RAM machine; CCA re-running without downsampling for all objects
-- CCA NP (262,967 cells) in progress; AF, CEP, all_cells pending
-- Modules 01-04 reused from v1/v4 (data/processed unchanged)
-- Human checkpoint for workflow selection deferred until full-cell CCA completes
-- See `docs/v5_execution_dialogue.md` for full execution history
+- Module 05: CCA selected as primary (label-free, strongest batch mixing iLISI 1.5-3.7)
+- CCA full-cell on 247GB machine (migrated 2026-03-23); scANVI + STACAS retained for comparison
+- Module 06: CCA produces fewer clusters (NP 12 vs v4 62) — smoother embedding
+- Module 07: NP 5 types (mature_chondrocyte 72%, fibrocartilaginous 28%), AF 4, CEP 7, all 16
+- Module 08: 17 powered comparisons, 1,198 sig genes (NP_fibrocartilaginous h→s: 556 genes)
+- Module 09: 2,506 enrichments, 3,301 GSEA, 288 sig TFs, 10 pain genes
+- Module 10: NP rho=-0.088, AF rho=+0.195, CEP rho=+0.073
+- Module 11: 25,537 healthy vs 34,208 degenerated CCC interactions
+- Module 12: 19 supplementary tables, final report
+- Modules 01-04 reused from v1/v4
 
 ### v4 (2026-03-11): Spec restructuring + scANVI — COMPLETE
 - Pipeline restructured from 10 to 12 modules (clustering and annotation split from integration)
@@ -232,3 +254,4 @@ scANVI and STACAS complete. CCA re-running at full cell counts on 247GB machine 
 | 2026-03-22 | CCA v5 complete (all 4 objects, downsampled for NP/all_cells). STACAS v2.4 API fixed, complete. |
 | 2026-03-22 | Module 05 human checkpoint ready. 3-workflow comparison report and notebooks generated. |
 | 2026-03-23 | Migrated to 247GB RAM machine. CCA script updated to remove downsampling. Re-running CCA full-cell for all objects. |
+| 2026-03-25 | CCA full-cell complete (all 4 objects). Metrics computed for all 3 workflows. CCA selected as primary workflow. Modules 06-12 proceeding with CCA. |

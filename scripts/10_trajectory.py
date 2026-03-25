@@ -49,7 +49,7 @@ NP_RESIDENT = None  # Will use all mesenchymal cell types in NP object
 AF_RESIDENT = None  # Will use all mesenchymal cell types in AF object
 
 # Embeddings to use
-PRIMARY_EMBEDDING = 'X_scanvi_mesenchymal'    # scANVI mesenchymal tier
+PRIMARY_EMBEDDING = 'X_integrated'    # CCA integrated embedding
 SENSITIVITY_EMBEDDING = None  # No second embedding in new pipeline
 
 PSEUDOTIME_CORR_FDR = 0.05
