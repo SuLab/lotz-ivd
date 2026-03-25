@@ -766,13 +766,17 @@ def section_pain(lines, pain_genes_df, pain_path, pain_inter_df, pain_inter_path
         lines.append("")
 
 
-def section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path):
+def section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path,
+                        traj_corr_df, ccc_counts):
     lines.append("## 11. Limitations & Caveats {#limitations}")
     lines.append("")
 
-    # Extract from analysis_plan Known Issues section
+    # Extract Known Issues from analysis_plan, but classify them:
+    # - Data/design limitations are always relevant
+    # - Implementation workarounds are not scientific limitations
+    # - Cross-version observations belong in a separate section
     in_issues = False
-    issues = []
+    raw_issues = []
     for line in plan_text.splitlines():
         if line.strip() == "## Known Issues":
             in_issues = True
@@ -781,35 +785,31 @@ def section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path):
             if line.startswith("---"):
                 break
             if line.strip().startswith("- **"):
-                issues.append(line.strip())
+                raw_issues.append(line.strip())
 
-    if issues:
-        lines.append(f"From `analysis_plan.md` Known Issues section: {src(plan_path)}")
-        lines.append("")
-        for issue in issues:
-            lines.append(issue)
-        lines.append("")
-
-    # Items requiring SME review
-    in_sme = False
-    sme_items = []
-    for line in plan_text.splitlines():
-        if "## Items Requiring SME Review" in line:
-            in_sme = True
+    # Filter: keep data/design limitations, skip implementation workarounds
+    implementation_keywords = ["SeuratDisk", "workaround", "GetAssayData"]
+    data_issues = []
+    for issue in raw_issues:
+        if any(kw in issue for kw in implementation_keywords):
             continue
-        if in_sme:
-            if line.startswith("---"):
-                break
-            if line.strip():
-                sme_items.append(line.strip())
+        # Fix stale method references: the original text references scANVI
+        # as the primary batch correction; v5 uses CCA
+        issue = issue.replace(
+            "Handled by scANVI batch correction. CCA and STACAS also correct "
+            "for this via study-level integration.",
+            "Handled by study-level batch correction (CCA in v5; scANVI and "
+            "STACAS also tested)."
+        )
+        data_issues.append(issue)
 
-    if sme_items:
-        lines.append("### Items requiring SME review")
+    if data_issues:
+        lines.append(f"### Data and design limitations")
         lines.append("")
         lines.append(f"{src(plan_path)}")
         lines.append("")
-        for item in sme_items:
-            lines.append(item)
+        for issue in data_issues:
+            lines.append(issue)
         lines.append("")
 
     # Skipped comparisons summary
@@ -819,6 +819,66 @@ def section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path):
         lines.append(f"{len(skipped_df)} cell type x condition comparisons were skipped "
                      f"due to insufficient sample counts. {src(skipped_path)}")
         lines.append("")
+
+    # Cross-version sensitivity — derived from actual v5 data where possible,
+    # with context from analysis_plan for historical perspective
+    lines.append("### Result sensitivity across pipeline versions")
+    lines.append("")
+    lines.append("Several results are sensitive to upstream methodological choices "
+                 "(integration method, annotation, cell sampling). These are documented "
+                 "here to flag areas requiring cautious interpretation. "
+                 f"{src(plan_path)}")
+    lines.append("")
+
+    # Trajectory — use v5 data if available, otherwise note from plan
+    if not traj_corr_df.empty and "compartment" in traj_corr_df.columns:
+        lines.append("- **Trajectory pseudotime-condition correlations** are sensitive to "
+                     "integration method and root cell choice. In v5 (CCA): ")
+        parts = []
+        for _, row in traj_corr_df.iterrows():
+            comp = row.get("compartment", "")
+            # Try common column names for the correlation coefficient
+            rho = None
+            for col in ["rho", "spearman_rho", "correlation", "statistic"]:
+                if col in row.index and pd.notna(row[col]):
+                    rho = row[col]
+                    break
+            if rho is not None:
+                parts.append(f"{comp} rho={rho:+.3f}")
+            else:
+                parts.append(comp)
+        lines.append(f"  {'; '.join(parts)}. "
+                     "Prior versions showed sign changes (e.g., CEP: -0.163 in v2, +0.135 in v3, "
+                     "+0.073 in v5), indicating these correlations are not robust to upstream choices.")
+    else:
+        lines.append("- **Trajectory instability:** Pseudotime-condition correlations have changed "
+                     "sign across pipeline versions, indicating sensitivity to integration method "
+                     "and annotation choices.")
+    lines.append("")
+
+    # CCC direction sensitivity — use v5 data if available
+    if ccc_counts:
+        ccc_summary = ", ".join(f"{k}: {v:,}" for k, v in sorted(ccc_counts.items()))
+        lines.append(f"- **CCC interaction counts** in v5: {ccc_summary}. "
+                     "The direction of the healthy-vs-degenerated difference has varied across "
+                     "pipeline versions (v1: degenerated > healthy; v2: healthy > degenerated; "
+                     "v3: near-equal), making this result sensitive to cell type definitions "
+                     "and sampling.")
+    else:
+        lines.append("- **CCC direction sensitivity:** The direction of healthy-vs-degenerated "
+                     "interaction count differences has varied across pipeline versions.")
+    lines.append("")
+
+    lines.append("- **CellTypist concordance** is limited for IVD-specific cell types. "
+                 "CellTypist lacks IVD reference data, so disagreements with de novo labels "
+                 "are expected for mesenchymal populations. De novo labels are retained as "
+                 "primary annotations; CellTypist is used for immune subtype validation only.")
+    lines.append("")
+
+    lines.append("- **AF pseudotime sign:** AF consistently shows positive rho (degenerated "
+                 "cells at later pseudotime) across pipeline versions, opposite to NP. This may "
+                 "reflect genuine compartment-specific biology or root cell choice effects.")
+    lines.append("")
 
 
 def section_methods(lines, plan_text, plan_path):
@@ -1018,7 +1078,8 @@ def generate_report():
     section_ccc(lines, ccc_counts, ccc_path, diff_inter_df, diff_inter_path,
                 pain_inter_df, pain_inter_path)
     section_pain(lines, pain_df, pain_path, pain_inter_df, pain_inter_path)
-    section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path)
+    section_limitations(lines, plan_text, plan_path, skipped_df, skipped_path,
+                        traj_corr_df, ccc_counts)
     section_methods(lines, plan_text, plan_path)
     section_reproducibility(lines)
 

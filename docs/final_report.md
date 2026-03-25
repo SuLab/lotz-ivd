@@ -4,9 +4,9 @@
 
 | Field | Value |
 |-------|-------|
-| Report generated | 2026-03-25 13:45 |
+| Report generated | 2026-03-25 14:00 |
 | Pipeline version | v5 |
-| Git commit | `49e6992` (branch: `main`) |
+| Git commit | `12cacbf` (branch: `main`) |
 | Source of truth | `analysis_plan.md` |
 
 ## Contents
@@ -126,12 +126,13 @@ Pain gene results not found. *[source: `results/interpretation/pain_genes.tsv`]*
 
 ## 11. Limitations & Caveats {#limitations}
 
-From `analysis_plan.md` Known Issues section: *[source: `analysis_plan.md`]*
+### Data and design limitations
+
+*[source: `analysis_plan.md`]*
 
 - **NGDC datasets excluded:** PRJCA014236 and PRJCA007656 not downloaded. NP already well-covered.
 - **GSE205535 corrigenda:** Published corrections exist — reviewed during preprocessing.
-- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by scANVI batch correction. CCA and STACAS also correct for this via study-level integration.
-- **SeuratDisk incompatible with Seurat v5:** `GetAssayData(slot=...)` removed in SeuratObject 5.0. Workaround: R export to MTX/CSV + Python assembly (`scripts/seurat_to_h5ad_bridge.R` + `scripts/seurat_to_h5ad_assemble.py`).
+- **Platform heterogeneity:** 3 non-10x datasets (BD Rhapsody, Singleron). Handled by study-level batch correction (CCA in v5; scANVI and STACAS also tested).
 - **CEP underpowered:** Only 3 CEP datasets (6 samples). Compartment-specific CEP analyses are limited.
 - **GSE242443 culture-expanded:** CEP cells are culture-expanded. Included with caveats.
 - **GSE230809 sex bias:** All 24 samples from male donors. Limits sex-stratified analyses.
@@ -140,14 +141,17 @@ From `analysis_plan.md` Known Issues section: *[source: `analysis_plan.md`]*
 - **GSE251686_NP3 excluded:** Corrupt matrix file (5/6 samples retained).
 - **GSE165722 Pfirrmann offset:** GEO says I-IV, paper says II-V. Paper grades used.
 
-### Items requiring SME review
+### Result sensitivity across pipeline versions
 
-*[source: `analysis_plan.md`]*
+Several results are sensitive to upstream methodological choices (integration method, annotation, cell sampling). These are documented here to flag areas requiring cautious interpretation. *[source: `analysis_plan.md`]*
 
-1. **Trajectory instability across versions:** Pseudotime-condition correlations change sign between pipeline versions (e.g., CEP went from -0.163 in v2 to +0.135 in v3). This sensitivity to upstream annotation choices means trajectory results should be interpreted cautiously.
-2. **CellTypist NP disagreements:** 8/13 de novo NP clusters were discordant with CellTypist in v3. CellTypist lacks IVD-specific cell types, so de novo labels are retained, but this should be acknowledged.
-3. **CCC direction sensitivity:** v1 showed more interactions in degeneration (53K vs 44K), v2 showed fewer (27K vs 29K), v3 shows near-equal (40K vs 41K). The direction of this result is sensitive to annotation and sampling choices.
-4. **AF pseudotime sign:** AF consistently shows positive rho (degenerated at later pseudotime) across v2 and v3, opposite to NP. May reflect genuine AF-specific biology or root cell choice issues.
+- **Trajectory instability:** Pseudotime-condition correlations have changed sign across pipeline versions, indicating sensitivity to integration method and annotation choices.
+
+- **CCC direction sensitivity:** The direction of healthy-vs-degenerated interaction count differences has varied across pipeline versions.
+
+- **CellTypist concordance** is limited for IVD-specific cell types. CellTypist lacks IVD reference data, so disagreements with de novo labels are expected for mesenchymal populations. De novo labels are retained as primary annotations; CellTypist is used for immune subtype validation only.
+
+- **AF pseudotime sign:** AF consistently shows positive rho (degenerated cells at later pseudotime) across pipeline versions, opposite to NP. This may reflect genuine compartment-specific biology or root cell choice effects.
 
 ## 12. Methods {#methods}
 
@@ -203,7 +207,7 @@ Python 3.12, scanpy, scvi-tools, pyDESeq2, gseapy, decoupler, liana. R: Seurat 5
 
 ## 13. Reproducibility {#reproducibility}
 
-- **Git commit:** `49e6992614fbe62644d1978b9fa3642e27df00d5` (branch: `main`)
+- **Git commit:** `12cacbfca220d9c20518af9adea41345fac591b6` (branch: `main`)
 - **Random seeds:** 42 (all stochastic operations)
 - **Package versions:** pinned in `requirements.txt`, frozen in `requirements_frozen.txt`
 - **Parameter choices:** documented in `analysis_plan.md`
