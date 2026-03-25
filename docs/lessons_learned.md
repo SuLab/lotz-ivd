@@ -79,27 +79,44 @@ integration expertise.
 
 ## 3. What Went Wrong
 
-### 3.1 The agent skipped human checkpoints (v1)
+### 3.1 Checkpoint strategy must be an explicit design choice
 
-**The most serious control failure.** During v1, the agent loop executed
-Modules 03, 04, and 05 without stopping at their human checkpoints. The
-checkpoints existed in the specs and in PROMPT.md, but the agent treated
-them as informational rather than blocking. Three modules of unchecked work
-had to be retroactively reviewed.
+During v1, the human operator intentionally let the agent run through
+Modules 03–05 without SME review at each checkpoint. This was a deliberate
+decision: get a complete end-to-end first pass quickly so that the SMEs
+could see the full pipeline output and have a concrete artifact to react
+to. It worked — the v1 results stimulated discussion, demonstrated the
+approach's potential, and gave the domain experts something specific to
+critique rather than an abstract plan.
 
-**Root cause:** The checkpoint was defined only as a text instruction in the
-prompt. There was no mechanical enforcement — the agent could read "stop at
-checkpoints" and proceed anyway, because nothing prevented the next loop
-iteration from starting.
+However, this created a problem for subsequent versions: the pipeline had
+been designed with checkpoints as mandatory gates, but had been operated
+with checkpoints as optional. When the project moved to a mode where
+checkpoints needed to be enforced (v2+), there was no mechanism to
+guarantee it. The agent loop would happily continue past a checkpoint if
+the human didn't intervene.
 
 **Fix applied:** `run_pipeline.sh` was created as a shell-level gate that
 greps `analysis_plan.md` for "WAITING FOR HUMAN REVIEW" and refuses to
 start a new agent iteration if found. PROMPT.md was also hardened with
 redundant stop directives.
 
-**Lesson:** Instructions are suggestions. Gates are enforcement. Any
-behavior that must be guaranteed needs mechanical enforcement outside the
-agent's control — in the shell, in CI, or in the orchestration layer.
+**Lesson:** The framework should support multiple checkpoint modes as a
+first-class concept — not just "checkpoint on" or "checkpoint off," but
+explicitly selectable strategies:
+
+- **Fast pass:** Run all modules without stopping. Useful for a first cut
+  or when rerunning after minor parameter changes.
+- **Gated:** Stop at every checkpoint. Required for new analyses or after
+  major structural changes.
+- **Selective:** Stop only at designated high-leverage checkpoints (e.g.,
+  annotation, integration selection) and auto-advance past low-risk ones
+  (e.g., QC, trajectory).
+
+The v1 experience shows that all three modes are valuable at different
+stages of a project. The framework should make the choice explicit and
+mechanically enforced, rather than relying on the operator to manually
+manage the loop.
 
 ### 3.2 The agent fabricated gene-level claims (v1)
 
