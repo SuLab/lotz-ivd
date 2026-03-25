@@ -182,11 +182,16 @@ v1, v2, v3, and v5. Trajectory correlations changed sign between versions.
 These were eventually recognized as "method-sensitive" results and flagged
 with caveats, but in early versions they were reported as findings.
 
-**Lesson:** Cross-version stability should be an explicit quality metric.
-Any result that changes direction when upstream methods change is not robust
-enough to report as a finding. A future framework should automate this:
-run at least two integration methods and flag any downstream result that
-is not directionally consistent across both.
+**Lesson:** Cross-version instability is a useful signal, but not a
+definitive one. Results that shift direction across versions *may* indicate
+method sensitivity — or they may reflect genuine improvements as upstream
+errors are corrected (e.g., the v2→v3 annotation fix legitimately changed
+downstream results). The framework should track and flag cross-version
+changes automatically, but the interpretation of those changes requires
+human judgment. Running at least two integration methods in parallel and
+comparing downstream results is a practical way to surface this kind of
+sensitivity early, rather than discovering it across sequential pipeline
+versions.
 
 ### 3.5 The agent cannot manage its own compute environment
 
