@@ -6,6 +6,147 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>IVD Single-Cell Atlas</title>
   <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
     code{white-space: pre-wrap;}
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -22,7 +163,6 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
   </style>
-  <link rel="stylesheet" href="" />
 </head>
 <body>
 <header id="title-block-header">
@@ -266,14 +406,14 @@ included in the meta-analysis.</p>
 </tr>
 </tbody>
 </table>
-<figure>
-<img src="../results/qc_reports/notebook_01_coverage_heatmap.png"
-alt="Figure 1A. Dataset coverage heatmap showing the number of datasets available for each condition × compartment combination. NP is the most densely sampled compartment; CEP and AF have limited coverage for some conditions." />
-<figcaption aria-hidden="true">Figure 1A. Dataset coverage heatmap
-showing the number of datasets available for each condition ×
-compartment combination. NP is the most densely sampled compartment; CEP
-and AF have limited coverage for some conditions.</figcaption>
-</figure>
+<p><img
+src="../results/qc_reports/notebook_01_coverage_heatmap.png" /></p>
+<blockquote>
+<p><strong>Figure 1A.</strong> Dataset coverage heatmap showing the
+number of datasets available for each condition × compartment
+combination. NP is the most densely sampled compartment; CEP and AF have
+limited coverage for some conditions.</p>
+</blockquote>
 <p>After per-dataset quality control (minimum 200 genes, maximum 6,000
 genes, minimum 500 UMI counts, maximum 20% mitochondrial reads, Scrublet
 doublet detection; Supplementary Figure S1), cells were processed
@@ -290,16 +430,16 @@ approaches where integration quality depends on annotation quality and
 vice versa. CCA also processed all cells without downsampling — unlike
 STACAS, which required subsampling to 16,000 cells for NP and 30,000 for
 all_cells due to memory constraints.</p>
-<figure>
-<img src="../results/integration/workflow_comparison_metrics.png"
-alt="Figure 1B. Integration method comparison. Bar plots showing iLISI (batch mixing; higher is better), batch_ASW (batch silhouette width; more negative indicates stronger correction), and condition_ASW (biological signal preservation) for CCA, scANVI, and STACAS across all four compartment objects. CCA achieved the strongest batch mixing (highest iLISI) across all objects." />
-<figcaption aria-hidden="true">Figure 1B. Integration method comparison.
-Bar plots showing iLISI (batch mixing; higher is better), batch_ASW
-(batch silhouette width; more negative indicates stronger correction),
-and condition_ASW (biological signal preservation) for CCA, scANVI, and
+<p><img
+src="../results/integration/workflow_comparison_metrics.png" /></p>
+<blockquote>
+<p><strong>Figure 1B.</strong> Integration method comparison. Bar plots
+showing iLISI (batch mixing; higher is better), batch_ASW (batch
+silhouette width; more negative indicates stronger correction), and
+condition_ASW (biological signal preservation) for CCA, scANVI, and
 STACAS across all four compartment objects. CCA achieved the strongest
-batch mixing (highest iLISI) across all objects.</figcaption>
-</figure>
+batch mixing (highest iLISI) across all objects.</p>
+</blockquote>
 <p>The negative batch-corrected average silhouette width (batch_ASW =
 −0.11 to −0.15) indicated mild overcorrection by CCA. However, because
 all downstream differential expression analyses used pseudobulk
@@ -478,27 +618,23 @@ populations identified across three IVD compartments.</p>
 </tr>
 </tbody>
 </table>
-<figure>
-<img src="../results/integration/umap_NP_annotated.png"
-alt="Figure 2. UMAP atlas of the human intervertebral disc. Compartment-specific UMAP projections of NP (top), all_cells (bottom left), and individual compartments colored by cell type, coarse classification, confidence level, study of origin, and condition. NP is dominated by mature chondrocytes (71%) and fibrocartilaginous cells (28%); AF shows a clear inner-outer gradient; CEP exhibits the greatest cell type diversity among mesenchymal populations." />
-<figcaption aria-hidden="true">Figure 2. UMAP atlas of the human
-intervertebral disc. Compartment-specific UMAP projections of NP (top),
-all_cells (bottom left), and individual compartments colored by cell
-type, coarse classification, confidence level, study of origin, and
-condition. NP is dominated by mature chondrocytes (71%) and
-fibrocartilaginous cells (28%); AF shows a clear inner-outer gradient;
-CEP exhibits the greatest cell type diversity among mesenchymal
-populations.</figcaption>
-</figure>
-<figure>
-<img src="../results/integration/umap_all_cells_annotated.png"
-alt="Figure 2 (continued). All-cells UMAP atlas showing all 16 cell populations across NP, AF, and CEP compartments. Cell types are colored consistently across panels. Non-mesenchymal populations (endothelial, immune) form distinct clusters separated from the mesenchymal continuum." />
-<figcaption aria-hidden="true">Figure 2 (continued). All-cells UMAP
-atlas showing all 16 cell populations across NP, AF, and CEP
-compartments. Cell types are colored consistently across panels.
-Non-mesenchymal populations (endothelial, immune) form distinct clusters
-separated from the mesenchymal continuum.</figcaption>
-</figure>
+<p><img src="../results/integration/umap_NP_annotated.png" /></p>
+<blockquote>
+<p><strong>Figure 2A.</strong> UMAP atlas of the NP compartment. Panels
+show NP cells colored by Leiden cluster, cell type, coarse
+classification, confidence level, study of origin, and condition. NP is
+dominated by mature chondrocytes (71%, green) and fibrocartilaginous
+cells (28%, red). Non-mesenchymal populations (endothelial, T cell,
+macrophage) form distinct clusters.</p>
+</blockquote>
+<p><img src="../results/integration/umap_all_cells_annotated.png" /></p>
+<blockquote>
+<p><strong>Figure 2B.</strong> All-cells UMAP atlas showing all 16 cell
+populations across NP, AF, and CEP compartments. Cell types are colored
+consistently across panels. Non-mesenchymal populations (endothelial,
+immune) form distinct clusters separated from the mesenchymal
+continuum.</p>
+</blockquote>
 <p>The dominant NP population — NP mature chondrocytes — expressed
 canonical notochordal/chondrocyte markers consistent with the
 established notochordal-to-chondrocytic transition that occurs during
@@ -635,30 +771,27 @@ notable: it identifies NP fibrocartilaginous cells as the primary
 cellular substrate of degenerative transcriptional remodeling, while NP
 mature chondrocytes — the majority cell type — showed comparatively
 modest changes (52 genes in mild-vs-severe only).</p>
-<figure>
-<img
-src="../results/differential/volcano_plots/volcano_NP_fibrocartilaginous_healthy_vs_degenerated_severe.png"
-alt="Figure 3A. Volcano plot of differential gene expression in NP fibrocartilaginous cells, healthy vs. severe degeneration. 237 genes significantly upregulated (red) and 319 downregulated (blue) at |log2FC| &gt; 0.5, padj &lt; 0.05. The most extreme fold changes exceed log2FC of ±10, indicating dramatic transcriptional remodeling." />
-<figcaption aria-hidden="true">Figure 3A. Volcano plot of differential
-gene expression in NP fibrocartilaginous cells, healthy vs. severe
+<p><img
+src="../results/differential/volcano_plots/volcano_NP_fibrocartilaginous_healthy_vs_degenerated_severe.png" /></p>
+<blockquote>
+<p><strong>Figure 3A.</strong> Volcano plot of differential gene
+expression in NP fibrocartilaginous cells, healthy vs. severe
 degeneration. 237 genes significantly upregulated (red) and 319
 downregulated (blue) at |log2FC| &gt; 0.5, padj &lt; 0.05. The most
 extreme fold changes exceed log2FC of ±10, indicating dramatic
-transcriptional remodeling.</figcaption>
-</figure>
-<figure>
-<img
-src="../results/differential/heatmaps/heatmap_NP_fibrocartilaginous_healthy_vs_deg.png"
-alt="Figure 3B. Pseudobulk expression heatmap of top DE genes in NP fibrocartilaginous cells (healthy vs. all degeneration). Each column represents a gene; each row represents a pseudobulk sample (aggregated per study × condition). Hierarchical clustering separates healthy samples (bottom, green/blue sidebar) from degenerated samples (top, orange/red sidebar), with clear expression blocks distinguishing the two conditions across multiple studies." />
-<figcaption aria-hidden="true">Figure 3B. Pseudobulk expression heatmap
-of top DE genes in NP fibrocartilaginous cells (healthy vs. all
-degeneration). Each column represents a gene; each row represents a
-pseudobulk sample (aggregated per study × condition). Hierarchical
-clustering separates healthy samples (bottom, green/blue sidebar) from
-degenerated samples (top, orange/red sidebar), with clear expression
-blocks distinguishing the two conditions across multiple
-studies.</figcaption>
-</figure>
+transcriptional remodeling.</p>
+</blockquote>
+<p><img
+src="../results/differential/heatmaps/heatmap_NP_fibrocartilaginous_healthy_vs_deg.png" /></p>
+<blockquote>
+<p><strong>Figure 3B.</strong> Pseudobulk expression heatmap of top DE
+genes in NP fibrocartilaginous cells (healthy vs. all degeneration).
+Each column represents a gene; each row represents a pseudobulk sample
+(aggregated per study × condition). Hierarchical clustering separates
+healthy samples (bottom, green/blue sidebar) from degenerated samples
+(top, orange/red sidebar), with clear expression blocks distinguishing
+the two conditions across multiple studies.</p>
+</blockquote>
 <p>The AF compartment showed 147 significant genes across 4 comparisons.
 AF outer cells were the primary responders, with 118 genes in
 healthy-vs-mild degeneration (predominantly downregulated: 114 down, 4
@@ -686,17 +819,16 @@ enrichments were uniformly cell-cycle-related: Reactome Cell Cycle (padj
 × 10⁻³⁸), and DNA Metabolic Process (padj = 2.17 × 10⁻²⁷). All of these
 terms were enriched among genes downregulated in degeneration (Figure
 4A).</p>
-<figure>
-<img
-src="../results/interpretation/pathway_enrichment/enrichment_NP_fibrocartilaginous_down.png"
-alt="Figure 4A. Top downregulated pathways in NP fibrocartilaginous cells (healthy vs. severe degeneration). Bar plot of the 20 most significant enriched terms among downregulated genes, colored by database. Cell cycle and mitotic pathways dominate, with Reactome Cell Cycle achieving padj = 10⁻⁹⁴ — the strongest enrichment in the entire analysis." />
-<figcaption aria-hidden="true">Figure 4A. Top downregulated pathways in
-NP fibrocartilaginous cells (healthy vs. severe degeneration). Bar plot
-of the 20 most significant enriched terms among downregulated genes,
+<p><img
+src="../results/interpretation/pathway_enrichment/enrichment_NP_fibrocartilaginous_down.png" /></p>
+<blockquote>
+<p><strong>Figure 4A.</strong> Top downregulated pathways in NP
+fibrocartilaginous cells (healthy vs. severe degeneration). Bar plot of
+the 20 most significant enriched terms among downregulated genes,
 colored by database. Cell cycle and mitotic pathways dominate, with
 Reactome Cell Cycle achieving padj = 10⁻⁹⁴ — the strongest enrichment in
-the entire analysis.</figcaption>
-</figure>
+the entire analysis.</p>
+</blockquote>
 <p>This cell cycle suppression was supported by specific gene-level
 evidence. The proliferation marker MKI67 was downregulated 6.4-fold
 (log2FC = −2.68, padj = 0.004) in healthy-vs-severe degeneration, along
@@ -745,17 +877,16 @@ consistent with the known phenotypic shift from a healthy,
 ECM-maintaining chondrocyte state to a degradative, fibroblast-like
 state — precisely the transition represented by the NP
 fibrocartilaginous population.</p>
-<figure>
-<img
-src="../results/interpretation/pathway_enrichment/enrichment_NP_fibrocartilaginous_up.png"
-alt="Figure 4B. Top upregulated pathways in NP fibrocartilaginous cells (healthy vs. severe degeneration). Epithelial-Mesenchymal Transition is the dominant upregulated program (padj = 6.0 × 10⁻²⁰), followed by TNF-alpha Signaling via NF-kB, ECM Organization, and inflammatory/immune response pathways. Results shown across GO, KEGG, Reactome, and MSigDB Hallmark databases." />
-<figcaption aria-hidden="true">Figure 4B. Top upregulated pathways in NP
+<p><img
+src="../results/interpretation/pathway_enrichment/enrichment_NP_fibrocartilaginous_up.png" /></p>
+<blockquote>
+<p><strong>Figure 4B.</strong> Top upregulated pathways in NP
 fibrocartilaginous cells (healthy vs. severe degeneration).
 Epithelial-Mesenchymal Transition is the dominant upregulated program
 (padj = 6.0 × 10⁻²⁰), followed by TNF-alpha Signaling via NF-kB, ECM
 Organization, and inflammatory/immune response pathways. Results shown
-across GO, KEGG, Reactome, and MSigDB Hallmark databases.</figcaption>
-</figure>
+across GO, KEGG, Reactome, and MSigDB Hallmark databases.</p>
+</blockquote>
 <p>SFRP2, a secreted frizzled-related protein that modulates WNT
 signaling, was the most strongly upregulated gene in the dataset (log2FC
 = +6.63 in NP fibrocartilaginous cells, healthy-vs-severe). SFRP2
@@ -789,20 +920,18 @@ compartment undergoes ECM loss as an early event in degeneration,
 consistent with the histological observation that AF fissuring and
 matrix loss precede NP collapse in many cases of disc degeneration
 (Adams &amp; Roughley, 2006).</p>
-<figure>
-<img
-src="../results/interpretation/pathway_enrichment/gsea_ivd_custom_heatmap.png"
-alt="Figure 4C. IVD-specific gene set enrichment analysis (GSEA) heatmap. Normalized enrichment scores (NES) for 16 custom IVD-relevant gene sets across all powered cell type × comparison combinations. Red indicates positive enrichment (upregulated in disease); blue indicates negative enrichment (downregulated). Asterisks denote FDR &lt; 0.05. Cell cycle/senescence pathways are uniformly suppressed in NP fibrocartilaginous cells, while inflammatory and ECM remodeling programs show compartment-specific patterns." />
-<figcaption aria-hidden="true">Figure 4C. IVD-specific gene set
-enrichment analysis (GSEA) heatmap. Normalized enrichment scores (NES)
-for 16 custom IVD-relevant gene sets across all powered cell type ×
-comparison combinations. Red indicates positive enrichment (upregulated
-in disease); blue indicates negative enrichment (downregulated).
-Asterisks denote FDR &lt; 0.05. Cell cycle/senescence pathways are
-uniformly suppressed in NP fibrocartilaginous cells, while inflammatory
-and ECM remodeling programs show compartment-specific
-patterns.</figcaption>
-</figure>
+<p><img
+src="../results/interpretation/pathway_enrichment/gsea_ivd_custom_heatmap.png" /></p>
+<blockquote>
+<p><strong>Figure 4C.</strong> IVD-specific gene set enrichment analysis
+(GSEA) heatmap. Normalized enrichment scores (NES) for 16 custom
+IVD-relevant gene sets across all powered cell type × comparison
+combinations. Red indicates positive enrichment (upregulated in
+disease); blue indicates negative enrichment (downregulated). Asterisks
+denote FDR &lt; 0.05. Cell cycle/senescence pathways are uniformly
+suppressed in NP fibrocartilaginous cells, while inflammatory and ECM
+remodeling programs show compartment-specific patterns.</p>
+</blockquote>
 <h3
 id="inflammatory-programs-emerge-cell-type-specifically">Inflammatory
 Programs Emerge Cell-Type-Specifically</h3>
@@ -890,17 +1019,17 @@ network identified 288 significant TF-condition associations (padj &lt;
 associations were in NP fibrocartilaginous cells, distributed across
 three comparisons: healthy-vs-severe (137 TFs), mild-vs-severe (124
 TFs), and healthy-vs-all (27 TFs).</p>
-<figure>
-<img src="../results/interpretation/tf_activity/tf_activity_heatmap.png"
-alt="Figure 5. Transcription factor activity changes in NP fibrocartilaginous cells. Heatmap showing TF activity scores (mean absolute log2FC of targets) across three comparisons. Blue indicates suppressed TF activity (targets downregulated); red indicates activated (targets upregulated). The E2F family (E2F1–E2F5) and FOXM1 are uniformly suppressed, consistent with cell cycle arrest. TP53, NFKBIZ, and stress-response TFs (ATF4, KLF4) are activated." />
-<figcaption aria-hidden="true">Figure 5. Transcription factor activity
-changes in NP fibrocartilaginous cells. Heatmap showing TF activity
-scores (mean absolute log2FC of targets) across three comparisons. Blue
-indicates suppressed TF activity (targets downregulated); red indicates
-activated (targets upregulated). The E2F family (E2F1–E2F5) and FOXM1
-are uniformly suppressed, consistent with cell cycle arrest. TP53,
-NFKBIZ, and stress-response TFs (ATF4, KLF4) are activated.</figcaption>
-</figure>
+<p><img
+src="../results/interpretation/tf_activity/tf_activity_heatmap.png" /></p>
+<blockquote>
+<p><strong>Figure 5.</strong> Transcription factor activity changes in
+NP fibrocartilaginous cells. Heatmap showing TF activity scores (mean
+absolute log2FC of targets) across three comparisons. Blue indicates
+suppressed TF activity (targets downregulated); red indicates activated
+(targets upregulated). The E2F family (E2F1–E2F5) and FOXM1 are
+uniformly suppressed, consistent with cell cycle arrest. TP53, NFKBIZ,
+and stress-response TFs (ATF4, KLF4) are activated.</p>
+</blockquote>
 <p>The TF landscape organized into several coherent regulatory programs
 (Figure 5):</p>
 <ol type="1">
@@ -947,38 +1076,36 @@ healthy cells (0.050 vs. 0.080), suggesting that degenerated
 fibrocartilaginous cells occupy an earlier position on the maturation
 trajectory — possibly reflecting dedifferentiation or arrest in a
 progenitor-like state.</p>
-<figure>
-<img src="../results/trajectories/umap_trajectory_NP.png"
-alt="Figure 6A. NP trajectory analysis. Top left: UMAP colored by cell type showing NP fibrocartilaginous (red) and NP mature chondrocyte (green) populations. Top right: UMAP colored by diffusion pseudotime (dark purple = root/early; yellow = late). Bottom: UMAP colored by disease condition showing spatial separation of healthy (green) and degenerated (blue/orange/pink) cells along the pseudotime axis." />
-<figcaption aria-hidden="true">Figure 6A. NP trajectory analysis. Top
-left: UMAP colored by cell type showing NP fibrocartilaginous (red) and
-NP mature chondrocyte (green) populations. Top right: UMAP colored by
-diffusion pseudotime (dark purple = root/early; yellow = late). Bottom:
-UMAP colored by disease condition showing spatial separation of healthy
+<p><img src="../results/trajectories/umap_trajectory_NP.png" /></p>
+<blockquote>
+<p><strong>Figure 6A.</strong> NP trajectory analysis. Top left: UMAP
+colored by cell type showing NP fibrocartilaginous (red) and NP mature
+chondrocyte (green) populations. Top right: UMAP colored by diffusion
+pseudotime (dark purple = root/early; yellow = late). Bottom: UMAP
+colored by disease condition showing spatial separation of healthy
 (green) and degenerated (blue/orange/pink) cells along the pseudotime
-axis.</figcaption>
-</figure>
-<figure>
-<img src="../results/trajectories/pseudotime_by_condition_NP.png"
-alt="Figure 6B. NP pseudotime distribution by condition. Density plots showing the distribution of pseudotime values for each condition. Healthy cells (red) have a broader pseudotime distribution extending to later values, while degenerated cells (mild = blue, severe = orange) are concentrated at earlier pseudotime, consistent with dedifferentiation or maturational arrest (Spearman rho = −0.088, p = 6.2 × 10⁻⁸⁷)." />
-<figcaption aria-hidden="true">Figure 6B. NP pseudotime distribution by
-condition. Density plots showing the distribution of pseudotime values
-for each condition. Healthy cells (red) have a broader pseudotime
-distribution extending to later values, while degenerated cells (mild =
-blue, severe = orange) are concentrated at earlier pseudotime,
-consistent with dedifferentiation or maturational arrest (Spearman rho =
-−0.088, p = 6.2 × 10⁻⁸⁷).</figcaption>
-</figure>
-<figure>
-<img src="../results/trajectories/gene_dynamics_NP.png"
-alt="Figure 6C. Gene expression dynamics along NP pseudotime. Expression of 20 key genes plotted against pseudotime (x-axis) with LOESS smoothing (red line). Matrix genes (ACAN, COL2A1, COL1A1) show pseudotime-dependent expression gradients. Catabolic genes (MMP13, MMP3, ADAMTS5) and inflammatory genes (IL6, CXCL1, CXCL2) show distinct activation patterns along the trajectory." />
-<figcaption aria-hidden="true">Figure 6C. Gene expression dynamics along
-NP pseudotime. Expression of 20 key genes plotted against pseudotime
+axis.</p>
+</blockquote>
+<p><img
+src="../results/trajectories/pseudotime_by_condition_NP.png" /></p>
+<blockquote>
+<p><strong>Figure 6B.</strong> NP pseudotime distribution by condition.
+Density plots showing the distribution of pseudotime values for each
+condition. Healthy cells (red) have a broader pseudotime distribution
+extending to later values, while degenerated cells (mild = blue, severe
+= orange) are concentrated at earlier pseudotime, consistent with
+dedifferentiation or maturational arrest (Spearman rho = −0.088, p = 6.2
+× 10⁻⁸⁷).</p>
+</blockquote>
+<p><img src="../results/trajectories/gene_dynamics_NP.png" /></p>
+<blockquote>
+<p><strong>Figure 6C.</strong> Gene expression dynamics along NP
+pseudotime. Expression of 20 key genes plotted against pseudotime
 (x-axis) with LOESS smoothing (red line). Matrix genes (ACAN, COL2A1,
 COL1A1) show pseudotime-dependent expression gradients. Catabolic genes
 (MMP13, MMP3, ADAMTS5) and inflammatory genes (IL6, CXCL1, CXCL2) show
-distinct activation patterns along the trajectory.</figcaption>
-</figure>
+distinct activation patterns along the trajectory.</p>
+</blockquote>
 <p>In the AF, the correlation was positive (rho = +0.195, p &lt;
 10⁻³⁰⁰), with both AF inner (rho = +0.218) and AF outer (rho = +0.110)
 cells showing degenerated cells at later pseudotime. This opposite
@@ -1017,33 +1144,31 @@ interactions, 8,017 health-specific interactions, and 17,520 shared
 interactions. The mean rank difference across all interactions was
 +0.079 (shifted toward degeneration), confirming a global expansion of
 intercellular signaling in disease.</p>
-<figure>
-<img
-src="../results/communication/interaction_plots/interaction_heatmap_degenerated.png"
-alt="Figure 7A. Cell-cell communication heatmap in degenerated tissue. Matrix showing the number of predicted ligand-receptor interactions between each cell type pair (source → target). Macrophage M2 cells are prominent targets (right column, 494–596 interactions from multiple sources), consistent with macrophage-disc cell crosstalk in degenerative disease. NP fibrocartilaginous and fibroblast-like cells are major interaction sources." />
-<figcaption aria-hidden="true">Figure 7A. Cell-cell communication
-heatmap in degenerated tissue. Matrix showing the number of predicted
+<p><img
+src="../results/communication/interaction_plots/interaction_heatmap_degenerated.png" /></p>
+<blockquote>
+<p><strong>Figure 7A.</strong> Cell-cell communication heatmap in
+degenerated tissue. Matrix showing the number of predicted
 ligand-receptor interactions between each cell type pair (source →
 target). Macrophage M2 cells are prominent targets (right column,
 494–596 interactions from multiple sources), consistent with
 macrophage-disc cell crosstalk in degenerative disease. NP
 fibrocartilaginous and fibroblast-like cells are major interaction
-sources.</figcaption>
-</figure>
-<figure>
-<img
-src="../results/communication/interaction_plots/differential_interactions.png"
-alt="Figure 7B. Top differential interactions between healthy and degenerated tissue. Bar plot showing the top 15 gained (blue, negative rank difference = gained in degeneration) and top 15 lost (red, positive rank difference = lost in degeneration) ligand-receptor interactions. Gained interactions are dominated by complement signaling (FN1→C5AR1, RPS19→C5AR1) targeting T cells. Lost interactions include ephrin (EFNA4→EPHA2), WNT (WNT5A→FZD2), and galectin (LGALS1→ITGB1) signaling, indicating loss of homeostatic tissue patterning." />
-<figcaption aria-hidden="true">Figure 7B. Top differential interactions
-between healthy and degenerated tissue. Bar plot showing the top 15
-gained (blue, negative rank difference = gained in degeneration) and top
-15 lost (red, positive rank difference = lost in degeneration)
+sources.</p>
+</blockquote>
+<p><img
+src="../results/communication/interaction_plots/differential_interactions.png" /></p>
+<blockquote>
+<p><strong>Figure 7B.</strong> Top differential interactions between
+healthy and degenerated tissue. Bar plot showing the top 15 gained
+(blue, negative rank difference = gained in degeneration) and top 15
+lost (red, positive rank difference = lost in degeneration)
 ligand-receptor interactions. Gained interactions are dominated by
 complement signaling (FN1→C5AR1, RPS19→C5AR1) targeting T cells. Lost
 interactions include ephrin (EFNA4→EPHA2), WNT (WNT5A→FZD2), and
 galectin (LGALS1→ITGB1) signaling, indicating loss of homeostatic tissue
-patterning.</figcaption>
-</figure>
+patterning.</p>
+</blockquote>
 <p>The most prominent gained interactions involved complement and immune
 signaling: FN1→C5AR1 and RPS19→C5AR1 targeting T cells from multiple
 cell types, indicating complement pathway activation (Figure 7B). The
@@ -1075,19 +1200,18 @@ Signatures</h3>
 10 unique genes (13 gene-comparison entries) were significantly
 differentially expressed (padj &lt; 0.05), spanning four pain-relevant
 categories (Figure 8):</p>
-<figure>
-<img src="../results/interpretation/pain_genes_heatmap.png"
-alt="Figure 8. Pain-associated gene expression changes across all cell types and comparisons. Heatmap showing log2FC values for 66 pain-related genes (rows) across all powered cell type × comparison combinations (columns). Red indicates upregulation in disease; blue indicates downregulation. Significant results (padj &lt; 0.05) are marked. NP fibrocartilaginous cells show the most pain gene dysregulation, including nerve guidance cues (NTN1, NTN4, UNC5B), inflammatory mediators (IL1B, IL6, PLA2G2A), angiogenic factors (VEGFA, PDGFA), and the endogenous opioid PENK." />
-<figcaption aria-hidden="true">Figure 8. Pain-associated gene expression
-changes across all cell types and comparisons. Heatmap showing log2FC
-values for 66 pain-related genes (rows) across all powered cell type ×
-comparison combinations (columns). Red indicates upregulation in
-disease; blue indicates downregulation. Significant results (padj &lt;
-0.05) are marked. NP fibrocartilaginous cells show the most pain gene
+<p><img src="../results/interpretation/pain_genes_heatmap.png" /></p>
+<blockquote>
+<p><strong>Figure 8.</strong> Pain-associated gene expression changes
+across all cell types and comparisons. Heatmap showing log2FC values for
+66 pain-related genes (rows) across all powered cell type × comparison
+combinations (columns). Red indicates upregulation in disease; blue
+indicates downregulation. Significant results (padj &lt; 0.05) are
+marked. NP fibrocartilaginous cells show the most pain gene
 dysregulation, including nerve guidance cues (NTN1, NTN4, UNC5B),
 inflammatory mediators (IL1B, IL6, PLA2G2A), angiogenic factors (VEGFA,
-PDGFA), and the endogenous opioid PENK.</figcaption>
-</figure>
+PDGFA), and the endogenous opioid PENK.</p>
+</blockquote>
 <p><strong>Nerve guidance cues (4 genes):</strong> NTN1 (Netrin-1) was
 the most robustly significant pain gene, upregulated in NP
 fibrocartilaginous cells in both healthy-vs-all (log2FC = +2.87, padj =
@@ -1398,47 +1522,6 @@ and supplementary tables are provided as supplementary materials.</p>
 <p>This study was performed as a computational meta-analysis of publicly
 available datasets. We thank the original data generators for making
 their data openly accessible.</p>
-<h2 id="figure-legends">Figure Legends</h2>
-<p><strong>Figure 1. Study design and integration.</strong> (A) Dataset
-coverage heatmap showing the number of studies available for each
-condition × compartment combination. (B) Integration method comparison
-across three workflows (CCA, scANVI, STACAS) evaluated by iLISI (batch
-mixing), batch_ASW (overcorrection), and condition_ASW (biological
-signal preservation) for all four compartment objects.</p>
-<p><strong>Figure 2. Single-cell atlas of the human intervertebral
-disc.</strong> UMAP projections of NP and all_cells objects colored by
-Leiden cluster, cell type, coarse classification, annotation confidence,
-study of origin, and harmonized condition. Sixteen cell populations
-identified across three compartments.</p>
-<p><strong>Figure 3. Differential expression in IVD
-degeneration.</strong> (A) Volcano plot of NP fibrocartilaginous cells,
-healthy vs. severe degeneration (556 significant genes). (B) Pseudobulk
-heatmap of top DE genes showing study-level expression patterns.</p>
-<p><strong>Figure 4. Pathway enrichment analysis.</strong> (A) Top 20
-downregulated pathways in NP fibrocartilaginous cells, dominated by cell
-cycle and mitotic programs. (B) Top 20 upregulated pathways, led by
-Epithelial-Mesenchymal Transition and inflammatory signaling. (C)
-IVD-specific gene set enrichment (GSEA NES heatmap) across all powered
-comparisons.</p>
-<p><strong>Figure 5. Transcription factor activity.</strong> Heatmap of
-significant TF activity changes in NP fibrocartilaginous cells across
-three comparisons, showing coordinated suppression of E2F/FOXM1 (cell
-cycle) and activation of TP53/NF-kB (senescence/inflammation).</p>
-<p><strong>Figure 6. Trajectory analysis.</strong> (A) NP UMAP colored
-by cell type, pseudotime, and condition. (B) Pseudotime density
-distributions by condition showing degenerated cells at earlier
-pseudotime. (C) Gene expression dynamics along NP pseudotime for 20 key
-genes.</p>
-<p><strong>Figure 7. Cell-cell communication.</strong> (A) Interaction
-count heatmap in degenerated tissue showing cell type pair interaction
-frequencies. (B) Top differential interactions between healthy and
-degenerated states, highlighting gained complement signaling and lost
-ephrin/WNT/galectin signaling.</p>
-<p><strong>Figure 8. Pain-associated gene expression.</strong> Heatmap
-of log2FC values for 66 pain-related genes across all powered
-comparisons, with significant results marked. Ten unique pain genes are
-significantly dysregulated, spanning nerve guidance, inflammation,
-angiogenesis, and endogenous opioid categories.</p>
 <h2 id="supplementary-figures">Supplementary Figures</h2>
 <p><strong>Supplementary Figure S1.</strong> Per-dataset QC metrics:
 violin plots of gene counts, UMI counts, and mitochondrial percentage
