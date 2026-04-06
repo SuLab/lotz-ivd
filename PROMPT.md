@@ -29,9 +29,17 @@ intervertebral disc (IVD) single-cell RNA-seq data.
    - Contain no stale or placeholder text — all markdown must describe
      what was actually computed
    - Cover every visualization listed in the spec's notebook section
+   - Have all markdown cells (titles, descriptions, status summaries)
+     reflect the current pipeline version and integration method from
+     `analysis_plan.md`. When updating a notebook from a previous run,
+     review and rewrite EVERY markdown cell — not just re-execute code.
 8. Verify the notebook by running:
    `jupyter nbconvert --to notebook --execute --inplace notebooks/XX_name.ipynb`
    If it fails, fix it before proceeding.
+   Then verify no stale version references remain:
+   `python3 -c "import json,sys; nb=json.load(open(sys.argv[1])); [sys.exit(f'STALE: cell {i}: {line.strip()}') for i,c in enumerate(nb['cells']) if c['cell_type']=='markdown' for line in c['source'] if any(old in line for old in ['(v4)', 'scANVI-based'])]" notebooks/XX_name.ipynb`
+   Update the stale-string list in this check to include previous version
+   identifiers whenever the pipeline version changes.
 9. Update `analysis_plan.md`:
    - Move the completed step to the Completed Steps table with today's
      date, outcome, and key parameters/decisions.

@@ -37,6 +37,7 @@ This is a human-gated agentic bioinformatics pipeline. The agent executes one ta
 - Notebooks should be executable independently: a reviewer should be able to run the notebook without re-running the compute scripts.
 - Notebooks serve as the review artifact at human checkpoints.
 - Notebooks are the draft manuscript figures. Each maps to specific figures/tables (see spec files for mapping).
+- **Notebook markdown must match computed results.** Every markdown cell (titles, headers, descriptions, status summaries) must accurately reflect the current pipeline version, integration method, and result statistics. The current pipeline version and integration method are recorded in `analysis_plan.md` — derive version strings from there, never hardcode them. When re-running notebooks after a pipeline change (e.g., switching integration methods), update ALL markdown cells, not just code cells. A notebook with correct outputs but stale documentation text is a bug.
 
 ## Git Usage
 
