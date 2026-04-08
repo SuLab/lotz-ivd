@@ -189,4 +189,4 @@ flowchart TD
 
 ---
 
-*Current version. See `results/VERSION_DIFFERENCES_SUMMARY.md` and `results/V3_V4_COMPARISON.md` for cross-version comparison.*
+*Superseded by v5 (CCA integration, label-free, full-cell). See `results/VERSION_DIFFERENCES_SUMMARY.md` and `docs/version_history.md` for cross-version comparison.*
