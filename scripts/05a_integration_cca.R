@@ -59,11 +59,7 @@ message("  Parallelism: workers = ", N_WORKERS,
 BASE <- normalizePath(file.path(.get_script_dir(), ".."), mustWork = FALSE)
 
 PROC_DIR   <- file.path(BASE, "data", "processed")
-INT_DIR    <- file.path(BASE, "data", "integrated", "cca")
-RESULTS_DIR <- file.path(BASE, "results", "integration")
-
-dir.create(INT_DIR, recursive = TRUE, showWarnings = FALSE)
-dir.create(RESULTS_DIR, recursive = TRUE, showWarnings = FALSE)
+# INT_DIR and RESULTS_DIR set after argument parsing (may depend on --n-hvg)
 
 # ── Integration parameters ───────────────────────────────────────────────
 N_HVG       <- 3000   # Number of highly variable genes
@@ -104,11 +100,31 @@ parser <- ArgumentParser(description = "Module 05A: CCA Integration (Seurat v5)"
 parser$add_argument("--object", type = "character", default = NULL,
                     choices = c("NP", "AF", "CEP", "all_cells"),
                     help = "Process a single object (default: all)")
+parser$add_argument("--n-hvg", type = "integer", default = NULL,
+                    help = "Number of highly variable genes (default: 3000)")
 parser$add_argument("--validate-only", action = "store_true", default = FALSE,
                     help = "Run validation checks only")
 parser$add_argument("--force", action = "store_true", default = FALSE,
                     help = "Re-run even if outputs exist")
 args <- parser$parse_args()
+
+# Override N_HVG if provided via command line
+if (!is.null(args$n_hvg)) {
+  N_HVG <- args$n_hvg
+  message("  N_HVG overridden via --n-hvg: ", N_HVG)
+}
+
+# Set output directories — use HVG-specific subdirectory when non-default
+if (N_HVG != 3000) {
+  INT_DIR    <- file.path(BASE, "data", "integrated", paste0("cca_hvg", N_HVG))
+  RESULTS_DIR <- file.path(BASE, "results", paste0("integration_hvg", N_HVG))
+} else {
+  INT_DIR    <- file.path(BASE, "data", "integrated", "cca")
+  RESULTS_DIR <- file.path(BASE, "results", "integration")
+}
+dir.create(INT_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(RESULTS_DIR, recursive = TRUE, showWarnings = FALSE)
+message("  Output dirs: ", INT_DIR, " / ", RESULTS_DIR)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
