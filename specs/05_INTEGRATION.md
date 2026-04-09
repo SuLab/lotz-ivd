@@ -139,6 +139,10 @@ Per workflow (`{wf}` = `cca`, `scanvi`, `stacas`):
 - `data/integrated/{wf}/all_cells.rds` — integrated all IVD cells
 - `data/integrated/{wf}/integration_metrics.tsv` — quantitative integration assessment
 
+CCA parameter sweep outputs (non-default parameters):
+- `data/integrated/cca_hvg{N}_dims{D}/` — integrated objects for each parameter combination
+- `results/integration_cca_hvg{N}_dims{D}/` — UMAPs and metrics for each combination
+
 Shared outputs (generated once):
 - `results/integration/inclusion_summary.tsv` — study × object inclusion table
 - `results/integration/inclusion_summary.html` — formatted version for manuscript supplement
@@ -187,8 +191,23 @@ Shared outputs (generated once):
 
 All three workflows share these parameters (from Shared Parameters):
 - **Normalization:** SCTransform per sample, regressing out percent.mt
-- **HVGs:** 3,000 selected across all datasets (`SelectIntegrationFeatures(nfeatures = 3000)`)
-- **Dimensionality:** 50 PCs for all PCA, neighbor graph, and integration steps
+- **HVGs:** 3,000 selected across all datasets (`SelectIntegrationFeatures(nfeatures = 3000)`) — default; configurable via `--n-hvg`
+- **Dimensionality:** 50 PCs for all PCA, neighbor graph, and integration steps — default; configurable via `--n-dims`
+
+### CCA Parameter Sweep
+
+The CCA script (`scripts/05a_integration_cca.R`) supports `--n-hvg` and `--n-dims` flags for parameter sweeps. Non-default parameter combinations write to separate output directories (e.g., `data/integrated/cca_hvg2000_dims30/`, `results/integration_cca_hvg2000_dims30/`) to allow side-by-side comparison with the baseline.
+
+Planned parameter combinations:
+
+| HVGs | Dims | Directory suffix | Rationale |
+|------|------|-------------------|-----------|
+| 3,000 | 50 | (default) | Baseline — original v5 integration |
+| 2,000 | 50 | `cca_hvg2000_dims50` | Fewer HVGs to reduce batch-driven features |
+| 3,000 | 30 | `cca_hvg3000_dims30` | Fewer dims to exclude noisy components |
+| 2,000 | 30 | `cca_hvg2000_dims30` | Combined reduction |
+
+The goal is to improve batch mixing (increase iLISI, move batch ASW toward 0) without losing biological signal (condition ASW should not become more negative).
 
 ---
 
@@ -206,19 +225,21 @@ Load per-study h5ad files, apply compartment/sample filters, merge into one obje
 
 ### Step 2 — Normalization
 
-`NormalizeData()` + `FindVariableFeatures(nfeatures = 3000)` + `ScaleData()` — log-normalization that preserves the per-study layer structure required by `IntegrateLayers`. The CCA algorithm itself is normalization-agnostic (it finds shared correlation structure); log-normalization is the standard Seurat v5 `IntegrateLayers` input.
+`NormalizeData()` + `FindVariableFeatures(nfeatures = N_HVG)` + `ScaleData()` — log-normalization that preserves the per-study layer structure required by `IntegrateLayers`. The CCA algorithm itself is normalization-agnostic (it finds shared correlation structure); log-normalization is the standard Seurat v5 `IntegrateLayers` input. N_HVG defaults to 3,000; configurable via `--n-hvg`.
 
 ### Step 3 — PCA and CCA integration
 
 For all objects (NP, AF, CEP, all_cells):
-1. `RunPCA(npcs = 50)` on the merged object
-2. `IntegrateLayers(method = CCAIntegration, orig.reduction = "pca", dims = 1:50)`
+1. `RunPCA(npcs = N_DIMS)` on the merged object
+2. `IntegrateLayers(method = CCAIntegration, orig.reduction = "pca", dims = 1:N_DIMS)`
 3. `JoinLayers()` to recombine after integration
+
+N_DIMS defaults to 50; configurable via `--n-dims`.
 
 ### Step 4 — Dimensionality reduction
 
-1. `RunUMAP(reduction = "integrated.cca", dims = 1:50)`
-2. `FindNeighbors(reduction = "integrated.cca", dims = 1:50)`
+1. `RunUMAP(reduction = "integrated.cca", dims = 1:N_DIMS)`
+2. `FindNeighbors(reduction = "integrated.cca", dims = 1:N_DIMS)`
 
 ---
 
