@@ -102,22 +102,30 @@ parser$add_argument("--object", type = "character", default = NULL,
                     help = "Process a single object (default: all)")
 parser$add_argument("--n-hvg", type = "integer", default = NULL,
                     help = "Number of highly variable genes (default: 3000)")
+parser$add_argument("--n-dims", type = "integer", default = NULL,
+                    help = "Number of PCA/CCA dimensions (default: 50)")
 parser$add_argument("--validate-only", action = "store_true", default = FALSE,
                     help = "Run validation checks only")
 parser$add_argument("--force", action = "store_true", default = FALSE,
                     help = "Re-run even if outputs exist")
 args <- parser$parse_args()
 
-# Override N_HVG if provided via command line
+# Override parameters if provided via command line
 if (!is.null(args$n_hvg)) {
   N_HVG <- args$n_hvg
   message("  N_HVG overridden via --n-hvg: ", N_HVG)
 }
+if (!is.null(args$n_dims)) {
+  N_DIMS <- args$n_dims
+  message("  N_DIMS overridden via --n-dims: ", N_DIMS)
+}
 
-# Set output directories — use HVG-specific subdirectory when non-default
-if (N_HVG != 3000) {
-  INT_DIR    <- file.path(BASE, "data", "integrated", paste0("cca_hvg", N_HVG))
-  RESULTS_DIR <- file.path(BASE, "results", paste0("integration_hvg", N_HVG))
+# Set output directories — use parameter-specific subdirectory when non-default
+is_default <- (N_HVG == 3000 && N_DIMS == 50)
+if (!is_default) {
+  suffix <- paste0("cca_hvg", N_HVG, "_dims", N_DIMS)
+  INT_DIR    <- file.path(BASE, "data", "integrated", suffix)
+  RESULTS_DIR <- file.path(BASE, "results", paste0("integration_", suffix))
 } else {
   INT_DIR    <- file.path(BASE, "data", "integrated", "cca")
   RESULTS_DIR <- file.path(BASE, "results", "integration")
