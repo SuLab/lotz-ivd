@@ -386,6 +386,69 @@ After all three workflows complete, compare them to inform the human checkpoint 
 
 Workflow A (CCA) is used unless it clearly underperforms on batch mixing or biological conservation. If CCA performs adequately, prefer it because it is label-free and avoids any circular dependency between annotation and integration. If CCA underperforms, the comparison informs which alternative to select.
 
+## NP Integration Quality Experiment
+
+### Motivation
+
+The v5 flat CCA integration over-integrated NP (262,967 cells, 8 studies). Metrics showed:
+- iLISI = 3.68 (aggressive batch mixing)
+- condition_ASW = -0.156 (condition signal erased)
+- The `NP_mature_chondrocyte` cluster (186K cells, 72% of NP) had all 5 conditions uniformly mixed
+
+Root cause: strong condition-study confounding. Several studies are 100% one condition (GSE160756 = all healthy, GSE165722 = all degenerated, GSE251686 = all herniated), so CCA treats condition differences as batch artifacts.
+
+### Experiment design
+
+Three integration strategies are compared on NP only, evaluated with an expanded metrics suite:
+
+| Run | Strategy | Normalization | Integration API | Tiering |
+|-----|----------|--------------|-----------------|---------|
+| **tiered_v5** | Tiered CCA | log-norm | Seurat v5 `IntegrateLayers` | mes + non-mes |
+| **flat_v4** | Flat CCA | SCTransform | Seurat v4 `FindIntegrationAnchors` → `IntegrateData` | none |
+| **tiered_v4** | Tiered CCA | SCTransform | Seurat v4 `FindIntegrationAnchors` → `IntegrateData` | mes + non-mes |
+
+**Tier split:** mesenchymal = `cell_class %in% c("mesenchymal", "unknown")` (~259K cells), non-mesenchymal = `cell_class == "non_mesenchymal"` (~3.4K cells).
+
+**Baseline:** existing flat v5 CCA results.
+
+**Rationale for v4-style pipeline:** `FindIntegrationAnchors` uses mutual nearest neighbor filtering, which is more conservative than v5 `IntegrateLayers`. Combined with SCTransform's variance-stabilized residuals, anchors are less biased toward highly expressed genes. Cells without good cross-batch anchors receive less correction — desirable when condition and batch are confounded.
+
+**Rationale for tiering:** CCA dimensions in the flat run are dominated by the mesenchymal majority (98.5%). Separating tiers lets CCA focus on variation within mesenchymal cells rather than spending dimensions on the mes/non-mes axis.
+
+### Scripts
+
+- `scripts/05g_np_experiment.R` — R integration script with `--mode {tiered_v5, flat_v4, tiered_v4, all}`
+- `scripts/05h_np_experiment_metrics.py` — Python expanded metrics (see below)
+
+### Expanded metrics suite
+
+| Category | Metric | Function | Interpretation |
+|----------|--------|----------|---------------|
+| Batch removal | iLISI | `scib_metrics.ilisi_knn()` | Higher = better batch mixing |
+| Batch removal | batch_ASW | `scib_metrics.silhouette_batch()` | Higher = better (rescaled [0,1]) |
+| Bio preservation | cLISI | `scib_metrics.clisi_knn()` on `coarse_label` | Lower = better cell-type purity |
+| Bio preservation | bio_ASW | `scib_metrics.silhouette_label()` on `coarse_label` | Higher = better bio separation |
+| Condition signal | condition_ASW | `sklearn.metrics.silhouette_score()` | More positive = conditions separable |
+| Condition signal | condition_LISI | `scib_metrics.lisi_knn()` on `condition_harmonized` | Lower = conditions preserved |
+| Cluster agreement | ARI | `scib_metrics.nmi_ari_cluster_labels_leiden()` | Higher = Leiden matches biology |
+| Cluster agreement | NMI | same | Higher = better |
+| Continuum signal | Marker variance ratio | within-cluster var / total var (COL2A1, ACAN, SOX9, COL1A1) | Higher = heterogeneity preserved |
+
+### Outputs
+
+```
+data/integrated/np_experiment/{tiered_v5,flat_v4,tiered_v4}/  — RDS objects + bridge exports
+results/integration/np_experiment/comparison_table.tsv         — all metrics, all runs
+results/integration/np_experiment/comparison_table.html        — formatted report
+results/integration/np_experiment/umap_*.png                   — per-run UMAP panels
+```
+
+### Selection criteria
+
+The winning approach should balance batch removal (iLISI > 1.5, indicating meaningful mixing) with biological preservation (condition_ASW near 0 or positive, high bio_ASW, high marker variance ratios). The selected approach replaces the flat v5 CCA for downstream NP analysis (Modules 06–12).
+
+---
+
 ## Automated Validation
 
 Per workflow:
