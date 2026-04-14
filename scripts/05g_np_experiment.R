@@ -26,7 +26,7 @@ suppressPackageStartupMessages({
 })
 
 # ── Parallelism ────────────────────────────────────────────────────────────
-N_WORKERS <- min(parallel::detectCores(), 4)
+N_WORKERS <- min(parallel::detectCores(), 2)
 options(future.globals.maxSize = 200 * 1024^3)
 message("  Parallelism: workers = ", N_WORKERS,
         " (activated during integration), BLAS = ", sessionInfo()$BLAS)
