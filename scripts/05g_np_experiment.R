@@ -327,10 +327,11 @@ integrate_v4_cca <- function(seurat_list, label) {
   message("    PrepSCTIntegration...")
   seurat_list <- PrepSCTIntegration(object.list = seurat_list, anchor.features = features)
 
-  # Find integration anchors (CCA)
+  # Find integration anchors (CCA) — SCT residuals are ~30% denser than log-norm,
+  # forcing sequential plan on v4: 2 workers OOM-kill on ~260K cells / 123 GB RAM.
   message("    FindIntegrationAnchors (CCA, dims = 1:", N_DIMS,
-          ", k.filter = ", k_filter, ")...")
-  plan("multicore", workers = N_WORKERS)
+          ", k.filter = ", k_filter, ", sequential)...")
+  plan("sequential")
   anchors <- FindIntegrationAnchors(
     object.list = seurat_list,
     normalization.method = "SCT",
@@ -340,7 +341,6 @@ integrate_v4_cca <- function(seurat_list, label) {
     k.filter = k_filter,
     verbose = FALSE
   )
-  plan("sequential")
 
   # Integrate data
   message("    IntegrateData (k.weight = ", k_weight, ")...")
