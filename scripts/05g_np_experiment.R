@@ -26,7 +26,7 @@ suppressPackageStartupMessages({
 })
 
 # ── Parallelism ────────────────────────────────────────────────────────────
-N_WORKERS <- min(parallel::detectCores(), 16)
+N_WORKERS <- min(parallel::detectCores(), 4)
 options(future.globals.maxSize = 200 * 1024^3)
 message("  Parallelism: workers = ", N_WORKERS,
         " (activated during integration), BLAS = ", sessionInfo()$BLAS)
@@ -261,14 +261,17 @@ integrate_v5_cca <- function(seurat_list, label) {
   message("    RunPCA (", N_DIMS, " dims)...")
   merged <- RunPCA(merged, npcs = N_DIMS, verbose = FALSE)
 
-  # CCA integration
-  message("    IntegrateLayers (CCA, dims = 1:", N_DIMS, ", workers = ", N_WORKERS, ")...")
+  # CCA integration — explicit HVG restriction to bound per-worker memory
+  hvgs <- VariableFeatures(merged)
+  message("    IntegrateLayers (CCA, dims = 1:", N_DIMS, ", features = ", length(hvgs),
+          " HVGs, workers = ", N_WORKERS, ")...")
   plan("multicore", workers = N_WORKERS)
   merged <- IntegrateLayers(
     object = merged,
     method = CCAIntegration,
     orig.reduction = "pca",
     new.reduction = "integrated.cca",
+    features = hvgs,
     dims = 1:N_DIMS,
     verbose = FALSE
   )
