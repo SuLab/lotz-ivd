@@ -238,7 +238,8 @@ split_tiers <- function(seurat_list) {
 
 integrate_v5_cca <- function(seurat_list, label) {
   message("\n  [", label, "] Running v5 CCA integration (IntegrateLayers)...")
-  total_cells <- sum(sapply(seurat_list, ncol))
+  study_sizes <- sapply(seurat_list, ncol)
+  total_cells <- sum(study_sizes)
   message("    Input: ", length(seurat_list), " studies, ", total_cells, " cells")
 
   # Merge into single v5 layered object
@@ -263,8 +264,10 @@ integrate_v5_cca <- function(seurat_list, label) {
 
   # CCA integration — explicit HVG restriction to bound per-worker memory
   hvgs <- VariableFeatures(merged)
+  # k.weight must be < smallest study size; Seurat default is 100
+  k_weight <- min(100, max(5, min(study_sizes) - 5))
   message("    IntegrateLayers (CCA, dims = 1:", N_DIMS, ", features = ", length(hvgs),
-          " HVGs, workers = ", N_WORKERS, ")...")
+          " HVGs, k.weight = ", k_weight, ", workers = ", N_WORKERS, ")...")
   plan("multicore", workers = N_WORKERS)
   merged <- IntegrateLayers(
     object = merged,
@@ -273,6 +276,7 @@ integrate_v5_cca <- function(seurat_list, label) {
     new.reduction = "integrated.cca",
     features = hvgs,
     dims = 1:N_DIMS,
+    k.weight = k_weight,
     verbose = FALSE
   )
   plan("sequential")
@@ -295,8 +299,13 @@ integrate_v5_cca <- function(seurat_list, label) {
 
 integrate_v4_cca <- function(seurat_list, label) {
   message("\n  [", label, "] Running v4 CCA integration (SCT + FindIntegrationAnchors)...")
-  total_cells <- sum(sapply(seurat_list, ncol))
-  message("    Input: ", length(seurat_list), " studies, ", total_cells, " cells")
+  study_sizes <- sapply(seurat_list, ncol)
+  total_cells <- sum(study_sizes)
+  smallest <- min(study_sizes)
+  # Seurat defaults: k.filter=200 (FindIntegrationAnchors), k.weight=100 (IntegrateData)
+  k_filter <- min(200, max(5, smallest - 5))
+  k_weight <- min(100, max(5, smallest - 5))
+  message("    Input: ", length(seurat_list), " studies, ", total_cells, " cells (smallest = ", smallest, ")")
 
   # SCTransform each study independently
   message("    SCTransform per study...")
@@ -319,7 +328,8 @@ integrate_v4_cca <- function(seurat_list, label) {
   seurat_list <- PrepSCTIntegration(object.list = seurat_list, anchor.features = features)
 
   # Find integration anchors (CCA)
-  message("    FindIntegrationAnchors (CCA, dims = 1:", N_DIMS, ")...")
+  message("    FindIntegrationAnchors (CCA, dims = 1:", N_DIMS,
+          ", k.filter = ", k_filter, ")...")
   plan("multicore", workers = N_WORKERS)
   anchors <- FindIntegrationAnchors(
     object.list = seurat_list,
@@ -327,16 +337,18 @@ integrate_v4_cca <- function(seurat_list, label) {
     anchor.features = features,
     reduction = "cca",
     dims = 1:N_DIMS,
+    k.filter = k_filter,
     verbose = FALSE
   )
   plan("sequential")
 
   # Integrate data
-  message("    IntegrateData...")
+  message("    IntegrateData (k.weight = ", k_weight, ")...")
   integrated <- IntegrateData(
     anchorset = anchors,
     normalization.method = "SCT",
     dims = 1:N_DIMS,
+    k.weight = k_weight,
     verbose = FALSE
   )
 
@@ -522,7 +534,7 @@ run_tiered_v5 <- function(seurat_list, force = FALSE) {
   mes_rds <- file.path(mode_dir, "mesenchymal.rds")
   nonmes_rds <- file.path(mode_dir, "non_mesenchymal.rds")
 
-  if (file.exists(mes_rds) && !force) {
+  if (file.exists(mes_rds) && file.exists(nonmes_rds) && !force) {
     message("\n=== tiered_v5: outputs exist, skipping (use --force) ===")
     return(invisible(NULL))
   }
@@ -533,21 +545,29 @@ run_tiered_v5 <- function(seurat_list, force = FALSE) {
 
   tiers <- split_tiers(seurat_list)
 
-  # Mesenchymal tier
-  mes_result <- integrate_v5_cca(tiers$mesenchymal, "tiered_v5_mesenchymal")
-  plot_umaps(mes_result, "tiered_v5_mesenchymal")
-  export_bridge(mes_result, file.path(mode_dir, "mesenchymal"))
-  message("  Saving ", mes_rds, "...")
-  saveRDS(mes_result, mes_rds)
-  rm(mes_result); gc(verbose = FALSE)
+  # Mesenchymal tier — skip if already saved
+  if (file.exists(mes_rds) && !force) {
+    message("\n  [tiered_v5_mesenchymal] Resuming: mesenchymal.rds already exists, skipping")
+  } else {
+    mes_result <- integrate_v5_cca(tiers$mesenchymal, "tiered_v5_mesenchymal")
+    plot_umaps(mes_result, "tiered_v5_mesenchymal")
+    export_bridge(mes_result, file.path(mode_dir, "mesenchymal"))
+    message("  Saving ", mes_rds, "...")
+    saveRDS(mes_result, mes_rds)
+    rm(mes_result); gc(verbose = FALSE)
+  }
 
   # Non-mesenchymal tier
-  nonmes_result <- process_nonmes_tier(tiers$non_mesenchymal, "tiered_v5", integrate_v5_cca)
-  if (!is.null(nonmes_result)) {
-    plot_umaps(nonmes_result, "tiered_v5_non_mesenchymal")
-    export_bridge(nonmes_result, file.path(mode_dir, "non_mesenchymal"))
-    saveRDS(nonmes_result, nonmes_rds)
-    rm(nonmes_result); gc(verbose = FALSE)
+  if (file.exists(nonmes_rds) && !force) {
+    message("\n  [tiered_v5_non_mesenchymal] Resuming: non_mesenchymal.rds already exists, skipping")
+  } else {
+    nonmes_result <- process_nonmes_tier(tiers$non_mesenchymal, "tiered_v5", integrate_v5_cca)
+    if (!is.null(nonmes_result)) {
+      plot_umaps(nonmes_result, "tiered_v5_non_mesenchymal")
+      export_bridge(nonmes_result, file.path(mode_dir, "non_mesenchymal"))
+      saveRDS(nonmes_result, nonmes_rds)
+      rm(nonmes_result); gc(verbose = FALSE)
+    }
   }
 
   message("\n  tiered_v5 complete")
@@ -587,7 +607,7 @@ run_tiered_v4 <- function(seurat_list, force = FALSE) {
   mes_rds <- file.path(mode_dir, "mesenchymal.rds")
   nonmes_rds <- file.path(mode_dir, "non_mesenchymal.rds")
 
-  if (file.exists(mes_rds) && !force) {
+  if (file.exists(mes_rds) && file.exists(nonmes_rds) && !force) {
     message("\n=== tiered_v4: outputs exist, skipping (use --force) ===")
     return(invisible(NULL))
   }
@@ -598,21 +618,29 @@ run_tiered_v4 <- function(seurat_list, force = FALSE) {
 
   tiers <- split_tiers(seurat_list)
 
-  # Mesenchymal tier
-  mes_result <- integrate_v4_cca(tiers$mesenchymal, "tiered_v4_mesenchymal")
-  plot_umaps(mes_result, "tiered_v4_mesenchymal")
-  export_bridge(mes_result, file.path(mode_dir, "mesenchymal"))
-  message("  Saving ", mes_rds, "...")
-  saveRDS(mes_result, mes_rds)
-  rm(mes_result); gc(verbose = FALSE)
+  # Mesenchymal tier — skip if already saved
+  if (file.exists(mes_rds) && !force) {
+    message("\n  [tiered_v4_mesenchymal] Resuming: mesenchymal.rds already exists, skipping")
+  } else {
+    mes_result <- integrate_v4_cca(tiers$mesenchymal, "tiered_v4_mesenchymal")
+    plot_umaps(mes_result, "tiered_v4_mesenchymal")
+    export_bridge(mes_result, file.path(mode_dir, "mesenchymal"))
+    message("  Saving ", mes_rds, "...")
+    saveRDS(mes_result, mes_rds)
+    rm(mes_result); gc(verbose = FALSE)
+  }
 
   # Non-mesenchymal tier
-  nonmes_result <- process_nonmes_tier(tiers$non_mesenchymal, "tiered_v4", integrate_v4_cca)
-  if (!is.null(nonmes_result)) {
-    plot_umaps(nonmes_result, "tiered_v4_non_mesenchymal")
-    export_bridge(nonmes_result, file.path(mode_dir, "non_mesenchymal"))
-    saveRDS(nonmes_result, nonmes_rds)
-    rm(nonmes_result); gc(verbose = FALSE)
+  if (file.exists(nonmes_rds) && !force) {
+    message("\n  [tiered_v4_non_mesenchymal] Resuming: non_mesenchymal.rds already exists, skipping")
+  } else {
+    nonmes_result <- process_nonmes_tier(tiers$non_mesenchymal, "tiered_v4", integrate_v4_cca)
+    if (!is.null(nonmes_result)) {
+      plot_umaps(nonmes_result, "tiered_v4_non_mesenchymal")
+      export_bridge(nonmes_result, file.path(mode_dir, "non_mesenchymal"))
+      saveRDS(nonmes_result, nonmes_rds)
+      rm(nonmes_result); gc(verbose = FALSE)
+    }
   }
 
   message("\n  tiered_v4 complete")
