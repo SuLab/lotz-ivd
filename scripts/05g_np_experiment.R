@@ -56,6 +56,19 @@ dir.create(RESULTS_DIR, recursive = TRUE, showWarnings = FALSE)
 N_HVG  <- 3000
 N_DIMS <- 50
 
+# ── Stage timing helpers ─────────────────────────────────────────────────
+.STAGE_T0 <- new.env()
+.tic <- function(stage) {
+  assign(stage, Sys.time(), envir = .STAGE_T0)
+  message("    [t] ", stage, " start: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"))
+}
+.toc <- function(stage) {
+  if (!exists(stage, envir = .STAGE_T0)) return(invisible(NULL))
+  dt <- as.numeric(difftime(Sys.time(), get(stage, envir = .STAGE_T0), units = "secs"))
+  message("    [t] ", stage, " end:   ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+          "  (elapsed ", sprintf("%.1f", dt), " s = ", sprintf("%.2f", dt / 60), " min)")
+}
+
 # ── NP study assignments ─────────────────────────────────────────────────
 NP_STUDIES <- list(
   list(acc = "GSE160756", comp = "NP"),
@@ -255,12 +268,16 @@ integrate_v5_cca <- function(seurat_list, label) {
 
   # Normalize + HVGs + Scale (per-layer, preserves split structure)
   message("    NormalizeData + FindVariableFeatures + ScaleData...")
+  .tic("v5_norm_hvg_scale")
   merged <- NormalizeData(merged, verbose = FALSE)
   merged <- FindVariableFeatures(merged, nfeatures = N_HVG, verbose = FALSE)
   merged <- ScaleData(merged, verbose = FALSE)
+  .toc("v5_norm_hvg_scale")
 
   message("    RunPCA (", N_DIMS, " dims)...")
+  .tic("v5_pca")
   merged <- RunPCA(merged, npcs = N_DIMS, verbose = FALSE)
+  .toc("v5_pca")
 
   # CCA integration — explicit HVG restriction to bound per-worker memory
   hvgs <- VariableFeatures(merged)
@@ -268,6 +285,7 @@ integrate_v5_cca <- function(seurat_list, label) {
   k_weight <- min(100, max(5, min(study_sizes) - 5))
   message("    IntegrateLayers (CCA, dims = 1:", N_DIMS, ", features = ", length(hvgs),
           " HVGs, k.weight = ", k_weight, ", workers = ", N_WORKERS, ")...")
+  .tic("v5_integrate_layers")
   plan("multicore", workers = N_WORKERS)
   merged <- IntegrateLayers(
     object = merged,
@@ -280,13 +298,16 @@ integrate_v5_cca <- function(seurat_list, label) {
     verbose = FALSE
   )
   plan("sequential")
+  .toc("v5_integrate_layers")
 
   merged <- JoinLayers(merged)
 
   # Post-integration
   message("    UMAP + neighbors...")
+  .tic("v5_umap_neighbors")
   merged <- RunUMAP(merged, reduction = "integrated.cca", dims = 1:N_DIMS, verbose = FALSE)
   merged <- FindNeighbors(merged, reduction = "integrated.cca", dims = 1:N_DIMS, verbose = FALSE)
+  .toc("v5_umap_neighbors")
 
   message("    v5 CCA complete: ", ncol(merged), " cells")
   return(merged)
@@ -309,28 +330,37 @@ integrate_v4_cca <- function(seurat_list, label) {
 
   # SCTransform each study independently
   message("    SCTransform per study...")
+  .tic("v4_sctransform_total")
   for (acc in names(seurat_list)) {
     n <- ncol(seurat_list[[acc]])
     message("      ", acc, " (", n, " cells)...")
+    .tic(paste0("v4_sct_", acc))
     seurat_list[[acc]] <- SCTransform(
       seurat_list[[acc]],
       vars.to.regress = "pct_counts_mt",
       verbose = FALSE
     )
+    .toc(paste0("v4_sct_", acc))
   }
+  .toc("v4_sctransform_total")
 
   # Select integration features
   message("    SelectIntegrationFeatures (", N_HVG, " features)...")
+  .tic("v4_select_features")
   features <- SelectIntegrationFeatures(object.list = seurat_list, nfeatures = N_HVG)
+  .toc("v4_select_features")
 
   # Prep SCT integration
   message("    PrepSCTIntegration...")
+  .tic("v4_prep_sct")
   seurat_list <- PrepSCTIntegration(object.list = seurat_list, anchor.features = features)
+  .toc("v4_prep_sct")
 
   # Find integration anchors (CCA) — SCT residuals are ~30% denser than log-norm,
   # forcing sequential plan on v4: 2 workers OOM-kill on ~260K cells / 123 GB RAM.
   message("    FindIntegrationAnchors (CCA, dims = 1:", N_DIMS,
           ", k.filter = ", k_filter, ", sequential)...")
+  .tic("v4_find_anchors")
   plan("sequential")
   anchors <- FindIntegrationAnchors(
     object.list = seurat_list,
@@ -341,9 +371,11 @@ integrate_v4_cca <- function(seurat_list, label) {
     k.filter = k_filter,
     verbose = FALSE
   )
+  .toc("v4_find_anchors")
 
   # Integrate data
   message("    IntegrateData (k.weight = ", k_weight, ")...")
+  .tic("v4_integrate_data")
   integrated <- IntegrateData(
     anchorset = anchors,
     normalization.method = "SCT",
@@ -351,6 +383,7 @@ integrate_v4_cca <- function(seurat_list, label) {
     k.weight = k_weight,
     verbose = FALSE
   )
+  .toc("v4_integrate_data")
 
   rm(seurat_list, anchors)
   gc(verbose = FALSE)
@@ -358,10 +391,12 @@ integrate_v4_cca <- function(seurat_list, label) {
   # Post-integration on "integrated" assay
   DefaultAssay(integrated) <- "integrated"
   message("    ScaleData + RunPCA on integrated assay...")
+  .tic("v4_scale_pca_umap_neighbors")
   integrated <- ScaleData(integrated, verbose = FALSE)
   integrated <- RunPCA(integrated, npcs = N_DIMS, verbose = FALSE)
   integrated <- RunUMAP(integrated, reduction = "pca", dims = 1:N_DIMS, verbose = FALSE)
   integrated <- FindNeighbors(integrated, reduction = "pca", dims = 1:N_DIMS, verbose = FALSE)
+  .toc("v4_scale_pca_umap_neighbors")
 
   message("    v4 CCA complete: ", ncol(integrated), " cells")
   return(integrated)
