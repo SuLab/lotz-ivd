@@ -48,9 +48,11 @@ BASE <- normalizePath(file.path(.get_script_dir(), ".."), mustWork = FALSE)
 PROC_DIR    <- file.path(BASE, "data", "processed")
 EXP_DIR     <- file.path(BASE, "data", "integrated", "np_experiment")
 RESULTS_DIR <- file.path(BASE, "results", "integration", "np_experiment")
+ANCHOR_CACHE_DIR <- file.path(EXP_DIR, "_anchor_cache")
 
 dir.create(EXP_DIR, recursive = TRUE, showWarnings = FALSE)
 dir.create(RESULTS_DIR, recursive = TRUE, showWarnings = FALSE)
+dir.create(ANCHOR_CACHE_DIR, recursive = TRUE, showWarnings = FALSE)
 
 # ── Integration parameters ───────────────────────────────────────────────
 N_HVG  <- 3000
@@ -318,7 +320,7 @@ integrate_v5_cca <- function(seurat_list, label) {
 # INTEGRATION: Seurat v4 SCT + FindIntegrationAnchors + IntegrateData
 # ═══════════════════════════════════════════════════════════════════════════
 
-integrate_v4_cca <- function(seurat_list, label) {
+integrate_v4_cca <- function(seurat_list, label, force = FALSE) {
   message("\n  [", label, "] Running v4 CCA integration (SCT + FindIntegrationAnchors)...")
   study_sizes <- sapply(seurat_list, ncol)
   total_cells <- sum(study_sizes)
@@ -328,50 +330,71 @@ integrate_v4_cca <- function(seurat_list, label) {
   k_weight <- min(100, max(5, smallest - 5))
   message("    Input: ", length(seurat_list), " studies, ", total_cells, " cells (smallest = ", smallest, ")")
 
-  # SCTransform each study independently
-  message("    SCTransform per study...")
-  .tic("v4_sctransform_total")
-  for (acc in names(seurat_list)) {
-    n <- ncol(seurat_list[[acc]])
-    message("      ", acc, " (", n, " cells)...")
-    .tic(paste0("v4_sct_", acc))
-    seurat_list[[acc]] <- SCTransform(
-      seurat_list[[acc]],
-      vars.to.regress = "pct_counts_mt",
+  # Anchor checkpoint — anchorset's @object.list contains the SCT-prepped objects,
+  # so this RDS is sufficient to resume directly into IntegrateData.
+  anchor_cache <- file.path(ANCHOR_CACHE_DIR, paste0(label, "_anchors.rds"))
+
+  if (file.exists(anchor_cache) && !force) {
+    message("    [cache] Loading anchorset from ", anchor_cache, " — skipping SCT + FindIntegrationAnchors")
+    .tic("v4_load_anchor_cache")
+    anchors <- readRDS(anchor_cache)
+    .toc("v4_load_anchor_cache")
+  } else {
+    # SCTransform each study independently
+    message("    SCTransform per study...")
+    .tic("v4_sctransform_total")
+    for (acc in names(seurat_list)) {
+      n <- ncol(seurat_list[[acc]])
+      message("      ", acc, " (", n, " cells)...")
+      .tic(paste0("v4_sct_", acc))
+      seurat_list[[acc]] <- SCTransform(
+        seurat_list[[acc]],
+        vars.to.regress = "pct_counts_mt",
+        verbose = FALSE
+      )
+      .toc(paste0("v4_sct_", acc))
+    }
+    .toc("v4_sctransform_total")
+
+    # Select integration features
+    message("    SelectIntegrationFeatures (", N_HVG, " features)...")
+    .tic("v4_select_features")
+    features <- SelectIntegrationFeatures(object.list = seurat_list, nfeatures = N_HVG)
+    .toc("v4_select_features")
+
+    # Prep SCT integration
+    message("    PrepSCTIntegration...")
+    .tic("v4_prep_sct")
+    seurat_list <- PrepSCTIntegration(object.list = seurat_list, anchor.features = features)
+    .toc("v4_prep_sct")
+
+    # Find integration anchors (CCA) — SCT residuals are ~30% denser than log-norm,
+    # forcing sequential plan on v4: 2 workers OOM-kill on ~260K cells / 123 GB RAM.
+    message("    FindIntegrationAnchors (CCA, dims = 1:", N_DIMS,
+            ", k.filter = ", k_filter, ", sequential)...")
+    .tic("v4_find_anchors")
+    plan("sequential")
+    anchors <- FindIntegrationAnchors(
+      object.list = seurat_list,
+      normalization.method = "SCT",
+      anchor.features = features,
+      reduction = "cca",
+      dims = 1:N_DIMS,
+      k.filter = k_filter,
       verbose = FALSE
     )
-    .toc(paste0("v4_sct_", acc))
+    .toc("v4_find_anchors")
+
+    # Persist anchorset before the memory-hungry IntegrateData step so a
+    # downstream OOM does not force a 4+ hour SCT/anchor recompute.
+    message("    [cache] Saving anchorset to ", anchor_cache, "...")
+    .tic("v4_save_anchor_cache")
+    saveRDS(anchors, anchor_cache)
+    .toc("v4_save_anchor_cache")
+
+    rm(seurat_list)
+    gc(verbose = FALSE)
   }
-  .toc("v4_sctransform_total")
-
-  # Select integration features
-  message("    SelectIntegrationFeatures (", N_HVG, " features)...")
-  .tic("v4_select_features")
-  features <- SelectIntegrationFeatures(object.list = seurat_list, nfeatures = N_HVG)
-  .toc("v4_select_features")
-
-  # Prep SCT integration
-  message("    PrepSCTIntegration...")
-  .tic("v4_prep_sct")
-  seurat_list <- PrepSCTIntegration(object.list = seurat_list, anchor.features = features)
-  .toc("v4_prep_sct")
-
-  # Find integration anchors (CCA) — SCT residuals are ~30% denser than log-norm,
-  # forcing sequential plan on v4: 2 workers OOM-kill on ~260K cells / 123 GB RAM.
-  message("    FindIntegrationAnchors (CCA, dims = 1:", N_DIMS,
-          ", k.filter = ", k_filter, ", sequential)...")
-  .tic("v4_find_anchors")
-  plan("sequential")
-  anchors <- FindIntegrationAnchors(
-    object.list = seurat_list,
-    normalization.method = "SCT",
-    anchor.features = features,
-    reduction = "cca",
-    dims = 1:N_DIMS,
-    k.filter = k_filter,
-    verbose = FALSE
-  )
-  .toc("v4_find_anchors")
 
   # Integrate data
   message("    IntegrateData (k.weight = ", k_weight, ")...")
@@ -385,7 +408,7 @@ integrate_v4_cca <- function(seurat_list, label) {
   )
   .toc("v4_integrate_data")
 
-  rm(seurat_list, anchors)
+  rm(anchors)
   gc(verbose = FALSE)
 
   # Post-integration on "integrated" assay
@@ -529,7 +552,7 @@ plot_umaps <- function(obj, run_label) {
 # PROCESS NON-MESENCHYMAL TIER (shared logic for tiered runs)
 # ═══════════════════════════════════════════════════════════════════════════
 
-process_nonmes_tier <- function(nonmes_list, mode_prefix, integrate_fn) {
+process_nonmes_tier <- function(nonmes_list, mode_prefix, integrate_fn, force = FALSE) {
   # Safeguard: exclude studies with <50 non-mesenchymal cells
   study_sizes <- sapply(nonmes_list, ncol)
   keep <- names(study_sizes)[study_sizes >= 50]
@@ -551,7 +574,9 @@ process_nonmes_tier <- function(nonmes_list, mode_prefix, integrate_fn) {
     message("    Only ", length(nonmes_list), " studies with >=50 cells — using simple merge")
     result <- integrate_simple(nonmes_list, paste0(mode_prefix, "_non_mesenchymal"))
   } else {
-    result <- integrate_fn(nonmes_list, paste0(mode_prefix, "_non_mesenchymal"))
+    fn_args <- list(nonmes_list, paste0(mode_prefix, "_non_mesenchymal"))
+    if ("force" %in% names(formals(integrate_fn))) fn_args$force <- force
+    result <- do.call(integrate_fn, fn_args)
   }
 
   return(result)
@@ -624,7 +649,7 @@ run_flat_v4 <- function(seurat_list, force = FALSE) {
   message("MODE: flat_v4 — Seurat v4 SCT + CCA (no tier split)")
   message(paste(rep("=", 60), collapse = ""))
 
-  result <- integrate_v4_cca(seurat_list, "flat_v4")
+  result <- integrate_v4_cca(seurat_list, "flat_v4", force = force)
   plot_umaps(result, "flat_v4")
   export_bridge(result, file.path(mode_dir, "all"))
   message("  Saving ", rds_path, "...")
@@ -657,7 +682,7 @@ run_tiered_v4 <- function(seurat_list, force = FALSE) {
   if (file.exists(mes_rds) && !force) {
     message("\n  [tiered_v4_mesenchymal] Resuming: mesenchymal.rds already exists, skipping")
   } else {
-    mes_result <- integrate_v4_cca(tiers$mesenchymal, "tiered_v4_mesenchymal")
+    mes_result <- integrate_v4_cca(tiers$mesenchymal, "tiered_v4_mesenchymal", force = force)
     plot_umaps(mes_result, "tiered_v4_mesenchymal")
     export_bridge(mes_result, file.path(mode_dir, "mesenchymal"))
     message("  Saving ", mes_rds, "...")
@@ -669,7 +694,7 @@ run_tiered_v4 <- function(seurat_list, force = FALSE) {
   if (file.exists(nonmes_rds) && !force) {
     message("\n  [tiered_v4_non_mesenchymal] Resuming: non_mesenchymal.rds already exists, skipping")
   } else {
-    nonmes_result <- process_nonmes_tier(tiers$non_mesenchymal, "tiered_v4", integrate_v4_cca)
+    nonmes_result <- process_nonmes_tier(tiers$non_mesenchymal, "tiered_v4", integrate_v4_cca, force = force)
     if (!is.null(nonmes_result)) {
       plot_umaps(nonmes_result, "tiered_v4_non_mesenchymal")
       export_bridge(nonmes_result, file.path(mode_dir, "non_mesenchymal"))
