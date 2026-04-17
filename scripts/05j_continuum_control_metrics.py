@@ -58,6 +58,7 @@ KNN_JOBS = 16
 SWEEP_RESOLUTIONS = [0.1, 0.25, 0.5, 1.0, 2.0]
 MARKER_GENES = ["COL2A1", "ACAN", "SOX9", "COL1A1"]
 RNG_SEED = 42
+MIN_CELLS_PER_STUDY = 500           # skip studies smaller than this in within-study test
 
 # Each run/scope: embedding + metadata + counts
 RUN_SCOPES = {
@@ -214,6 +215,60 @@ def compute_knn_spatial_metrics(embedding, expr_by_gene, k=KNN_K):
 
 
 # ═════════════════════════════════════════════════════════════════════════
+# OPTION 3c — WITHIN-STUDY MORAN'S I (batch-confound test)
+# ═════════════════════════════════════════════════════════════════════════
+
+def _morans_i_binary_knn(expr, knn_indices, k):
+    """Moran's I with binary KNN weights on a pre-built neighbor index."""
+    z = expr - expr.mean()
+    denom = float(np.sum(z ** 2))
+    if denom < 1e-12:
+        return np.nan
+    neighbor_sum_z = z[knn_indices].sum(axis=1)
+    return float(np.sum(z * neighbor_sum_z) / (k * denom))
+
+
+def compute_within_study_morans_i(embedding, metadata, expr_by_gene,
+                                   k=KNN_K, min_cells=MIN_CELLS_PER_STUDY):
+    """For each study with at least `min_cells` cells, build a KNN graph
+    restricted to that study's cells and compute Moran's I per marker.
+
+    Tests whether the pooled Moran's I is driven by *within-study* spatial
+    structure (biology) or *between-study* structure (batch). If a method
+    fails to mix studies, the pooled Moran's I captures the inter-study
+    separation of cells that differ systematically in marker expression,
+    inflating the value even when within-study biology is flat.
+
+    Returns list of dicts, one per (study, gene).
+    """
+    rows = []
+    studies = metadata["study"].value_counts()
+    studies = studies[studies >= min_cells].index.tolist()
+    print(f"    Studies with ≥{min_cells} cells: {len(studies)}")
+
+    for study in studies:
+        mask = (metadata["study"] == study).values
+        n_study = int(mask.sum())
+        emb_s = embedding[mask]
+        # Safe k for this study
+        k_study = min(k, n_study - 2)
+        nn = pynndescent(emb_s, n_neighbors=k_study + 1,
+                         random_state=RNG_SEED, n_jobs=KNN_JOBS)
+        idx_s = nn.indices[:, 1:]
+        for g, expr in expr_by_gene.items():
+            if expr is None:
+                rows.append({"study": study, "n_cells_study": n_study,
+                             "k_used": k_study, "gene": g, "morans_i": np.nan})
+                continue
+            expr_s = expr[mask]
+            mi = _morans_i_binary_knn(expr_s, idx_s, k_study)
+            rows.append({"study": study, "n_cells_study": n_study,
+                         "k_used": k_study, "gene": g, "morans_i": mi})
+            print(f"    {study} (n={n_study}): {g} Moran's I = {mi:.4f}")
+    return rows
+
+
+# ═════════════════════════════════════════════════════════════════════════
 # OPTION 2 — LEIDEN RESOLUTION SWEEP
 # ═════════════════════════════════════════════════════════════════════════
 
@@ -278,10 +333,17 @@ def main():
     parser.add_argument("--run", type=str, default=None,
                         choices=list(RUN_SCOPES))
     parser.add_argument("--skip-sweep", action="store_true",
-                        help="Only compute KNN neighborhood var_ratio")
+                        help="Skip Leiden resolution sweep")
     parser.add_argument("--skip-knn", action="store_true",
-                        help="Only compute resolution sweep")
+                        help="Skip pooled KNN metrics")
+    parser.add_argument("--skip-within-study", action="store_true",
+                        help="Skip within-study Moran's I (batch-confound test)")
+    parser.add_argument("--only-within-study", action="store_true",
+                        help="Only compute within-study Moran's I")
     args = parser.parse_args()
+    if args.only_within_study:
+        args.skip_knn = True
+        args.skip_sweep = True
 
     print("=" * 60)
     print("NP Continuum Preservation Controls")
@@ -294,6 +356,7 @@ def main():
 
     knn_rows = []
     sweep_rows = []
+    within_study_rows = []
 
     for run_name, scopes in runs.items():
         for scope_info in scopes:
@@ -328,6 +391,14 @@ def main():
                         "n_cells": embedding.shape[0], **r,
                     })
 
+            if not args.skip_within_study:
+                print("  --- Option 3c: within-study Moran's I ---")
+                for r in compute_within_study_morans_i(
+                        embedding, metadata, expr_by_gene):
+                    within_study_rows.append({
+                        "run": run_name, "scope": scope, **r,
+                    })
+
             del embedding, expr_by_gene
 
     # Save outputs
@@ -343,6 +414,11 @@ def main():
         pd.DataFrame(sweep_rows).to_csv(sweep_path, sep="\t", index=False,
                                         float_format="%.4f")
         print(f"Saved: {sweep_path}")
+    if within_study_rows:
+        ws_path = RESULTS_DIR / "continuum_within_study_morans_i.tsv"
+        pd.DataFrame(within_study_rows).to_csv(ws_path, sep="\t", index=False,
+                                               float_format="%.4f")
+        print(f"Saved: {ws_path}")
 
     print(f"\nCompleted: {datetime.now():%Y-%m-%d %H:%M:%S}")
 
