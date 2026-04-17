@@ -130,9 +130,23 @@ Scripts: `scripts/05g_np_experiment.R` (runs the 3 experimental arms), `scripts/
 - **Bio_ASW and batch_ASW** favor v4 methods modestly, but at the cost of continuum preservation.
 - Non-mesenchymal-scope metrics (3,393 cells): tiered_v5 and tiered_v4 give similar values; small tier so less informative for the main question.
 
-**Conclusion:** no change to the v5 pipeline. The v5 workflow selected at the 2026-03-25 checkpoint preserves the NP mesenchymal continuum better than any of the three alternatives tested here.
+**Initial conclusion (2026-04-17 AM):** no change to the v5 pipeline — based on cluster-based `var_ratio_*` metric showing v5 preserving marker variance better.
 
-Raw metrics: `results/integration/np_experiment/comparison_table.tsv`.
+**Revised conclusion (2026-04-17 PM) after follow-up controls:** SWITCH NP primary from flat v5 CCA to tiered v4 CCA.
+
+Four follow-up controls (cluster-free KNN variance, pooled Moran's I, within-study Moran's I, Leiden resolution sweep; script `scripts/05j_continuum_control_metrics.py`) falsified the original claim. v5 partially flattens within-donor marker spatial structure that v4 preserves (~20–30% lower Moran's I, confirmed not a between-study batch artifact). For the atlas's DE-between-conditions goal, tiered v4 is better on every decision-relevant metric:
+
+- condition_ASW: −0.020 (tiered v4) vs −0.165 (flat v5) — condition signal preserved
+- cLISI: 0.729 vs 0.869 — cleaner cell-type purity
+- bio_ASW: 0.510 vs 0.417 — better cell-type separability
+- Per-study COL1A1 Moran's I: 0.653 vs 0.491 — within-donor gradient preserved
+- n_clusters at res=0.5 (mes): 18 vs 13 — more powered DE comparisons
+
+Flat v5's only win is UMAP coherence (visualization), which doesn't affect pseudobulk DE.
+
+Execution plan: [`docs/np_switch_to_tiered_v4_plan.md`](docs/np_switch_to_tiered_v4_plan.md). AF and CEP remain on v5 (not in dispute). Status: **proposal pending execution approval**. Includes Phase 5 DE-concordance gate before declaring tiered v4 primary; v5 results archived under `results_v5_np_cca/` for comparison.
+
+Raw metrics: `results/integration/np_experiment/comparison_table.tsv`, `continuum_knn_var_ratio.tsv`, `continuum_sweep.tsv`, `continuum_within_study_morans_i.tsv`.
 
 ---
 
