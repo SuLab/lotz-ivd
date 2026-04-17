@@ -35,10 +35,14 @@ on every decision-relevant axis:
 | COL1A1 Moran's I (within-study mean) | 0.491 | **0.653** | tiered v4 |
 | COL2A1 / ACAN / SOX9 Moran's I (pooled & within-study) | 0.29–0.60 | **0.34–0.60** | tiered v4 |
 | n_clusters at res=0.5 (mes tier) | 13 | 18 | tiered v4 (more DE contrasts) |
-| UMAP study-fragmentation | none visible | visible GSE251686 / GSE189916 lobes | flat v5 |
+| UMAP topology | smooth single blob, studies mixed | coherent main mass, studies mixed through bulk, thin edge wisps | ~tied |
 
-The only metric flat v5 wins on is the absence of visible study lobes in
-the UMAP — a visualization property, not a pseudobulk DE property.
+Tiered v4 wins or ties on every decision-relevant metric. (An earlier
+draft of this plan claimed flat v5 won on "UMAP coherence" — that
+was overstated on close inspection of the tiered_v4 mes UMAP, which
+is itself coherent with studies mixed through the main mass. The
+flat_v4 UMAP does show more visible fragmentation, which is one
+reason to prefer tiered over flat within the v4 family.)
 
 The original `var_ratio_*` claim that v5 "preserves the continuum better"
 was falsified by four follow-up controls (cluster-free KNN variance,

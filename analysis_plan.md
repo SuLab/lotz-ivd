@@ -142,7 +142,7 @@ Four follow-up controls (cluster-free KNN variance, pooled Moran's I, within-stu
 - Per-study COL1A1 Moran's I: 0.653 vs 0.491 — within-donor gradient preserved
 - n_clusters at res=0.5 (mes): 18 vs 13 — more powered DE comparisons
 
-Flat v5's only win is UMAP coherence (visualization), which doesn't affect pseudobulk DE.
+An earlier draft claimed flat v5 also won on UMAP coherence, but close inspection of the tiered_v4 mes UMAP shows all 8 studies mixed through the main mass — the fragmentation claim was overstated for tiered_v4 (flat_v4 does fragment more visibly, which is one argument for tiered over flat within v4).
 
 Execution plan: [`docs/np_switch_to_tiered_v4_plan.md`](docs/np_switch_to_tiered_v4_plan.md). AF and CEP remain on v5 (not in dispute). Status: **proposal pending execution approval**. Includes Phase 5 DE-concordance gate before declaring tiered v4 primary; v5 results archived under `results_v5_np_cca/` for comparison.
 
