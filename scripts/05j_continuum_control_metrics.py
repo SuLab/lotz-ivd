@@ -154,12 +154,27 @@ def logn_expr(counts, gene_names, markers):
 
 
 # ═════════════════════════════════════════════════════════════════════════
-# OPTION 3 — CLUSTER-FREE KNN NEIGHBORHOOD VARIANCE
+# OPTION 3 — CLUSTER-FREE KNN METRICS
 # ═════════════════════════════════════════════════════════════════════════
 
-def compute_knn_var_ratio(embedding, expr_by_gene, k=KNN_K):
-    """For each cell, variance of marker expression across its k nearest
-    neighbors in the embedding. Averaged and normalized by total variance.
+def compute_knn_spatial_metrics(embedding, expr_by_gene, k=KNN_K):
+    """Two cluster-free metrics on a single k-NN graph:
+
+      knn_var_ratio  — mean(var(expr over each cell's k-NN)) / total var.
+                       Local: asks "are my neighbors similar TO EACH OTHER?"
+                       Low = smooth gradient; high (→1) = no local structure.
+
+      morans_i       — Moran's I spatial autocorrelation on the k-NN graph
+                       with binary weights. Global: asks "am I similar to
+                       THE MEAN OF my neighbors, relative to total variance?"
+                       With binary KNN weights this reduces to
+                           I = sum_i z_i · mean_neighbors(z_i) / sum_i z_i²
+                       where z = x - mean(x). Range roughly [-1, 1];
+                       higher = stronger spatial autocorrelation
+                       = continuum preserved at graph scale.
+
+    The two answer different questions and can diverge: neighborhood
+    variance misses global pocket arrangement that Moran's I picks up.
     """
     print(f"    Building KNN (k={k}) on full embedding...")
     # pynndescent returns NeighborsResults with .indices (n_cells, k+1 incl self)
@@ -171,18 +186,30 @@ def compute_knn_var_ratio(embedding, expr_by_gene, k=KNN_K):
     out = {}
     for g, expr in expr_by_gene.items():
         if expr is None:
-            out[g] = np.nan
+            out[f"knn_var_ratio_{g}"] = np.nan
+            out[f"morans_i_{g}"] = np.nan
             continue
         total_var = float(np.var(expr))
         if total_var < 1e-10:
-            out[g] = np.nan
+            out[f"knn_var_ratio_{g}"] = np.nan
+            out[f"morans_i_{g}"] = np.nan
             continue
-        # Vectorized: variance of expression over each cell's k neighbors
-        neighbor_expr = expr[idx]           # (n_cells, k)
-        neighbor_var = np.var(neighbor_expr, axis=1)   # (n_cells,)
-        ratio = float(np.mean(neighbor_var) / total_var)
-        out[g] = ratio
-        print(f"    knn_var_ratio_{g} (k={k}): {ratio:.4f}")
+
+        # --- Local: KNN neighborhood variance ---
+        neighbor_expr = expr[idx]                     # (n_cells, k)
+        neighbor_var = np.var(neighbor_expr, axis=1)  # (n_cells,)
+        knn_ratio = float(np.mean(neighbor_var) / total_var)
+        out[f"knn_var_ratio_{g}"] = knn_ratio
+
+        # --- Global: Moran's I with binary KNN weights ---
+        z = expr - expr.mean()
+        neighbor_sum_z = z[idx].sum(axis=1)           # (n_cells,)
+        denom = float(np.sum(z ** 2))
+        numerator = float(np.sum(z * neighbor_sum_z))
+        morans_i = numerator / (k * denom)
+        out[f"morans_i_{g}"] = morans_i
+
+        print(f"    {g}: knn_var_ratio={knn_ratio:.4f}  morans_i={morans_i:.4f}")
     return out
 
 
@@ -285,12 +312,12 @@ def main():
             del counts
 
             if not args.skip_knn:
-                print("  --- Option 3: KNN neighborhood variance ---")
-                knn_res = compute_knn_var_ratio(embedding, expr_by_gene)
+                print("  --- Option 3: cluster-free KNN metrics ---")
+                knn_res = compute_knn_spatial_metrics(embedding, expr_by_gene)
                 knn_rows.append({
                     "run": run_name, "scope": scope,
                     "n_cells": embedding.shape[0], "k": KNN_K,
-                    **{f"knn_var_ratio_{g}": v for g, v in knn_res.items()},
+                    **knn_res,
                 })
 
             if not args.skip_sweep:
@@ -305,6 +332,8 @@ def main():
 
     # Save outputs
     if knn_rows:
+        # Filename kept as continuum_knn_var_ratio.tsv for backwards
+        # compatibility; schema now also carries morans_i_<GENE> columns.
         knn_path = RESULTS_DIR / "continuum_knn_var_ratio.tsv"
         pd.DataFrame(knn_rows).to_csv(knn_path, sep="\t", index=False,
                                       float_format="%.4f")
