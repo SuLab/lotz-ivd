@@ -467,6 +467,16 @@ export_bridge <- function(obj, export_dir) {
   message("    Assays: ", paste(names(obj@assays), collapse = ", "))
   message("    Reductions: ", paste(names(obj@reductions), collapse = ", "))
 
+  # v4 SCT-per-study workflow leaves RNA assay split across studies;
+  # LayerData(layer="counts") then returns only the first study's layer.
+  if ("RNA" %in% names(obj@assays)) {
+    tryCatch({
+      obj[["RNA"]] <- JoinLayers(obj[["RNA"]])
+    }, error = function(e) {
+      message("    (JoinLayers skipped: ", conditionMessage(e), ")")
+    })
+  }
+
   # 1. Export raw counts from RNA assay
   counts <- NULL
   tryCatch({

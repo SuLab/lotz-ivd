@@ -111,6 +111,31 @@ Uses `Run.STACAS()` with coarse_label anchors. Objects >100K cells downsampled.
 
 ---
 
+## NP Integration Quality Experiment (2026-04-17)
+
+Follow-up experiment addressing the over-integration concern: does flat CCA on the full NP object erase the chondrocyte ↔ fibrocartilaginous continuum? Four integration strategies compared on the 262,967-cell NP object using expanded metrics (iLISI, batch_ASW, cLISI, bio_ASW, condition metrics, Leiden-vs-coarse_label NMI/ARI, and marker-variance preservation for COL2A1/ACAN/SOX9/COL1A1).
+
+Scripts: `scripts/05g_np_experiment.R` (runs the 3 experimental arms), `scripts/05h_np_experiment_metrics.py` (metric computation). Bridge-count export bug repaired via `scripts/05i_repair_v4_bridge_counts.R`.
+
+| Run (mesenchymal scope) | iLISI↑ | batch_ASW | cLISI↓ | bio_ASW↑ | var_COL1A1↑ | var_COL2A1↑ |
+|---|---|---|---|---|---|---|
+| baseline_flat_v5 (v5 primary) | 0.258 | 0.850 | 0.869 | 0.417 | **0.839** | **0.679** |
+| tiered_v5 (v5 with mes/non-mes split) | 0.209 | 0.869 | 0.799 | 0.455 | 0.799 | 0.674 |
+| flat_v4 (v4 SCT + CCA, no split) | 0.209 | 0.796 | 0.888 | 0.500 | 0.558 | 0.651 |
+| tiered_v4 (v4 SCT + CCA, with split) | 0.216 | 0.861 | **0.729** | **0.510** | 0.552 | 0.630 |
+
+**Takeaways:**
+- **Marker-variance preservation (the continuum signal)** separates v5 from v4: COL1A1 variance ratio collapses from ~0.80 (v5) to ~0.55 (v4). Tiering within a method has a small effect; the v5 vs v4 axis dominates. **Supports retaining v5 CCA as primary for NP.**
+- **Cell-type purity (cLISI)** improves with tiering in both v4 and v5 (0.87→0.80 and 0.89→0.73), but cLISI was already adequate under baseline_flat_v5.
+- **Bio_ASW and batch_ASW** favor v4 methods modestly, but at the cost of continuum preservation.
+- Non-mesenchymal-scope metrics (3,393 cells): tiered_v5 and tiered_v4 give similar values; small tier so less informative for the main question.
+
+**Conclusion:** no change to the v5 pipeline. The v5 workflow selected at the 2026-03-25 checkpoint preserves the NP mesenchymal continuum better than any of the three alternatives tested here.
+
+Raw metrics: `results/integration/np_experiment/comparison_table.tsv`.
+
+---
+
 ## Condition Mapping Decisions (reviewed 2026-03-05)
 
 1. **Herniated samples:** Kept as separate category. GSE233666 excluded in v2+ (herniated-only study confounds comparisons). GSE251686 herniated samples retained, treated as "severe."
