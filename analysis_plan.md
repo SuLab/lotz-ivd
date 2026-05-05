@@ -27,7 +27,13 @@
 
 ## Active Step
 
-**Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration.
+**Tiered v4 pipeline — Module 06 complete; STOPPED at human checkpoint before Module 07.**
+
+The atlas is being re-run on the tiered v4 integration (Seurat v4 SCT + CCA, mes / non-mes split) for all four compartments. The v5 outputs remain on disk untouched at `data/integrated/{NP,AF,CEP,all_cells}.h5ad`; the new tiered v4 outputs live at `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` and Module 06 wrote cluster columns back to those files.
+
+See **Tiered v4 Module 06 Results (2026-05-05)** below for cluster counts, resolution justification, and review materials. Resume pipeline at Module 07 only after human approval.
+
+**Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration. v5 results retained for comparison.
 
 ### Module 05 Workflow Selection (2026-03-25)
 
@@ -108,6 +114,103 @@ Uses `Run.STACAS()` with coarse_label anchors. Objects >100K cells downsampled.
 - **STACAS still downsampled** for NP and all_cells (RAM-bound in R even on 247GB — STACAS memory footprint is higher than CCA).
 - **Cluster counts are consistent across workflows** for AF (23, 18-23) and CEP (13-15), suggesting stable structure.
 - **NP cluster counts diverged previously:** CCA 9 (downsampled 15K) vs scANVI 29 (full 263K). Full-cell CCA will clarify whether this was a downsampling artifact or a real methodological difference.
+
+---
+
+## Tiered v4 Pipeline — Compartment Metrics + Module 06 (2026-05-05)
+
+The 2026-04-17 NP-only switch plan was extended to all four compartments after the tiered v4 integration was run for AF, CEP, and all_cells (commits `7d157be`, `2204069`). Per-compartment metrics are at `results/integration/{af,cep,all_cells}_experiment/comparison_table.tsv`; bar charts and tables in `notebooks/05_integration.ipynb` §6.
+
+### Per-compartment metric direction (tiered_v4 vs baseline_flat_v5)
+
+| Compartment | iLISI ↑ | batch_ASW ↑ | cLISI ↓ | bio_ASW ↑ | condition_ASW (closer to 0 = better) |
+|---|---|---|---|---|---|
+| NP (mes)    | 0.216 vs 0.258 | 0.861 vs 0.850 | **0.729 vs 0.869** | **0.510 vs 0.417** | **−0.020 vs −0.165** |
+| AF (mes)    | 0.091 vs 0.056 | 0.839 vs 0.829 | 0.880 vs 0.955 | 0.482 vs 0.465 | +0.024 vs +0.049 |
+| CEP (mes)   | **0.241 vs 0.089** | **0.949 vs 0.832** | **0.640 vs 0.881** | 0.496 vs 0.505 | **−0.042 vs −0.103** |
+| all_cells (mes) | 0.200 vs 0.152 | 0.857 vs 0.841 | **0.690 vs 0.835** | **0.508 vs 0.425** | −0.144 vs −0.150 |
+
+CEP shows the largest improvement; AF the smallest (only 3 studies → less batch effect to remove). all_cells improves on most axes but condition_ASW barely budges. NP confirms the original 2026-04-17 finding.
+
+### Tiered v4 atlas assembly
+
+`scripts/05m_assemble_tiered_v4.py` merges per-tier bridge files into per-compartment AnnData under `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad`:
+
+- `obs['cell_class']` ∈ {mesenchymal, unknown, non_mesenchymal} (already set in bridge metadata)
+- `obs['tier']` records mes vs non-mes membership
+- `obsm['X_integrated']` (n × 50) — per-tier PCA, NaN-padded across tiers (clustering happens per-tier)
+- `obsm['X_umap']` (n × 2) — per-tier UMAP, NaN-padded
+- `X` = raw counts (CSR sparse, gene union via `anndata.concat(join='outer')`)
+
+| Compartment | n_cells | n_genes | Output |
+|---|---|---|---|
+| NP        | 262,951 | 49,623 | NP.h5ad — assembled to 1.34 GB, 6.45 GB after Module 06 |
+| AF        | 84,568  | 37,846 | AF.h5ad — 0.52 GB → 2.59 GB |
+| CEP       | 50,840  | 32,956 | CEP.h5ad — 0.26 GB → 1.27 GB |
+| all_cells | 410,643 | 49,623 | all_cells.h5ad — 2.21 GB → 10.82 GB |
+
+(File sizes grow ~5× post-Module 06 because `06_clustering.py` writes back without compression; the original assembly used gzip on the sparse counts.)
+
+AF has only a mesenchymal tier — non-mes cells were too few per study after splitting (the smallest objects fell below the integration anchor threshold). AF non-mesenchymal cells are present only via the all_cells non-mes tier.
+
+### Module 06 results (Leiden resolution sweep)
+
+`scripts/06_clustering.py` was extended with `--input-dir` / `--output-dir` flags so it could be aimed at the tiered v4 outputs without overwriting v5. Resolution sweeps and selections (peak silhouette, with min_resolution=0.5 enforced for non-mes tiers) below.
+
+#### Cluster counts
+
+| Compartment | Tier | Cells | Resolution | n_clusters | silhouette | Notes |
+|---|---|---|---|---|---|---|
+| NP        | mes     | 259,558 | 0.8 | **27** | 0.049 | silhouette plateau across res 0.4–1.0 (0.043–0.049); thin pick |
+| NP        | non-mes |   3,393 | 0.5 |  6 | 0.072 | clear silhouette peak at low res |
+| AF        | mes     |  84,568 | 0.2 |  7 | 0.024 | low silhouette overall; peak at res=0.2 |
+| AF        | non-mes |       — |  — |  — | — | tier not present (assembled into all_cells non-mes only) |
+| CEP       | mes     |  50,769 | 0.2 |  6 | 0.078 | silhouette declines monotonically with resolution |
+| CEP       | non-mes |      71 | 1.0 |  5 | −0.033 | only 71 cells from 1 study — single-cluster up to res=0.9; not interpretable |
+| all_cells | mes     | 407,179 | 0.4 | 16 | 0.045 | silhouette peak at res=0.4 |
+| all_cells | non-mes |   3,464 | 0.5 |  5 | 0.072 | clear peak at low res |
+
+Combined cluster count per compartment (after merging tiers with M / NM prefix):
+
+| Compartment | v5 (CCA flat) | Tiered v4 |
+|---|---|---|
+| NP        | 12 | **33** |
+| AF        | 12 |  **7** |
+| CEP       |  9 | 11 |
+| all_cells | 15 | 21 |
+
+#### Validation (all PASS)
+
+- No cluster collapses to a single blob (all compartments have ≥ 7 real clusters except AF which has 7).
+- Study identity does not predict cluster identity: study × leiden ARI = 0.066 (NP), 0.028 (AF), 0.023 (CEP), 0.019 (all_cells) — well below 1.0.
+- Comparison resolutions (0.5, 1.0) stored per tier where computed.
+
+### Open questions for the human reviewer
+
+1. **NP mes resolution choice (27 clusters at res=0.8).** The silhouette curve is nearly flat across res=0.4–1.0 (0.043 → 0.049); the same data clusters into 18 (res=0.4), 22 (res=0.6), or 30 (res=1.0) within ~10% silhouette noise. Is 27 too fine for 5 broad NP cell types, or appropriate for resolving mature_chondrocyte ↔ fibrocartilaginous gradient states?
+2. **AF mes coarseness (7 clusters at res=0.2).** Silhouette is barely above zero across all resolutions. Picking the silhouette peak gave coarser clusters than v5 (12). Is 7 enough for AF biology, or should we override to a higher resolution?
+3. **CEP non-mes (71 cells, 5 clusters).** Forced by the script's min_resolution=0.5 enforcement on the non-mes tier. Is this tier worth carrying through Module 07+ at all, or should it be dropped and the cells reassigned to all_cells non-mes?
+4. **AF has no non-mesenchymal tier.** Per-compartment AF analysis will lose immune / endothelial / pericyte cells entirely; they appear only in `all_cells.h5ad`. Acceptable, or should we re-run 05k for AF with relaxed minimum-cells thresholds to recover an AF non-mes tier?
+
+### Phase-5 gates still pending (per `docs/np_switch_to_tiered_v4_plan.md`)
+
+The original NP plan included DE-concordance and pain-gene recovery gates that were never run because we paused at this step. Phase 5 should be widened to all four compartments before declaring tiered v4 the primary atlas. Specifically:
+
+- ≥ 80% top-100 DE concordance with v5 per powered comparison (or biologically coherent divergence)
+- ≥ 5 of 10 v5 significant pain genes recovered
+- max_study_pct < 85% per cluster
+- pseudobulk power ≥ v5's 17 powered comparisons
+
+These cannot be evaluated until Modules 07–08 run.
+
+### Review materials
+
+- `results/integration/tiered_v4/clustering_resolution_optimization/{NP,AF,CEP,all_cells}_{mesenchymal,non_mesenchymal}_optimization.png` — silhouette / modularity / cluster-count plots
+- `results/integration/tiered_v4/clustering_resolution_optimization/*_resolutions.tsv` — full resolution sweeps
+- `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` — clustering written back
+- Logs: `logs/05m_assemble_*.log`, `logs/06_clustering_*_tiered_v4.log`, `logs/06_clustering_validate_tiered_v4.log`
+
+**STOP. Awaiting human checkpoint review before Module 07.**
 
 ---
 
