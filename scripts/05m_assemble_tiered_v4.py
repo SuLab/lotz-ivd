@@ -52,14 +52,35 @@ OUT_DIR = INTEG / "tiered_v4"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 COMPARTMENTS = {
-    "NP":        ("np_experiment",        ["mesenchymal", "non_mesenchymal"]),
-    "AF":        ("af_experiment",        ["mesenchymal"]),  # non_mes not run (too few cells/study)
-    "CEP":       ("cep_experiment",       ["mesenchymal", "non_mesenchymal"]),
-    "all_cells": ("all_cells_experiment", ["mesenchymal", "non_mesenchymal"]),
+    "NP":        "np_experiment",
+    "AF":        "af_experiment",
+    "CEP":       "cep_experiment",
+    "all_cells": "all_cells_experiment",
 }
+
+ALL_TIERS = ["mesenchymal", "non_mesenchymal"]
 
 EMBEDDING_DIM = 50
 UMAP_DIM = 2
+
+
+def _tiers_present(compartment):
+    """Return the list of tiers that have a complete bridge export on disk.
+
+    Auto-detection prevents the assembly from missing a tier that was
+    produced by a later 05k run (e.g. AF non-mes after the threshold was
+    lowered from 50 → 5).
+    """
+    cfg_dir = COMPARTMENTS[compartment]
+    tiered_dir = INTEG / cfg_dir / "tiered_v4"
+    required = ["counts.mtx.gz", "metadata.csv.gz", "embedding_pca.csv.gz",
+                "embedding_umap.csv.gz", "barcodes.csv", "genes.csv"]
+    present = []
+    for tier in ALL_TIERS:
+        bd = tiered_dir / tier
+        if bd.is_dir() and all((bd / f).exists() for f in required):
+            present.append(tier)
+    return present
 
 
 def _load_tier(bridge_dir):
@@ -160,20 +181,18 @@ def _build_padded_embeddings(combined, tier_names, tier_lengths):
 
 
 def assemble_compartment(compartment):
-    cfg_dir, tier_names = COMPARTMENTS[compartment]
+    cfg_dir = COMPARTMENTS[compartment]
     tiered_dir = INTEG / cfg_dir / "tiered_v4"
+    tier_names = _tiers_present(compartment)
 
     print(f"\n{'='*60}\n{compartment}\n{'='*60}")
     print(f"  Bridge dir: {tiered_dir}")
-    print(f"  Tiers: {tier_names}")
+    print(f"  Tiers detected: {tier_names}")
 
     tier_adatas = []
     tier_lengths = []
     for tier in tier_names:
         bd = tiered_dir / tier
-        if not bd.exists():
-            print(f"  SKIP tier: {tier} (no bridge dir)")
-            continue
         ad = _load_tier(bd)
         tier_adatas.append(ad)
         tier_lengths.append(ad.n_obs)
@@ -188,9 +207,8 @@ def assemble_compartment(compartment):
         combined.obsm['X_integrated'] = combined.obsm.pop('X_pca_tier')
         combined.obsm['X_umap'] = combined.obsm.pop('X_umap_tier')
     else:
-        combined = _concat_tiers(tier_adatas, tier_names[:len(tier_adatas)])
-        combined = _build_padded_embeddings(combined, tier_names[:len(tier_adatas)],
-                                            tier_lengths)
+        combined = _concat_tiers(tier_adatas, tier_names)
+        combined = _build_padded_embeddings(combined, tier_names, tier_lengths)
 
     # Sanity: cell_class column already in metadata (from bridge), but verify
     if 'cell_class' not in combined.obs.columns:
