@@ -721,12 +721,24 @@ process_nonmes_tier <- function(nonmes_list, mode_prefix, force = FALSE) {
   }
 
   if (length(nonmes_list) == 0) {
-    message("    WARNING: No objects with >=50 non-mesenchymal cells, skipping tier")
+    message("    WARNING: No objects with >=", NONMES_MIN_CELLS_PER_STUDY,
+            " non-mesenchymal cells, skipping tier")
     return(NULL)
   }
 
-  if (length(nonmes_list) < 3) {
-    message("    Only ", length(nonmes_list), " objects with >=50 cells — using simple merge")
+  # CCA's FindIntegrationAnchors with dims=1:50 fails when any object has
+  # fewer than ~50 cells (it errors "Max dimension too large: object N
+  # contains fewer than 50 cells"). Fall back to the simple-merge path
+  # when fewer than 3 objects survive OR the smallest surviving object
+  # is below the CCA dims threshold. The merge keeps cells as a
+  # cross-study union without true integration — appropriate for very
+  # small tiers (e.g. AF non-mes: 56 cells across 3 studies, smallest 7).
+  CCA_MIN_CELLS_PER_OBJECT <- 50
+  smallest <- min(sapply(nonmes_list, ncol))
+  if (length(nonmes_list) < 3 || smallest < CCA_MIN_CELLS_PER_OBJECT) {
+    message("    Falling back to simple merge: ", length(nonmes_list),
+            " objects, smallest = ", smallest, " cells",
+            " (CCA needs >= ", CCA_MIN_CELLS_PER_OBJECT, " per object)")
     result <- integrate_simple(nonmes_list, paste0(mode_prefix, "_non_mesenchymal"))
   } else {
     result <- integrate_v4_cca(nonmes_list, paste0(mode_prefix, "_non_mesenchymal"), force = force)
