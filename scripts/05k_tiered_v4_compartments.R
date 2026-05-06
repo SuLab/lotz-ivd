@@ -704,23 +704,41 @@ plot_umaps <- function(obj, run_label) {
 # ═══════════════════════════════════════════════════════════════════════════
 
 process_nonmes_tier <- function(nonmes_list, mode_prefix, force = FALSE) {
+  # Per-study minimum cell count for the non-mesenchymal tier.
+  # Lowered from 50 → 5 on 2026-05-06 so AF (which had 28 / 7 / 21 non-mes
+  # cells across three studies) recovers a non-mes tier instead of pushing
+  # all immune cells into all_cells_non_mesenchymal.
+  NONMES_MIN_CELLS_PER_STUDY <- 5
   study_sizes <- sapply(nonmes_list, ncol)
-  keep <- names(study_sizes)[study_sizes >= 50]
-  dropped <- names(study_sizes)[study_sizes < 50]
+  keep <- names(study_sizes)[study_sizes >= NONMES_MIN_CELLS_PER_STUDY]
+  dropped <- names(study_sizes)[study_sizes < NONMES_MIN_CELLS_PER_STUDY]
 
   if (length(dropped) > 0) {
-    message("    Dropping ", length(dropped), " objects with <50 non-mes cells: ",
+    message("    Dropping ", length(dropped),
+            " objects with <", NONMES_MIN_CELLS_PER_STUDY, " non-mes cells: ",
             paste(dropped, " (", study_sizes[dropped], ")", sep = "", collapse = ", "))
     nonmes_list <- nonmes_list[keep]
   }
 
   if (length(nonmes_list) == 0) {
-    message("    WARNING: No objects with >=50 non-mesenchymal cells, skipping tier")
+    message("    WARNING: No objects with >=", NONMES_MIN_CELLS_PER_STUDY,
+            " non-mesenchymal cells, skipping tier")
     return(NULL)
   }
 
-  if (length(nonmes_list) < 3) {
-    message("    Only ", length(nonmes_list), " objects with >=50 cells — using simple merge")
+  # CCA's FindIntegrationAnchors with dims=1:50 fails when any object has
+  # fewer than ~50 cells (it errors "Max dimension too large: object N
+  # contains fewer than 50 cells"). Fall back to the simple-merge path
+  # when fewer than 3 objects survive OR the smallest surviving object
+  # is below the CCA dims threshold. The merge keeps cells as a
+  # cross-study union without true integration — appropriate for very
+  # small tiers (e.g. AF non-mes: 56 cells across 3 studies, smallest 7).
+  CCA_MIN_CELLS_PER_OBJECT <- 50
+  smallest <- min(sapply(nonmes_list, ncol))
+  if (length(nonmes_list) < 3 || smallest < CCA_MIN_CELLS_PER_OBJECT) {
+    message("    Falling back to simple merge: ", length(nonmes_list),
+            " objects, smallest = ", smallest, " cells",
+            " (CCA needs >= ", CCA_MIN_CELLS_PER_OBJECT, " per object)")
     result <- integrate_simple(nonmes_list, paste0(mode_prefix, "_non_mesenchymal"))
   } else {
     result <- integrate_v4_cca(nonmes_list, paste0(mode_prefix, "_non_mesenchymal"), force = force)
@@ -772,8 +790,10 @@ run_tiered_v4 <- function(seurat_list, force = FALSE, skip_rds = FALSE) {
     }
   }
   if (!nonmes_done || force) {
+    # Match the per-study threshold used in process_nonmes_tier (≥5 cells).
+    NONMES_MIN_CELLS_PER_STUDY <- 5
     nonmes_keep <- tiers$non_mesenchymal[
-      sapply(tiers$non_mesenchymal, ncol) >= 50
+      sapply(tiers$non_mesenchymal, ncol) >= NONMES_MIN_CELLS_PER_STUDY
     ]
     if (length(nonmes_keep) > 0) {
       stash_raw_counts(nonmes_keep, nonmes_counts_cache)
