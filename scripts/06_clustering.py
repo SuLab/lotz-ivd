@@ -88,27 +88,39 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
     embedding = adata.obsm[embedding_key]
     results = []
 
-    # Build igraph once for modularity computation (instead of per-resolution)
-    # Skip for large datasets (>100K cells) — modularity is expensive and silhouette suffices
-    ig_graph = None
-    ig_weights = None
-    MAX_CELLS_MODULARITY = 100000
-    if adata.shape[0] <= MAX_CELLS_MODULARITY:
-        try:
-            import igraph as ig
-            adj = adata.obsp['connectivities']
-            sources, targets = adj.nonzero()
-            weights = np.asarray(adj[sources, targets]).ravel()
-            edgelist = np.column_stack((sources, targets))
-            g = ig.Graph(n=adata.shape[0], edges=edgelist.tolist(), directed=False)
-            g.es['weight'] = weights.tolist()
-            ig_graph = g
-            ig_weights = g.es['weight']
-            print(f"    igraph built: {g.vcount()} vertices, {g.ecount()} edges")
-        except Exception as e:
-            print(f"    WARNING: igraph build failed: {e}, skipping modularity")
-    else:
-        print(f"    Skipping modularity (>{MAX_CELLS_MODULARITY:,} cells), using silhouette only")
+    # Modularity is computed directly from the connectivities matrix using
+    # sparse matrix algebra. This scales to >100K cells without needing the
+    # igraph Python list construction (which was the bottleneck behind the
+    # old MAX_CELLS_MODULARITY=100K skip).
+    adj = adata.obsp['connectivities']
+    deg = np.asarray(adj.sum(axis=1)).ravel().astype(np.float64)
+    twoM = float(deg.sum())  # = 2 * total edge weight (undirected)
+    print(f"    modularity helper ready: {adj.nnz:,} nonzero edges, 2m={twoM:.0f}")
+
+    def _weighted_modularity(membership):
+        """Newman modularity Q for a partition of the connectivities graph."""
+        if twoM <= 0:
+            return np.nan
+        membership = np.asarray(membership, dtype=np.int64)
+        n_c = int(membership.max()) + 1 if membership.size else 0
+        if n_c <= 1:
+            return 0.0
+        # within = sum of A[i,j] where membership[i]==membership[j]
+        # We build a (n_cells, n_clusters) one-hot indicator and use sparse
+        # matrix multiplication: A @ indicator gives, for each cell i and
+        # cluster c, the weight of i's edges into c. Diagonal of
+        # indicator.T @ (A @ indicator) sums within-cluster edge weights.
+        rows = np.arange(membership.size)
+        cols = membership
+        data = np.ones(membership.size, dtype=np.float64)
+        from scipy.sparse import csr_matrix as _csr, csc_matrix as _csc
+        H = _csr((data, (rows, cols)), shape=(membership.size, n_c))
+        AH = adj @ H                                   # (n, n_c)
+        within = np.asarray(H.multiply(AH).sum(axis=0)).ravel()  # length n_c
+        within_total = within.sum()
+        cluster_strength = H.T @ deg                    # length n_c, sum of degrees per cluster
+        expected = float((cluster_strength ** 2).sum() / twoM)
+        return float(within_total / twoM - expected / twoM)
 
     for res in resolutions:
         key = f'leiden_{res:.1f}'
@@ -128,14 +140,12 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
             except Exception:
                 pass
 
-        # Modularity from the graph partition (reuse pre-built graph)
-        mod_score = np.nan
-        if ig_graph is not None:
-            try:
-                membership = adata.obs[key].astype(int).values.tolist()
-                mod_score = float(ig_graph.modularity(membership, weights=ig_weights))
-            except Exception:
-                pass
+        # Modularity from the graph partition via sparse matrix algebra
+        try:
+            mod_score = _weighted_modularity(adata.obs[key].astype(int).values)
+        except Exception as e:
+            print(f"    WARNING: modularity at res={res} failed: {e}")
+            mod_score = np.nan
 
         results.append({
             'resolution': round(res, 1),
@@ -151,10 +161,11 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
         sep='\t', index=False
     )
 
-    # Select resolution: peak silhouette, or knee in modularity
-    # For non-mesenchymal tier, enforce minimum resolution of 0.5 to avoid
-    # too-coarse clustering that creates mixed T cell/myeloid clusters
-    min_resolution = 0.5 if "non_mesenchymal" in tier_name.lower() else 0.1
+    # Select resolution: peak silhouette across all tested resolutions.
+    # The previous non-mesenchymal-tier 0.5 floor was removed 2026-05-06
+    # because it produced a degenerate selection on tiny tiers (e.g. CEP
+    # non-mes, 71 cells from 1 study). Selection is now uniform across tiers.
+    min_resolution = 0.1
     valid = results_df.dropna(subset=['silhouette'])
     if len(valid) > 0:
         valid_above_min = valid[valid['resolution'] >= min_resolution]
@@ -165,7 +176,7 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
             best_idx = valid['silhouette'].idxmax()
             selected_res = valid.loc[best_idx, 'resolution']
     else:
-        selected_res = max(0.5, min_resolution)  # fallback
+        selected_res = 0.5  # fallback for un-clusterable tiers
 
     n_sel = results_df.loc[results_df['resolution'] == selected_res, 'n_clusters'].values[0]
     print(f"    Selected resolution: {selected_res} ({n_sel} clusters)")

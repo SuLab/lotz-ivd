@@ -704,12 +704,18 @@ plot_umaps <- function(obj, run_label) {
 # ═══════════════════════════════════════════════════════════════════════════
 
 process_nonmes_tier <- function(nonmes_list, mode_prefix, force = FALSE) {
+  # Per-study minimum cell count for the non-mesenchymal tier.
+  # Lowered from 50 → 5 on 2026-05-06 so AF (which had 28 / 7 / 21 non-mes
+  # cells across three studies) recovers a non-mes tier instead of pushing
+  # all immune cells into all_cells_non_mesenchymal.
+  NONMES_MIN_CELLS_PER_STUDY <- 5
   study_sizes <- sapply(nonmes_list, ncol)
-  keep <- names(study_sizes)[study_sizes >= 50]
-  dropped <- names(study_sizes)[study_sizes < 50]
+  keep <- names(study_sizes)[study_sizes >= NONMES_MIN_CELLS_PER_STUDY]
+  dropped <- names(study_sizes)[study_sizes < NONMES_MIN_CELLS_PER_STUDY]
 
   if (length(dropped) > 0) {
-    message("    Dropping ", length(dropped), " objects with <50 non-mes cells: ",
+    message("    Dropping ", length(dropped),
+            " objects with <", NONMES_MIN_CELLS_PER_STUDY, " non-mes cells: ",
             paste(dropped, " (", study_sizes[dropped], ")", sep = "", collapse = ", "))
     nonmes_list <- nonmes_list[keep]
   }
@@ -772,8 +778,10 @@ run_tiered_v4 <- function(seurat_list, force = FALSE, skip_rds = FALSE) {
     }
   }
   if (!nonmes_done || force) {
+    # Match the per-study threshold used in process_nonmes_tier (≥5 cells).
+    NONMES_MIN_CELLS_PER_STUDY <- 5
     nonmes_keep <- tiers$non_mesenchymal[
-      sapply(tiers$non_mesenchymal, ncol) >= 50
+      sapply(tiers$non_mesenchymal, ncol) >= NONMES_MIN_CELLS_PER_STUDY
     ]
     if (length(nonmes_keep) > 0) {
       stash_raw_counts(nonmes_keep, nonmes_counts_cache)
