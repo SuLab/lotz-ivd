@@ -34,13 +34,13 @@ warnings.filterwarnings('ignore', category=UserWarning, module='scanpy')
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # ── Paths ────────────────────────────────────────────────────────────────────
+# Defaults can be overridden via --input-dir / --output-dir on the command line
+# so the script can be aimed at a parallel pipeline (e.g. tiered_v4) without
+# overwriting the production v5 outputs.
 BASE = Path(__file__).resolve().parent.parent
 INT_DIR = BASE / "data" / "integrated"
 RESULTS_DIR = BASE / "results" / "integration"
 CLUSTER_DIR = RESULTS_DIR / "clustering_resolution_optimization"
-
-for d in [CLUSTER_DIR]:
-    d.mkdir(parents=True, exist_ok=True)
 
 # ── Tier configuration ──────────────────────────────────────────────────────
 # Embedding keys stored in the merged h5ad from Module 05
@@ -511,6 +511,7 @@ def validate_clustering():
 # ═════════════════════════════════════════════════════════════════════════════
 
 def main():
+    global INT_DIR, RESULTS_DIR, CLUSTER_DIR
     args = sys.argv[1:]
 
     validate_only = '--validate-only' in args
@@ -520,6 +521,21 @@ def main():
     for i, a in enumerate(args):
         if a == '--object' and i + 1 < len(args):
             object_filter = args[i + 1]
+
+    # Parse --input-dir (where to read {object}.h5ad from)
+    for i, a in enumerate(args):
+        if a == '--input-dir' and i + 1 < len(args):
+            INT_DIR = Path(args[i + 1]).resolve()
+
+    # Parse --output-dir (where resolution_optimization plots/tsvs land)
+    for i, a in enumerate(args):
+        if a == '--output-dir' and i + 1 < len(args):
+            RESULTS_DIR = Path(args[i + 1]).resolve()
+            CLUSTER_DIR = RESULTS_DIR / "clustering_resolution_optimization"
+
+    CLUSTER_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"  Input dir:  {INT_DIR}")
+    print(f"  Output dir: {CLUSTER_DIR}")
 
     if validate_only:
         passed, _ = validate_clustering()
