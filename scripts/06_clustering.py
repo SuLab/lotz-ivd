@@ -66,18 +66,14 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
                                    resolutions=None):
     """Test Leiden clustering at multiple resolutions, compute silhouette and modularity.
 
-    Returns the selected resolution and stores results in obs.
+    Returns the selected resolution and stores results in obs. Selection
+    follows the R reference single_nuclei_r/Silhouette_Modularity_Scoring.R:
+    sweep res 0.1 .. 2.0 step 0.1 for every tier, min-max normalize each
+    metric within the sweep, and pick the highest equal-weighted combined
+    score (sil_norm + mod_norm) / 2.
     """
     if resolutions is None:
-        # Use fewer resolutions for large datasets to reduce runtime
-        if adata.shape[0] > 300000:
-            resolutions = [0.4, 0.8, 1.0]  # 3 values for very large
-        elif adata.shape[0] > 200000:
-            resolutions = [0.2, 0.4, 0.6, 0.8, 1.0, 1.5]  # 6 values
-        elif adata.shape[0] > 50000:
-            resolutions = np.arange(0.2, 2.1, 0.2)  # 10 values
-        else:
-            resolutions = np.arange(0.1, 2.1, 0.1)  # 20 values
+        resolutions = np.round(np.arange(0.1, 2.05, 0.1), 1)
 
     print(f"  Optimizing clustering resolution ({tier_name})...")
     print(f"    Cells: {adata.shape[0]:,}, embedding: {embedding_key}")
@@ -156,27 +152,37 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
         print(f"    res={res:.1f}: {n_clusters} clusters, sil={sil:.3f}, mod={mod_score:.3f}")
 
     results_df = pd.DataFrame(results)
+
+    # Equal-weighted combined score: per-sweep min-max normalize each
+    # metric, then average. Mirrors single_nuclei_r/Silhouette_Modularity_Scoring.R.
+    # Rows where silhouette is NaN (n_clusters == 1) are excluded from
+    # selection but kept in the TSV for transparency.
+    valid = results_df.dropna(subset=['silhouette', 'modularity']).copy()
+    results_df['sil_norm'] = np.nan
+    results_df['mod_norm'] = np.nan
+    results_df['combined'] = np.nan
+    if len(valid) > 0:
+        sil_min, sil_max = valid['silhouette'].min(), valid['silhouette'].max()
+        mod_min, mod_max = valid['modularity'].min(), valid['modularity'].max()
+        sil_range = sil_max - sil_min
+        mod_range = mod_max - mod_min
+        valid['sil_norm'] = ((valid['silhouette'] - sil_min) / sil_range
+                             if sil_range > 0 else 0.5)
+        valid['mod_norm'] = ((valid['modularity'] - mod_min) / mod_range
+                             if mod_range > 0 else 0.5)
+        valid['combined'] = (valid['sil_norm'] + valid['mod_norm']) / 2.0
+        results_df.loc[valid.index, ['sil_norm', 'mod_norm', 'combined']] = \
+            valid[['sil_norm', 'mod_norm', 'combined']].values
+        # Highest combined; tie-break by silhouette (matches R).
+        ordered = valid.sort_values(['combined', 'silhouette'], ascending=False)
+        selected_res = float(ordered.iloc[0]['resolution'])
+    else:
+        selected_res = 0.5  # fallback for un-clusterable tiers
+
     results_df.to_csv(
         CLUSTER_DIR / f"{object_name}_{tier_name}_resolutions.tsv",
         sep='\t', index=False
     )
-
-    # Select resolution: peak silhouette across all tested resolutions.
-    # The previous non-mesenchymal-tier 0.5 floor was removed 2026-05-06
-    # because it produced a degenerate selection on tiny tiers (e.g. CEP
-    # non-mes, 71 cells from 1 study). Selection is now uniform across tiers.
-    min_resolution = 0.1
-    valid = results_df.dropna(subset=['silhouette'])
-    if len(valid) > 0:
-        valid_above_min = valid[valid['resolution'] >= min_resolution]
-        if len(valid_above_min) > 0:
-            best_idx = valid_above_min['silhouette'].idxmax()
-            selected_res = valid_above_min.loc[best_idx, 'resolution']
-        else:
-            best_idx = valid['silhouette'].idxmax()
-            selected_res = valid.loc[best_idx, 'resolution']
-    else:
-        selected_res = 0.5  # fallback for un-clusterable tiers
 
     n_sel = results_df.loc[results_df['resolution'] == selected_res, 'n_clusters'].values[0]
     print(f"    Selected resolution: {selected_res} ({n_sel} clusters)")
@@ -205,8 +211,8 @@ def optimize_clustering_resolution(adata, embedding_key, object_name, tier_name,
 
 
 def _plot_resolution_optimization(results_df, object_name, tier_name, selected_res):
-    """Plot silhouette and modularity vs resolution."""
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+    """Plot silhouette, modularity, combined score, and cluster count vs resolution."""
+    fig, axes = plt.subplots(1, 4, figsize=(20, 4))
 
     # Silhouette
     ax = axes[0]
@@ -224,8 +230,24 @@ def _plot_resolution_optimization(results_df, object_name, tier_name, selected_r
     ax.set_ylabel('Modularity')
     ax.set_title('Modularity')
 
-    # Cluster count
+    # Combined (min-max normalized average)
     ax = axes[2]
+    if 'combined' in results_df.columns:
+        ax.plot(results_df['resolution'], results_df['sil_norm'],
+                'o-', color='#2196F3', alpha=0.5, label='sil_norm')
+        ax.plot(results_df['resolution'], results_df['mod_norm'],
+                'o-', color='#4CAF50', alpha=0.5, label='mod_norm')
+        ax.plot(results_df['resolution'], results_df['combined'],
+                'o-', color='#9C27B0', label='combined')
+        ax.legend(loc='best', fontsize=8)
+    ax.axvline(selected_res, color='red', linestyle='--', alpha=0.7)
+    ax.set_xlabel('Resolution')
+    ax.set_ylabel('Min-max normalized score')
+    ax.set_title('Combined Score (selection)')
+    ax.set_ylim(-0.05, 1.05)
+
+    # Cluster count
+    ax = axes[3]
     ax.plot(results_df['resolution'], results_df['n_clusters'], 'o-', color='#FF9800')
     ax.axvline(selected_res, color='red', linestyle='--', alpha=0.7)
     ax.set_xlabel('Resolution')
