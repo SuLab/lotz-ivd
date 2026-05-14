@@ -27,11 +27,11 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 06 complete; STOPPED at human checkpoint before Module 07.**
+**Tiered v4 pipeline — Module 06 complete; human checkpoint cleared 2026-05-14; ready to resume at Module 07.**
 
 The atlas is being re-run on the tiered v4 integration (Seurat v4 SCT + CCA, mes / non-mes split) for all four compartments. The v5 outputs remain on disk untouched at `data/integrated/{NP,AF,CEP,all_cells}.h5ad`; the new tiered v4 outputs live at `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` and Module 06 wrote cluster columns back to those files.
 
-See **Tiered v4 Module 06 Results (2026-05-05)** below for cluster counts, resolution justification, and review materials. Resume pipeline at Module 07 only after human approval.
+See **Tiered v4 Module 06 Results** below for cluster counts (refreshed 2026-05-09), resolution justification, and the 2026-05-14 review decisions.
 
 **Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration. v5 results retained for comparison.
 
@@ -153,44 +153,52 @@ CEP shows the largest improvement; AF the smallest (only 3 studies → less batc
 
 AF has only a mesenchymal tier — non-mes cells were too few per study after splitting (the smallest objects fell below the integration anchor threshold). AF non-mesenchymal cells are present only via the all_cells non-mes tier.
 
-### Module 06 results (Leiden resolution sweep)
+### Module 06 results (Leiden resolution sweep, refreshed 2026-05-09)
 
-`scripts/06_clustering.py` was extended with `--input-dir` / `--output-dir` flags so it could be aimed at the tiered v4 outputs without overwriting v5. Resolution sweeps and selections (peak silhouette, with min_resolution=0.5 enforced for non-mes tiers) below.
+`scripts/06_clustering.py` was extended with `--input-dir` / `--output-dir` flags so it could be aimed at the tiered v4 outputs without overwriting v5. The 2026-05-08/09 reruns apply the equal-weighted silhouette+modularity selection introduced in PR #4 (commit `d44a0c4`):
 
-#### Cluster counts
+- Full resolution sweep (0.1 → 2.0, step 0.1) is run for every tier; the cell-count-gated coarse sweeps are gone.
+- Silhouette and modularity are min-max normalized within each sweep, then averaged into a combined score. The selected resolution is `argmax combined`, with ties broken on silhouette.
+- Earlier 2026-05-06 changes still in effect (commits `0886c50`, `562adcd`, `f8d5940`): the non-mesenchymal `min_resolution = 0.5` floor is gone; the 05k AF tier-export threshold was raised to ≥ 5 cells per study, which created an AF non-mesenchymal tier (56 cells) for the first time; non-mes tiers below the CCA dims threshold fall back to `integrate_simple`; 05m auto-detects on-disk tiers per compartment.
 
-| Compartment | Tier | Cells | Resolution | n_clusters | silhouette | Notes |
+#### Cluster counts (current, 2026-05-09)
+
+| Compartment | Tier | Cells | Resolution | n_clusters | Combined | Notes |
 |---|---|---|---|---|---|---|
-| NP        | mes     | 259,558 | 0.8 | **27** | 0.049 | silhouette plateau across res 0.4–1.0 (0.043–0.049); thin pick |
-| NP        | non-mes |   3,393 | 0.5 |  6 | 0.072 | clear silhouette peak at low res |
-| AF        | mes     |  84,568 | 0.2 |  7 | 0.024 | low silhouette overall; peak at res=0.2 |
-| AF        | non-mes |       — |  — |  — | — | tier not present (assembled into all_cells non-mes only) |
-| CEP       | mes     |  50,769 | 0.2 |  6 | 0.078 | silhouette declines monotonically with resolution |
-| CEP       | non-mes |      71 | 1.0 |  5 | −0.033 | only 71 cells from 1 study — single-cluster up to res=0.9; not interpretable |
-| all_cells | mes     | 407,179 | 0.4 | 16 | 0.045 | silhouette peak at res=0.4 |
-| all_cells | non-mes |   3,464 | 0.5 |  5 | 0.072 | clear peak at low res |
+| NP        | mes     | 259,558 | 0.8 | **27** | 0.543 | combined flat across res 0.6–1.0 (0.515–0.543); silhouette ≲0.05 → modularity-driven |
+| NP        | non-mes |   3,393 | 0.3 |  5 | 0.783 | sharp curvature past res=0.3; modularity moved selection from sil-only res=0.1 (2 clusters) |
+| AF        | mes     |  84,568 | 0.4 | 13 | 0.640 | silhouette barely above zero; res=0.6 (15 clusters, 0.634) within ~1% of peak |
+| AF        | non-mes |      56 | 1.0 |  4 | —     | tier created by 05k threshold raise; ~14 cells/cluster — interpret with caution |
+| CEP       | mes     |  50,769 | 0.9 | 15 | —     | shifted from prior 6 clusters at res=0.2 under PR #4; integration metrics favor finer granularity |
+| CEP       | non-mes |      71 | 1.0 |  5 | —     | collapses to 1 cluster at every res ≤0.9 — smallest res that splits, not a curvature minimum |
+| all_cells | mes     | 407,179 | 0.5 | 17 | 0.541 | combined flat across res 0.4–0.9 (0.512–0.541); v5-comparable count |
+| all_cells | non-mes |   3,464 | 0.3 |  4 | —     | sharp curvature past res=0.3; shifted from prior 5 clusters at res=0.5 |
 
 Combined cluster count per compartment (after merging tiers with M / NM prefix):
 
-| Compartment | v5 (CCA flat) | Tiered v4 |
+| Compartment | v5 (CCA flat) | Tiered v4 (2026-05-09) |
 |---|---|---|
-| NP        | 12 | **33** |
-| AF        | 12 |  **7** |
-| CEP       |  9 | 11 |
-| all_cells | 15 | 21 |
+| NP        | 12 | **32** |
+| AF        | 12 | **17** |
+| CEP       |  9 | **20** |
+| all_cells | 15 | **21** |
 
 #### Validation (all PASS)
 
-- No cluster collapses to a single blob (all compartments have ≥ 7 real clusters except AF which has 7).
-- Study identity does not predict cluster identity: study × leiden ARI = 0.066 (NP), 0.028 (AF), 0.023 (CEP), 0.019 (all_cells) — well below 1.0.
+- No cluster collapses to a single blob across the four compartments.
+- Study identity does not predict cluster identity: max study × leiden ARI = 0.079 (CEP); all four compartments well below 1.0.
 - Comparison resolutions (0.5, 1.0) stored per tier where computed.
 
-### Open questions for the human reviewer
+### Review decisions (2026-05-14)
 
-1. **NP mes resolution choice (27 clusters at res=0.8).** The silhouette curve is nearly flat across res=0.4–1.0 (0.043 → 0.049); the same data clusters into 18 (res=0.4), 22 (res=0.6), or 30 (res=1.0) within ~10% silhouette noise. Is 27 too fine for 5 broad NP cell types, or appropriate for resolving mature_chondrocyte ↔ fibrocartilaginous gradient states?
-2. **AF mes coarseness (7 clusters at res=0.2).** Silhouette is barely above zero across all resolutions. Picking the silhouette peak gave coarser clusters than v5 (12). Is 7 enough for AF biology, or should we override to a higher resolution?
-3. **CEP non-mes (71 cells, 5 clusters).** Forced by the script's min_resolution=0.5 enforcement on the non-mes tier. Is this tier worth carrying through Module 07+ at all, or should it be dropped and the cells reassigned to all_cells non-mes?
-4. **AF has no non-mesenchymal tier.** Per-compartment AF analysis will lose immune / endothelial / pericyte cells entirely; they appear only in `all_cells.h5ad`. Acceptable, or should we re-run 05k for AF with relaxed minimum-cells thresholds to recover an AF non-mes tier?
+Cluster counts accepted as-is for all four compartments. Rationale: the goal is a statistics-based resolution choice; biological merging happens at the Module 07 annotation checkpoint where DE-evidence within coarse groups (Stage 2) can collapse near-duplicate clusters. Specific notes carried forward:
+
+- **NP mes (27 clusters)**: combined-score plateau across res 0.6–1.0 means selection is "thin but not wrong"; 17–29 clusters all defensible within noise. Granularity question deferred to Module 07 — if many of the 27 annotate to the same `cell_type` with no distinguishing DE markers, they merge there.
+- **AF mes (13 clusters)**: roughly v5-comparable count. 13-vs-15 is genuinely within noise; committing to 13 ahead of Module 07.
+- **AF non-mes (56 cells, 4 clusters)** and **CEP non-mes (71 cells, 5 clusters)**: single-study tiers; will almost certainly fail Phase-5 `max_study_pct < 85%` and pseudobulk power gates. Flagged for likely drop at Module 08+; AF and CEP non-mes cells will be analyzed only through `all_cells.h5ad` in practice.
+- **CEP mes (15 clusters)** and **all_cells (17 mes + 4 non-mes)**: accepted; integration metrics support CEP's finer granularity, and all_cells mes lands at v5-comparable count.
+
+The unified-vs-compartment asymmetry (NP+AF+CEP mes sum = 55 fine clusters; all_cells mes = 17) is expected: cross-compartment cell-type differences dominate the unified atlas's degrees of freedom, while compartment-level atlases resolve within-tissue substates. Both views are kept; downstream usage is per-compartment for DE, unified for Figure 1 / proportions.
 
 ### Phase-5 gates still pending (per `docs/np_switch_to_tiered_v4_plan.md`)
 
@@ -210,7 +218,7 @@ These cannot be evaluated until Modules 07–08 run.
 - `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` — clustering written back
 - Logs: `logs/05m_assemble_*.log`, `logs/06_clustering_*_tiered_v4.log`, `logs/06_clustering_validate_tiered_v4.log`
 
-**STOP. Awaiting human checkpoint review before Module 07.**
+**Human checkpoint cleared 2026-05-14. Ready to resume at Module 07.**
 
 ---
 
