@@ -35,14 +35,12 @@ warnings.filterwarnings('ignore', category=UserWarning, module='scvi')
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # ── Paths ────────────────────────────────────────────────────────────────────
+# Defaults can be overridden via --input-dir / --output-dir on the command line
+# so the script can be aimed at a parallel pipeline (e.g. tiered_v4) without
+# overwriting the production v5 outputs.
 BASE = Path(__file__).resolve().parent.parent
 INT_DIR = BASE / "data" / "integrated"
 RESULTS_DIR = BASE / "results" / "integration"
-
-for d in [RESULTS_DIR / "cluster_markers",
-          RESULTS_DIR / "annotation_dotplots",
-          RESULTS_DIR / "celltypist_validation"]:
-    d.mkdir(parents=True, exist_ok=True)
 
 
 # ── Canonical marker panels for coarse annotation ────────────────────────────
@@ -1263,6 +1261,7 @@ def validate_annotation():
 # ═════════════════════════════════════════════════════════════════════════════
 
 def main():
+    global INT_DIR, RESULTS_DIR
     args = sys.argv[1:]
 
     validate_only = '--validate-only' in args
@@ -1273,6 +1272,24 @@ def main():
     for i, a in enumerate(args):
         if a == '--object' and i + 1 < len(args):
             object_filter = args[i + 1]
+
+    # Parse --input-dir (where to read {object}.h5ad from)
+    for i, a in enumerate(args):
+        if a == '--input-dir' and i + 1 < len(args):
+            INT_DIR = Path(args[i + 1]).resolve()
+
+    # Parse --output-dir (where annotation results land)
+    for i, a in enumerate(args):
+        if a == '--output-dir' and i + 1 < len(args):
+            RESULTS_DIR = Path(args[i + 1]).resolve()
+
+    for d in [RESULTS_DIR / "cluster_markers",
+              RESULTS_DIR / "annotation_dotplots",
+              RESULTS_DIR / "celltypist_validation"]:
+        d.mkdir(parents=True, exist_ok=True)
+
+    print(f"  Input dir:  {INT_DIR}")
+    print(f"  Output dir: {RESULTS_DIR}")
 
     if validate_only:
         passed, _ = validate_annotation()
