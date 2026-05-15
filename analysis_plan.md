@@ -27,11 +27,11 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 06 complete; human checkpoint cleared 2026-05-14; ready to resume at Module 07.**
+**Tiered v4 pipeline — Module 07 complete 2026-05-15; pending human checkpoint.**
 
-The atlas is being re-run on the tiered v4 integration (Seurat v4 SCT + CCA, mes / non-mes split) for all four compartments. The v5 outputs remain on disk untouched at `data/integrated/{NP,AF,CEP,all_cells}.h5ad`; the new tiered v4 outputs live at `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` and Module 06 wrote cluster columns back to those files.
+The atlas is being re-run on the tiered v4 integration (Seurat v4 SCT + CCA, mes / non-mes split) for all four compartments. The v5 outputs remain on disk untouched at `data/integrated/{NP,AF,CEP,all_cells}.h5ad`; the new tiered v4 outputs live at `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` and Modules 06–07 wrote cluster + annotation columns back to those files.
 
-See **Tiered v4 Module 06 Results** below for cluster counts (refreshed 2026-05-09), resolution justification, and the 2026-05-14 review decisions.
+See **Tiered v4 Module 06 Results** for cluster counts (refreshed 2026-05-09) and the 2026-05-14 review decisions, and **Tiered v4 Module 07 Results** for the 2026-05-15 annotation outputs and the three soft-warning items awaiting checkpoint review.
 
 **Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration. v5 results retained for comparison.
 
@@ -219,6 +219,46 @@ These cannot be evaluated until Modules 07–08 run.
 - Logs: `logs/05m_assemble_*.log`, `logs/06_clustering_*_tiered_v4.log`, `logs/06_clustering_validate_tiered_v4.log`
 
 **Human checkpoint cleared 2026-05-14. Ready to resume at Module 07.**
+
+---
+
+## Tiered v4 Module 07 Results (2026-05-15)
+
+`scripts/07_annotation.py` was re-run against `data/integrated/tiered_v4/` after commit `2d183ed` added `--input-dir` / `--output-dir` flags (so the tiered v4 outputs do not overwrite the v5 production results). Run wall time 18:54 → 19:45 (~51 min). Validator overall status: **PASSED**.
+
+### Cell-type counts (per-compartment cell_type column)
+
+| Object | Cells | Cell types | Notes |
+|--------|-------|------------|-------|
+| NP        | 262,951 | 8  | 12.4% `unassigned` (32,621 cells) — soft warning, see below |
+| AF        | 84,624  | 7  | 0.0% unassigned |
+| CEP       | 50,840  | 6  | 0.0% unassigned |
+| all_cells | 410,643 | 19 | 0.2% unassigned (908 cells); 398,359 transferred + 44,905 de novo |
+
+Finer than v5 (NP 5 · AF 4 · CEP 7 · all_cells 16), consistent with the larger Module 06 tiered v4 cluster counts (NP 32, AF 17, CEP 20, all_cells 21).
+
+### Validator warnings to weigh at checkpoint
+
+1. **NP `unassigned` = 12.4%** — above the 10% spec threshold. Mesenchymal clusters that did not score above the stage-1 coarse-marker cutoff for any of Chondrocyte_like / Fibroblast_like / Fibrochondrocyte_like. Question: biologically meaningful (trajectory intermediates?) or low-quality clusters to merge into a neighbor / accept with a relaxed cutoff?
+2. **CellTypist failed on CEP non-mesenchymal cells** with *"Invalid expression matrix in `.X`, expect log1p normalized expression to 10000 counts per cell."* Coarse and fine labels from the marker-based annotator are unaffected; only the automated secondary check is missing for the CEP non-mes subset. One-line fix in `07_annotation.py` (pass a normalized copy of `.X` to CellTypist).
+3. **`all_cells`: no cluster marker tables found** — expected, because `all_cells` annotations are transferred from compartment-specific objects rather than recomputed. Validator does not currently know to skip this check for transfer-mode objects; consider gating the check on the presence of locally-computed clusters.
+
+### Cell-type naming question
+
+Compartment-specific labels (`NP_fibrocartilaginous`, `NP_mature_chondrocyte`, `AF_outer`, `AF_inner`, `EP_hyaline`) coexist with generic labels (`Fibroblast_like`, `Chondrocyte_like`, `Fibrochondrocyte_like`) in the `all_cells` object. Is this the intended cross-compartment scheme (compartment-specific identities preserved where the cell sits in its own compartment, generic where it's a transfer-mode call) or should it be harmonized before Module 08 pseudobulk?
+
+### Review materials
+
+- `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` — annotated objects (`cell_type`, `coarse_cell_type`, `cell_type_confidence`, `annotation_evidence` in `.obs`)
+- `results/integration/tiered_v4/cell_type_definitions.tsv` — 40 rows
+- `results/integration/tiered_v4/umap_{NP,AF,CEP,all_cells}_annotated.png`
+- `results/integration/tiered_v4/cluster_markers/` — 14 per-tier and within-coarse marker tables
+- `results/integration/tiered_v4/annotation_dotplots/` — 9 canonical-marker dot plot PDFs
+- `results/integration/tiered_v4/annotation_report.html` — auto-generated annotation report
+- `notebooks/07_annotation.ipynb` §6 — embedded tables, UMAPs, dot plots, and validator notes
+- Log: `logs/07_annotation_tiered_v4.log`
+
+**Status: pending human checkpoint review of the three validator warnings + the cross-compartment naming question above before resuming at Module 08.**
 
 ---
 
