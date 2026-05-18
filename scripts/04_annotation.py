@@ -69,11 +69,17 @@ FIBROBLAST_GENES = ["COL1A1", "COL1A2", "DCN", "LUM"]
 # Non-mesenchymal markers
 IMMUNE_PRIMARY = ["PTPRC"]
 IMMUNE_SUPPORTING = [
+    # Lymphoid / monocytic / mast
     "CD3D", "CD3E", "CD68", "CD14", "CSF1R",
     "CD79A", "MS4A1", "KIT", "TPSAB1", "NKG7", "GNLY",
+    # Granulocyte / neutrophil
+    "S100A8", "S100A9", "FCGR3B", "CSF3R",
+    # Plasma cell
+    "MZB1", "JCHAIN", "SDC1",
 ]
 ENDOTHELIAL_GENES = ["PECAM1", "VWF", "CDH5"]
 PERICYTE_GENES = ["RGS5", "PDGFRB"]
+ERYTHROCYTE_GENES = ["HBB", "HBA1", "HBA2", "GYPA"]
 
 # Rescue markers (prevent stressed disc cells from being called non-mesenchymal)
 RESCUE_GENES = ["ACAN", "SOX9"]
@@ -82,16 +88,17 @@ RESCUE_GENES = ["ACAN", "SOX9"]
 ALL_MARKER_GENES = (
     CHONDROCYTE_GENES + FIBROBLAST_GENES +
     IMMUNE_PRIMARY + IMMUNE_SUPPORTING +
-    ENDOTHELIAL_GENES + PERICYTE_GENES
+    ENDOTHELIAL_GENES + PERICYTE_GENES + ERYTHROCYTE_GENES
 )
 
-# Coarse label palette (6 categories)
+# Coarse label palette (7 categories)
 COARSE_PALETTE = {
     "Chondrocyte_like": "#2196F3",
     "Fibroblast_like": "#4CAF50",
     "Immune": "#E91E63",
     "Endothelial": "#FF9800",
     "Pericyte_SMC": "#9C27B0",
+    "Erythrocyte": "#B71C1C",
     "Unknown": "#9E9E9E",
 }
 
@@ -212,7 +219,8 @@ def score_cell_class(adata):
           + (f" (missing: {', '.join(fibro_missing)})" if fibro_missing else ""))
 
     # Report non-mesenchymal marker availability
-    nonmes_genes = IMMUNE_PRIMARY + IMMUNE_SUPPORTING + ENDOTHELIAL_GENES + PERICYTE_GENES
+    nonmes_genes = (IMMUNE_PRIMARY + IMMUNE_SUPPORTING +
+                    ENDOTHELIAL_GENES + PERICYTE_GENES + ERYTHROCYTE_GENES)
     nonmes_resolved, nonmes_missing = resolve_gene_list(nonmes_genes, var_names)
     print(f"    Non-mesenchymal markers: {len(nonmes_resolved)}/{len(nonmes_genes)} available"
           + (f" (missing: {', '.join(nonmes_missing)})" if nonmes_missing else ""))
@@ -228,19 +236,21 @@ def classify_cells(adata):
     """Assign coarse_label based on hierarchical marker rules.
 
     Classification hierarchy (first match wins):
-    1. Immune: PTPRC in top 10th percentile, OR ≥2 immune supporting markers
+    1. Erythrocyte: HBB, HBA1, HBA2, or GYPA in top 10th percentile.
+       Tissue-prep contamination; routed to non_mesenchymal.
+    2. Immune: PTPRC in top 10th percentile, OR ≥2 immune supporting markers
        each in the top 10th percentile. Must NOT co-express ACAN or SOX9.
-    2. Endothelial: PECAM1, VWF, or CDH5 in top 10th percentile.
+    3. Endothelial: PECAM1, VWF, or CDH5 in top 10th percentile.
        Must NOT co-express ACAN or SOX9.
-    3. Pericyte_SMC: RGS5 AND PDGFRB co-expressed (both in top 10th percentile).
+    4. Pericyte_SMC: RGS5 AND PDGFRB co-expressed (both in top 10th percentile).
        Must NOT co-express ACAN or SOX9.
-    4. Chondrocyte_like: chondrocyte score > 2x fibroblast score AND > 0.
-    5. Fibroblast_like: fibroblast score > 2x chondrocyte score AND > 0.
-    6. Unknown: everything else.
+    5. Chondrocyte_like: chondrocyte score > 2x fibroblast score AND > 0.
+    6. Fibroblast_like: fibroblast score > 2x chondrocyte score AND > 0.
+    7. Unknown: everything else.
 
     Derives cell_class from coarse_label:
     - Chondrocyte_like, Fibroblast_like -> "mesenchymal"
-    - Immune, Endothelial, Pericyte_SMC -> "non_mesenchymal"
+    - Immune, Endothelial, Pericyte_SMC, Erythrocyte -> "non_mesenchymal"
     - Unknown -> "unknown"
     """
     n_cells = adata.shape[0]
@@ -251,7 +261,7 @@ def classify_cells(adata):
 
     # Precompute expression vectors and top-10th-percentile thresholds
     all_genes = (IMMUNE_PRIMARY + IMMUNE_SUPPORTING + ENDOTHELIAL_GENES +
-                 PERICYTE_GENES + RESCUE_GENES)
+                 PERICYTE_GENES + ERYTHROCYTE_GENES + RESCUE_GENES)
     marker_data = {}
     for gene in all_genes:
         expr = _get_gene_expression(adata, gene)
@@ -272,7 +282,16 @@ def classify_cells(adata):
 
     # Classify each cell using the hierarchy
     for i in range(n_cells):
-        # ── Rule 1: Immune ──────────────────────────────────────────────
+        # ── Rule 1: Erythrocyte ─────────────────────────────────────────
+        # Anuclear RBCs: hemoglobin/glycophorin dominate expression.
+        # Routed to non_mesenchymal so they cluster separately in integration
+        # rather than leaking into the mesenchymal tier as "Unknown".
+        is_eryth = any(_is_top(g, i) for g in ERYTHROCYTE_GENES)
+        if is_eryth and not _has_rescue(i):
+            labels[i] = "Erythrocyte"
+            continue
+
+        # ── Rule 2: Immune ──────────────────────────────────────────────
         is_immune = False
         if _is_top('PTPRC', i):
             is_immune = True
@@ -285,31 +304,31 @@ def classify_cells(adata):
             labels[i] = "Immune"
             continue
 
-        # ── Rule 2: Endothelial ─────────────────────────────────────────
+        # ── Rule 3: Endothelial ─────────────────────────────────────────
         is_endo = any(_is_top(g, i) for g in ENDOTHELIAL_GENES)
         if is_endo and not _has_rescue(i):
             labels[i] = "Endothelial"
             continue
 
-        # ── Rule 3: Pericyte_SMC ────────────────────────────────────────
+        # ── Rule 4: Pericyte_SMC ────────────────────────────────────────
         is_pericyte = _is_top('RGS5', i) and _is_top('PDGFRB', i)
         if is_pericyte and not _has_rescue(i):
             labels[i] = "Pericyte_SMC"
             continue
 
-        # ── Rule 4: Chondrocyte_like ────────────────────────────────────
+        # ── Rule 5: Chondrocyte_like ────────────────────────────────────
         s_c = score_chondro[i]
         s_f = score_fibro[i]
         if s_c > 0 and s_c > 2 * s_f:
             labels[i] = "Chondrocyte_like"
             continue
 
-        # ── Rule 5: Fibroblast_like ─────────────────────────────────────
+        # ── Rule 6: Fibroblast_like ─────────────────────────────────────
         if s_f > 0 and s_f > 2 * s_c:
             labels[i] = "Fibroblast_like"
             continue
 
-        # ── Rule 6: Unknown ─────────────────────────────────────────────
+        # ── Rule 7: Unknown ─────────────────────────────────────────────
         # labels[i] already set to "Unknown"
 
     adata.obs['coarse_label_raw'] = labels
@@ -317,15 +336,120 @@ def classify_cells(adata):
     # Log rescue stats
     n_rescued = 0
     for i in range(n_cells):
-        # Count cells that matched immune/endo/pericyte but were rescued
+        # Count cells that matched any non-mes rule but were rescued by ACAN/SOX9
         if _has_rescue(i):
+            is_eryth = any(_is_top(g, i) for g in ERYTHROCYTE_GENES)
             is_immune = _is_top('PTPRC', i) or sum(1 for g in IMMUNE_SUPPORTING if _is_top(g, i)) >= 2
             is_endo = any(_is_top(g, i) for g in ENDOTHELIAL_GENES)
             is_pericyte = _is_top('RGS5', i) and _is_top('PDGFRB', i)
-            if is_immune or is_endo or is_pericyte:
+            if is_eryth or is_immune or is_endo or is_pericyte:
                 n_rescued += 1
     if n_rescued > 0:
         print(f"    ACAN/SOX9 rescue: {n_rescued} cells kept from non-mesenchymal assignment")
+
+
+def _score_cluster_for_panel(adata, mask, panel_genes, var_set):
+    """Cluster-level marker score: mean over genes of frac_in × min(specificity, 5)."""
+    resolved = [g for g in panel_genes if resolve_gene(g, var_set) is not None]
+    resolved = [resolve_gene(g, var_set) for g in resolved]
+    if not resolved:
+        return 0.0
+    expr_in = adata[mask, resolved].X
+    expr_out = adata[~mask, resolved].X
+    try:
+        expr_in = expr_in.toarray()
+    except AttributeError:
+        expr_in = np.asarray(expr_in)
+    try:
+        expr_out = expr_out.toarray()
+    except AttributeError:
+        expr_out = np.asarray(expr_out)
+
+    gene_scores = []
+    for j in range(expr_in.shape[1]):
+        frac_in = float((expr_in[:, j] > 0).mean())
+        mean_in = float(expr_in[:, j].mean())
+        mean_out = float(expr_out[:, j].mean())
+        specificity = mean_in / (mean_out + 0.01)
+        gene_scores.append(frac_in * min(specificity, 5.0))
+    return float(np.mean(gene_scores)) if gene_scores else 0.0
+
+
+def _cluster_level_nonmes_rescue(adata, cluster_key, min_score=0.10, min_margin=0.03):
+    """Reclassify Unknown-majority clusters that match a non-mes lineage panel.
+
+    Per-cell top-decile rules in classify_cells undercount cell types that
+    are abundant (>10%) within a dataset (e.g. neutrophils in granulocyte-rich
+    studies). This step inspects each Leiden cluster at the classification
+    resolution; if the cluster is majority Unknown AND its cluster-mean
+    expression strongly matches one of the non-mes panels (with a margin over
+    the runner-up), the cluster is reclassified.
+    """
+    if cluster_key not in adata.obs.columns:
+        return
+
+    var_set = set(adata.var_names)
+    panels = {
+        "Neutrophil_like":  ["S100A8", "S100A9", "FCGR3B", "CSF3R", "FPR1"],
+        "Macrophage_like":  ["CD68", "CD14", "CSF1R", "CD163"],
+        "T_cell_like":      ["CD3D", "CD3E", "CD8A"],
+        "B_cell_like":      ["CD79A", "MS4A1"],
+        "Plasma_cell_like": ["MZB1", "JCHAIN", "SDC1", "DERL3", "CD38"],
+        "NK_cell_like":     ["NKG7", "GNLY"],
+        "Mast_cell_like":   ["KIT", "TPSAB1"],
+        "Endothelial_like": ["PECAM1", "VWF", "CDH5", "EMCN", "EGFL7"],
+        "Pericyte_like":    ["RGS5", "PDGFRB", "ACTA2"],
+        "Erythrocyte_like": ["HBB", "HBA1", "HBA2", "GYPA"],
+    }
+    panel_to_coarse = {
+        "Neutrophil_like":  "Immune",
+        "Macrophage_like":  "Immune",
+        "T_cell_like":      "Immune",
+        "B_cell_like":      "Immune",
+        "Plasma_cell_like": "Immune",
+        "NK_cell_like":     "Immune",
+        "Mast_cell_like":   "Immune",
+        "Endothelial_like": "Endothelial",
+        "Pericyte_like":    "Pericyte_SMC",
+        "Erythrocyte_like": "Erythrocyte",
+    }
+
+    coarse = adata.obs['coarse_label'].values.copy()
+    n_rescued_total = 0
+    rescued_by = {}
+
+    for cluster in adata.obs[cluster_key].unique():
+        mask = (adata.obs[cluster_key] == cluster).values
+        cluster_labels = coarse[mask]
+        n_cells = int(mask.sum())
+        if n_cells < 30:
+            continue
+        unknown_frac = float((cluster_labels == "Unknown").mean())
+        if unknown_frac < 0.5:
+            continue
+
+        scores = {p: _score_cluster_for_panel(adata, mask, g, var_set)
+                  for p, g in panels.items()}
+        sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+        best_panel, best_score = sorted_scores[0]
+        second_score = sorted_scores[1][1] if len(sorted_scores) > 1 else 0.0
+
+        if best_score < min_score:
+            continue
+        if (best_score - second_score) < min_margin:
+            continue
+
+        new_label = panel_to_coarse[best_panel]
+        coarse[mask] = new_label
+        n_rescued_total += n_cells
+        key = f"{best_panel} -> {new_label}"
+        rescued_by[key] = rescued_by.get(key, 0) + n_cells
+
+    adata.obs['coarse_label'] = coarse
+    if n_rescued_total > 0:
+        print(f"    Cluster-level non-mes rescue: {n_rescued_total:,} cells reclassified from Unknown")
+        for k, v in sorted(rescued_by.items(), key=lambda x: -x[1]):
+            print(f"      {k}: {v:,} cells")
 
 
 def cluster_majority_vote(adata, resolution=CLASSIFICATION_RESOLUTION):
@@ -376,6 +500,12 @@ def cluster_majority_vote(adata, resolution=CLASSIFICATION_RESOLUTION):
 
     adata.obs['coarse_label'] = final_labels
 
+    # Cluster-level rescue: catch Unknown-majority clusters whose cluster-mean
+    # marker expression unambiguously matches a non-mes lineage. Necessary
+    # because per-cell top-decile rules undercount abundant cell types
+    # (e.g. neutrophils >20% of dataset have S100A8/9 spread across percentiles).
+    _cluster_level_nonmes_rescue(adata, cluster_key)
+
     # Derive cell_class from coarse_label
     class_map = {
         "Chondrocyte_like": "mesenchymal",
@@ -383,6 +513,7 @@ def cluster_majority_vote(adata, resolution=CLASSIFICATION_RESOLUTION):
         "Immune": "non_mesenchymal",
         "Endothelial": "non_mesenchymal",
         "Pericyte_SMC": "non_mesenchymal",
+        "Erythrocyte": "non_mesenchymal",
         "Unknown": "unknown",
     }
     adata.obs['cell_class'] = adata.obs['coarse_label'].map(class_map)

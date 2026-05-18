@@ -61,8 +61,44 @@ BASE <- normalizePath(file.path(.get_script_dir(), ".."), mustWork = FALSE)
 PROC_DIR <- file.path(BASE, "data", "processed")
 
 # ── Integration parameters ───────────────────────────────────────────────
-N_HVG  <- 3000
-N_DIMS <- 50
+N_HVG_DEFAULT <- 3000   # Seurat CCA vignette default
+N_DIMS        <- 50
+
+# Adaptive feature selection guards against int32 indexing overflow in
+# Seurat v4 IntegrateData. The failing intermediate matrix scales with
+# (n_cells × n_features × n_objects). Empirical calibration from
+# tiered_v4 integration logs (2026-04 to 2026-05):
+#
+#   Tier             cells   objects  features  C×F×O     Outcome
+#   AF mes          84,568   3        3000      7.6e8     OK
+#   CEP mes         50,769   3        3000      4.6e8     OK
+#   NP mes         262,951   8        3000      6.3e9     OK
+#   all_cells mes  407,179   15       3000      1.83e10   FAIL
+#   all_cells mes  407,179   15       1000      6.1e9     OK
+#
+# Failure boundary lies in (6.3e9, 1.83e10). Default ceiling 1e10 sits
+# between the data points with margin on both sides. Override via
+# --max-cfo-product (or --features-to-integrate for a fixed value).
+INTEGRATION_CFO_CEILING_DEFAULT <- 1e10
+N_HVG_FLOOR <- 500     # Never fall below this number of features
+
+# Resolves the actual feature count to use for a given tier.
+# Returns the number of integration features after applying the
+# adaptive ceiling and any CLI overrides.
+adaptive_features <- function(n_cells, n_objects,
+                              hvg_cap = N_HVG_DEFAULT,
+                              ceiling = INTEGRATION_CFO_CEILING_DEFAULT) {
+  budget <- floor(ceiling / (as.numeric(n_cells) * as.numeric(n_objects)))
+  chosen <- min(hvg_cap, max(budget, N_HVG_FLOOR))
+  message(sprintf(
+    "    [adaptive_features] %d cells x %d objects -> budget %d ft; using %d (cap=%d, ceiling=%.1e)",
+    n_cells, n_objects, budget, chosen, hvg_cap, ceiling))
+  chosen
+}
+
+# N_HVG is kept as a back-compat alias for code paths that haven't been
+# updated to call adaptive_features() directly. Points at the cap.
+N_HVG <- N_HVG_DEFAULT
 
 # ── Stage timing helpers ─────────────────────────────────────────────────
 .STAGE_T0 <- new.env()
@@ -138,6 +174,10 @@ parser$add_argument("--skip-rds", action = "store_true", default = FALSE,
                     help = "Skip saveRDS of full integrated object (saves disk space; bridge export still produced)")
 parser$add_argument("--features-to-integrate", type = "integer", default = NULL,
                     help = "Limit IntegrateData to top N anchor features (default: all). Use to avoid R Matrix 2^31 nnz overflow on very large objects (e.g. all_cells: 2000).")
+parser$add_argument("--max-cfo-product", type = "double", default = INTEGRATION_CFO_CEILING_DEFAULT,
+                    help = sprintf("Adaptive ceiling for cells x features x objects (default: %.1e). Override only if you have new calibration data.", INTEGRATION_CFO_CEILING_DEFAULT))
+parser$add_argument("--hvg-cap", type = "integer", default = N_HVG_DEFAULT,
+                    help = sprintf("Maximum HVGs (Seurat CCA vignette default: %d). Adaptive selection reduces below this when cell or object count is large.", N_HVG_DEFAULT))
 args <- parser$parse_args()
 
 EXP_DIR <- file.path(BASE, "data", "integrated", paste0(tolower(args$compartment), "_experiment"))
@@ -436,9 +476,15 @@ integrate_v4_cca <- function(seurat_list, label, force = FALSE) {
     }
     .toc("v4_sctransform_total")
 
-    message("    SelectIntegrationFeatures (", N_HVG, " features)...")
+    n_cells_tier <- sum(sapply(seurat_list, ncol))
+    n_obj_tier <- length(seurat_list)
+    n_features_tier <- adaptive_features(
+      n_cells_tier, n_obj_tier,
+      hvg_cap = args$hvg_cap, ceiling = args$max_cfo_product
+    )
+    message("    SelectIntegrationFeatures (", n_features_tier, " features)...")
     .tic("v4_select_features")
-    features <- SelectIntegrationFeatures(object.list = seurat_list, nfeatures = N_HVG)
+    features <- SelectIntegrationFeatures(object.list = seurat_list, nfeatures = n_features_tier)
     .toc("v4_select_features")
 
     message("    PrepSCTIntegration...")
@@ -840,7 +886,13 @@ main <- function() {
   message(paste(rep("=", 60), collapse = ""))
   message("Module 05k — Tiered v4 Integration (", args$compartment, ")")
   message("Seurat version: ", as.character(packageVersion("Seurat")))
-  message("HVGs: ", N_HVG, ", Dims: ", N_DIMS)
+  message("HVG cap: ", args$hvg_cap,
+          ", adaptive ceiling (C×F×O): ", sprintf("%.1e", args$max_cfo_product),
+          ", Dims: ", N_DIMS)
+  if (!is.null(args$features_to_integrate)) {
+    message("features-to-integrate override: ", args$features_to_integrate,
+            " (trims SCT data post-anchor-finding)")
+  }
   message("BLAS: ", sessionInfo()$BLAS)
   message("CPUs available: ", parallel::detectCores())
   message("skip_rds: ", args$skip_rds, ", force: ", args$force)

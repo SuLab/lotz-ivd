@@ -59,11 +59,14 @@ CANONICAL_MARKERS = {
     "EP_ossification":      ["RUNX2", "SP7", "BGLAP"],
     # Non-mesenchymal
     "Macrophage":           ["CD68", "CD14", "CSF1R", "CD163", "CD86"],
+    "Neutrophil":           ["S100A8", "S100A9", "FCGR3B", "CSF3R", "FPR1"],
     "T_cell":               ["CD3D", "CD3E", "CD4", "CD8A"],
     "B_cell":               ["CD79A", "MS4A1"],
+    "Plasma_cell":          ["MZB1", "DERL3", "SDC1", "CD38"],
     "NK_cell":              ["NKG7", "GNLY"],
     "Mast_cell":            ["KIT", "TPSAB1"],
     "Endothelial":          ["PECAM1", "VWF", "CDH5"],
+    "Erythrocyte":          ["HBB", "HBA1", "HBA2", "GYPA"],
     "Pericyte_SMC":         ["ACTA2", "RGS5", "PDGFRB"],
     # Additional coarse panels
     "Fibrochondrocyte_like": ["COL1A1", "COL2A1", "ACAN", "DCN"],
@@ -80,12 +83,15 @@ COARSE_PANELS_MESENCHYMAL = {
 
 COARSE_PANELS_NON_MESENCHYMAL = {
     "Macrophage":     ["CD68", "CD14", "CSF1R", "CD163", "CD86"],
+    "Neutrophil":     ["S100A8", "S100A9", "FCGR3B", "CSF3R", "FPR1"],
     "T_cell":         ["CD3D", "CD3E", "CD4", "CD8A"],
     "B_cell":         ["CD79A", "MS4A1"],
+    "Plasma_cell":    ["MZB1", "DERL3", "SDC1", "CD38"],
     "NK_cell":        ["NKG7", "GNLY"],
     "Mast_cell":      ["KIT", "TPSAB1"],
     "Endothelial":    ["PECAM1", "VWF", "CDH5"],
     "Pericyte_SMC":   ["ACTA2", "RGS5", "PDGFRB"],
+    "Erythrocyte":    ["HBB", "HBA1", "HBA2", "GYPA"],
 }
 
 # Fine marker panels — used in Stage 2 within each coarse group
@@ -301,8 +307,9 @@ def annotate_coarse(adata, object_name, tier_name):
     """Stage 1: Assign coarse_cell_type to each cluster via canonical markers.
 
     For mesenchymal tiers: Chondrocyte_like, Fibroblast_like, Fibrochondrocyte_like
-    For non-mesenchymal tiers: Macrophage, T_cell, B_cell, NK_cell, Mast_cell,
-                                Endothelial, Pericyte_SMC
+    For non-mesenchymal tiers: Macrophage, Neutrophil, T_cell, B_cell, Plasma_cell,
+                                NK_cell, Mast_cell, Endothelial, Pericyte_SMC,
+                                Erythrocyte
     """
     print(f"  Stage 1: Coarse annotation ({tier_name})...")
 
