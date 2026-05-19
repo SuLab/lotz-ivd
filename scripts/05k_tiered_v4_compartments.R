@@ -96,10 +96,6 @@ adaptive_features <- function(n_cells, n_objects,
   chosen
 }
 
-# N_HVG is kept as a back-compat alias for code paths that haven't been
-# updated to call adaptive_features() directly. Points at the cap.
-N_HVG <- N_HVG_DEFAULT
-
 # ── Stage timing helpers ─────────────────────────────────────────────────
 .STAGE_T0 <- new.env()
 .tic <- function(stage) {
@@ -565,7 +561,11 @@ integrate_simple <- function(seurat_list, label) {
 
   merged <- JoinLayers(merged)
   merged <- NormalizeData(merged, verbose = FALSE)
-  merged <- FindVariableFeatures(merged, nfeatures = N_HVG, verbose = FALSE)
+  n_features_simple <- adaptive_features(
+    total_cells, length(seurat_list),
+    hvg_cap = args$hvg_cap, ceiling = args$max_cfo_product
+  )
+  merged <- FindVariableFeatures(merged, nfeatures = n_features_simple, verbose = FALSE)
   merged <- ScaleData(merged, verbose = FALSE)
 
   dims_use <- min(N_DIMS, ncol(merged) - 1, nrow(merged) - 1)
