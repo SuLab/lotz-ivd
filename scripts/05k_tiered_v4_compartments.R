@@ -590,10 +590,14 @@ integrate_simple <- function(seurat_list, label) {
 # values — wrong for downstream pseudobulk DE.
 # ═══════════════════════════════════════════════════════════════════════════
 
-stash_raw_counts <- function(seurat_list, cache_path) {
-  if (file.exists(cache_path)) {
+stash_raw_counts <- function(seurat_list, cache_path, force = FALSE) {
+  if (file.exists(cache_path) && !force) {
     message("    [raw counts cache] exists, skipping build: ", cache_path)
     return(invisible(NULL))
+  }
+  if (file.exists(cache_path) && force) {
+    message("    [raw counts cache] --force: removing stale cache and rebuilding")
+    file.remove(cache_path)
   }
   message("    [raw counts cache] Building merged raw counts → ", cache_path)
   .tic("raw_counts_stash")
@@ -832,7 +836,7 @@ run_tiered_v4 <- function(seurat_list, force = FALSE, skip_rds = FALSE) {
   # anchor-cache trim path.
   if (!mes_done || force) {
     if (length(tiers$mesenchymal) > 0) {
-      stash_raw_counts(tiers$mesenchymal, mes_counts_cache)
+      stash_raw_counts(tiers$mesenchymal, mes_counts_cache, force = force)
     }
   }
   if (!nonmes_done || force) {
@@ -842,7 +846,7 @@ run_tiered_v4 <- function(seurat_list, force = FALSE, skip_rds = FALSE) {
       sapply(tiers$non_mesenchymal, ncol) >= NONMES_MIN_CELLS_PER_STUDY
     ]
     if (length(nonmes_keep) > 0) {
-      stash_raw_counts(nonmes_keep, nonmes_counts_cache)
+      stash_raw_counts(nonmes_keep, nonmes_counts_cache, force = force)
     }
   }
 

@@ -260,6 +260,76 @@ Compartment-specific labels (`NP_fibrocartilaginous`, `NP_mature_chondrocyte`, `
 
 **Status: pending human checkpoint review of the three validator warnings + the cross-compartment naming question above before resuming at Module 08.**
 
+### Root-cause analysis of the NP unassigned cells (2026-05-18)
+
+Follow-up marker-scan on the 8 NP mes-tier "unassigned" Leiden clusters (`scripts/07_annotation.py` Stage-1 panel: Chondrocyte_like / Fibroblast_like / Fibrochondrocyte_like). Every cluster's top-15 markers are unambiguous **non-mesenchymal lineage markers**:
+
+| Cluster | Cells | Top markers | Identity | Mes / Unknown (Module 04) |
+|---|---|---|---|---|
+| 8  | 10,779 | CXCL8, S100A8/9, FPR1, C5AR1, BCL2A1, G0S2, NAMPT, SRGN | Neutrophils / activated myeloid | 1,843 / 8,936 |
+| 15 | 6,982  | LYZ, S100A8/9, LTF, BPI, CEACAM8, MNDA, CD24             | Neutrophils / granulocytes      | 793 / 6,189   |
+| 18 | 3,765  | CD74, HLA-DRB1/DPA1/DPB1, FCER1G, LYZ, CTSS, PTPRC       | Macrophages / APCs              | 1,026 / 2,739 |
+| 19 | 3,578  | PECAM1, EMCN, CD34, EGFL7, PODXL, AQP1, RAMP2, GNG11     | Endothelial                     | 1,256 / 2,322 |
+| 21 | 2,390  | TRBC2, CD48, CCL5, RUNX3, CXCR4, REL, PTPRC              | T cells                         | 187 / 2,203   |
+| 22 | 2,243  | HBB, HBA1, HBA2, HBD, AHSP, ALAS2, GYPA, HEMGN           | Erythrocytes                    | 481 / 1,762   |
+| 23 | 1,014  | CD79A, IGHM, IGKC, HLA-DR/DP/DQ, SPIB, CD37              | B cells                         | 69 / 945      |
+| 25 | 271    | MZB1, DERL3, FKBP11, SLAMF7, CD38, SSR4, HERPUD1         | Plasma cells                    | 13 / 258      |
+
+74.6% of the 31,022 cells carry `coarse_label = "Unknown"` from Module 04. They are not trajectory intermediates or low-quality mesenchymal cells; they are mis-tiered non-mesenchymal cells. The mes-tier coarse panel correctly rejected them.
+
+The same marker scan on NP non-mes cluster 0 (the 1,599 cells = 47.1% unassigned in non-mes tier) shows the **identical neutrophil signature** (CXCL8, S100A8, C5AR1, G0S2, BCL2A1, NAMPT, FPR1). AF and CEP each have **zero unassigned cells** in any tier — both compartments have much smaller immune/blood populations and the tier-routing did not leak.
+
+### Two compounding root causes
+
+1. **Tier-routing leak in `scripts/05k_tiered_v4_compartments.R:286`** — `mes_cells <- which(cc %in% c("mesenchymal", "unknown"))` routes every `cell_class = "unknown"` cell into the mesenchymal integration tier. This was likely intended to capture ambiguous chondrocyte/fibroblast intermediates but in practice dumps ~23K NP cells (mostly neutrophils, plus macrophages / T / B / plasma / endothelial / RBCs) into the mes tier where they cannot be labeled by chondrocyte/fibroblast panels.
+
+2. **Panel coverage gap in `scripts/04_annotation.py` and `scripts/07_annotation.py`** — Module 04's `IMMUNE_SUPPORTING` list covers T cells (CD3D/E), monocytes/macs (CD68, CD14, CSF1R), B cells (CD79A, MS4A1), mast cells (KIT, TPSAB1), NK cells (NKG7, GNLY) — but **no neutrophil markers, no plasma-cell markers, no erythroid markers**. Neutrophils have only weak PTPRC and none of the supporting markers, so they fall through every rule into "Unknown." Module 07's `COARSE_PANELS_NON_MESENCHYMAL` has the same gap, so even if the routing fix were made in isolation, NP non-mes cluster 0 would still be "unassigned."
+
+### Proposed fix (Module 04 + Module 07; rerun cost is low)
+
+**A. Module 04 (`scripts/04_annotation.py`):** Extend the non-mesenchymal classification rules so neutrophils / plasma cells / erythrocytes are routed to `cell_class = non_mesenchymal` rather than `unknown`. Minimal-change option is to extend `IMMUNE_SUPPORTING`:
+
+```python
+IMMUNE_SUPPORTING = [
+    "CD3D", "CD3E", "CD68", "CD14", "CSF1R",
+    "CD79A", "MS4A1", "KIT", "TPSAB1", "NKG7", "GNLY",
+    "S100A8", "S100A9", "FCGR3B", "CSF3R",    # neutrophil / granulocyte
+    "MZB1", "JCHAIN", "SDC1",                 # plasma cell
+]
+```
+
+…and add a separate Erythrocyte rule before the chondrocyte/fibroblast scoring (HBB / HBA1 / HBA2 / GYPA in top decile → `cell_class = non_mesenchymal`, `coarse_label = "Erythrocyte"`), so these clearly-contaminant cells can be filtered downstream rather than smuggled into the mes tier.
+
+**B. Module 07 (`scripts/07_annotation.py:81-89`):** Add matching coarse panels so the non-mes tier can name them after integration:
+
+```python
+COARSE_PANELS_NON_MESENCHYMAL = {
+    "Macrophage":   ["CD68", "CD14", "CSF1R", "CD163", "CD86"],
+    "Neutrophil":   ["S100A8", "S100A9", "FCGR3B", "CSF3R", "FPR1"],
+    "T_cell":       ["CD3D", "CD3E", "CD4", "CD8A"],
+    "B_cell":       ["CD79A", "MS4A1"],
+    "Plasma_cell":  ["MZB1", "DERL3", "SDC1", "CD38"],
+    "NK_cell":      ["NKG7", "GNLY"],
+    "Mast_cell":    ["KIT", "TPSAB1"],
+    "Endothelial":  ["PECAM1", "VWF", "CDH5"],
+    "Pericyte_SMC": ["ACTA2", "RGS5", "PDGFRB"],
+    "Erythrocyte":  ["HBB", "HBA1", "HBA2", "GYPA"],
+}
+```
+
+**C. Optional `scripts/05k_tiered_v4_compartments.R` tightening:** Once (A) re-routes the bulk of these cells out of `unknown`, the line-286 dump becomes lower-stakes. If residual `unknown` cells remain (e.g. <5% per compartment), keeping them in the mes tier as ambiguous intermediates is defensible. If a larger Unknown bucket persists, route through both tiers and pick the higher-scoring panel.
+
+**Practical recommendation:** drop cluster 22 (2,243 erythrocytes) entirely as RBC tissue-prep contamination — they have no analytic value for the DE/CCC/trajectory questions and the hemoglobin signal can distort integration. The remaining ~28.8K cells get clean non-mesenchymal identities after the fix.
+
+**Decision points for the human checkpoint:**
+1. Approve the Module 04 + Module 07 panel extensions above? (Re-run Module 04 → re-run 05k tiered_v4 integration → re-run 06/07. Roughly half a day end-to-end; reuses checkpointed scANVI / anchorset where possible.)
+2. Filter the ~2.2K erythrocyte cluster pre-integration?
+3. Open question deferred from main checkpoint section: cross-compartment naming scheme (compartment-specific vs. generic) — still needs a call before Module 08.
+
+Review materials added since the original 2026-05-15 entry:
+- This memo (above)
+- Marker scan output retained in conversation; can be exported to `results/integration/tiered_v4/cluster_markers/unassigned_diagnostic.tsv` if desired
+
 ---
 
 ## NP Integration Quality Experiment (2026-04-17)
