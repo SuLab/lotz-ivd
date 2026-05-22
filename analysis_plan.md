@@ -35,6 +35,23 @@ Validator overall status: **PASSED**. **0.0 % unassigned across all four compart
 
 **Module 08 grouping decision (agreed 2026-05-22):** primary pseudobulk DE runs on `cell_type` (collapsed) for statistical power and v5 cross-version comparability; composition tests run on both `cell_type` and `cell_subtype`; `cell_subtype` is the supplementary descriptive lens for within-cell-type characterization and Module 09 contextualization, not the unit of statistical claims.
 
+**Label harmonization + contamination flagging (2026-05-22, applied by `scripts/07b_harmonize_labels.py`):** before Module 08, the cell_type labels in all four h5ads were harmonized for compartment-prefix consistency, and two new contamination-tracking columns were added.
+
+Renames (applied to `cell_type`, `coarse_cell_type`, and `cell_subtype` base):
+- `EP_hyaline` → `CEP_hyaline`
+- `EP_ossification` → `CEP_ossification`
+- `Fibrochondrocyte_chondroid` → `NP_fibrochondrocyte_chondroid`
+- `Fibrochondrocyte_fibroid` → `CEP_fibrochondrocyte_fibroid`
+- `Fibroblast_like` → `CEP_outer` *(CEP-compartment cells only; IVD_mixed cells from GSE189916 keep generic labels since that dataset doesn't separate compartments)*
+
+New columns:
+- `is_contamination` (bool) — True for `Erythrocyte` cells and `_endothelial_admixed` sub-states
+- `contamination_type` (string) — one of `RBC`, `endothelial_admixed`, `clean`
+
+Result: 19 cell_types in all_cells (8 compartment-prefixed + 4 IVD_mixed generic + 7 non-resident). 18,345 cells flagged contamination (16,514 RBC, 1,831 endothelial_admixed) = 4.5 % of total; **decision to retain with caveats rather than filter** (per 2026-05-22 checkpoint). Module 08 will filter or annotate via the contamination columns.
+
+The `scripts/07_annotation.py` panel definitions (`CANONICAL_MARKERS`, `FINE_PANELS`, `_get_fine_panel_for_coarse`) were updated to produce the harmonized labels natively — future end-to-end reruns will not need the 07b post-step.
+
 Historical snapshots retained: **Tiered v4 Module 06 Rerun (2026-05-22)** for the new cluster counts; **Tiered v4 Module 06 Results (2026-05-09)** for the 2026-05-14 review decisions; **Tiered v4 Module 07 Results (2026-05-15)** for the pre-rescue annotation state.
 
 **Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration. v5 results retained for comparison.

@@ -55,8 +55,9 @@ CANONICAL_MARKERS = {
     "AF_outer":             ["COL1A1", "COL1A2", "THY1", "DCN", "LUM"],
     "AF_mechanical_stress": ["COMP", "CILP", "THBS1"],
     # Endplate
-    "EP_hyaline":           ["COL2A1", "COL10A1", "SOX9"],
-    "EP_ossification":      ["RUNX2", "SP7", "BGLAP"],
+    "CEP_hyaline":          ["COL2A1", "COL10A1", "SOX9"],
+    "CEP_ossification":     ["RUNX2", "SP7", "BGLAP"],
+    "CEP_outer":            ["COL1A1", "COL1A2", "DCN", "LUM", "THY1"],
     # Non-mesenchymal
     "Immune":               ["PTPRC", "CD3D", "CD3E", "CD79A", "CD68"],
     "Macrophage":           ["CD68", "CD14", "CSF1R", "CD163", "CD86"],
@@ -129,11 +130,11 @@ FINE_PANELS = {
     "AF_outer":             ["COL1A1", "COL1A2", "THY1", "DCN", "LUM"],
     "AF_mechanical_stress": ["COMP", "CILP", "THBS1"],
     # Within Fibrochondrocyte-like
-    "Fibrochondrocyte_chondroid": ["COL2A1", "ACAN", "SOX9"],
-    "Fibrochondrocyte_fibroid":   ["COL1A1", "COL1A2", "DCN"],
-    "Fibrochondrocyte_stressed":  ["MMP13", "ADAMTS5", "VEGFA"],
+    "NP_fibrochondrocyte_chondroid":  ["COL2A1", "ACAN", "SOX9"],
+    "CEP_fibrochondrocyte_fibroid":   ["COL1A1", "COL1A2", "DCN"],
+    "Fibrochondrocyte_stressed":      ["MMP13", "ADAMTS5", "VEGFA"],
     # Within Endplate chondrocytes
-    "EP_hyaline":           ["COL2A1", "COL10A1", "SOX9"],
+    "CEP_hyaline":          ["COL2A1", "COL10A1", "SOX9"],
     "EP_ossification":      ["RUNX2", "SP7", "BGLAP"],
     # Within Immune
     "Macrophage_M1":        ["CD86", "IL1B", "TNF", "NOS2"],
@@ -440,8 +441,8 @@ def _get_fine_panel_for_coarse(coarse_type, object_name):
             }
         elif object_name == "CEP":
             return {
-                "EP_hyaline":           FINE_PANELS["EP_hyaline"],
-                "EP_ossification":      FINE_PANELS["EP_ossification"],
+                "CEP_hyaline":          FINE_PANELS["CEP_hyaline"],
+                "CEP_ossification":     FINE_PANELS["CEP_ossification"],
             }
         else:
             # AF chondrocyte-like → inner AF
@@ -459,14 +460,18 @@ def _get_fine_panel_for_coarse(coarse_type, object_name):
             return {
                 "NP_fibrocartilaginous": CANONICAL_MARKERS["NP_fibrocartilaginous"],
             }
+        elif object_name == "CEP":
+            return {
+                "CEP_outer":            FINE_PANELS["CEP_outer"],
+            }
         else:
             return {}
 
     elif coarse_type == "Fibrochondrocyte_like":
         return {
-            "Fibrochondrocyte_chondroid": FINE_PANELS["Fibrochondrocyte_chondroid"],
-            "Fibrochondrocyte_fibroid":   FINE_PANELS["Fibrochondrocyte_fibroid"],
-            "Fibrochondrocyte_stressed":  FINE_PANELS["Fibrochondrocyte_stressed"],
+            "NP_fibrochondrocyte_chondroid":  FINE_PANELS["NP_fibrochondrocyte_chondroid"],
+            "CEP_fibrochondrocyte_fibroid":   FINE_PANELS["CEP_fibrochondrocyte_fibroid"],
+            "Fibrochondrocyte_stressed":      FINE_PANELS["Fibrochondrocyte_stressed"],
         }
 
     elif coarse_type == "Macrophage":
