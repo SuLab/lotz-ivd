@@ -62,7 +62,14 @@ DOWNSAMPLE_FOR_PAGA = 50000  # Max cells for PAGA computation
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_compartment(compartment):
-    """Load integrated data for a compartment."""
+    """Load integrated data for a compartment.
+
+    Subsets to mesenchymal-tier cells — for tiered_v4 this is the cells with
+    `obs['tier'] == 'mesenchymal'` (covers both cell_class=='mesenchymal' AND
+    the 'unknown'-class residual that 05m routed into the mes integration
+    tier). For v5 the `tier` column may not exist, so we fall back to
+    cell_class=='mesenchymal'.
+    """
     path = INT_DIR / f"{compartment}.h5ad"
 
     if not path.exists():
@@ -73,11 +80,14 @@ def load_compartment(compartment):
     adata = sc.read_h5ad(path)
     print(f"    Full: {adata.n_obs:,} cells × {adata.n_vars} genes")
 
-    # Subset to mesenchymal cells (trajectory on resident/mesenchymal only)
-    if 'cell_class' in adata.obs.columns:
+    if 'tier' in adata.obs.columns:
+        mask = adata.obs['tier'].astype(str) == 'mesenchymal'
+        adata = adata[mask].copy()
+        print(f"    Mesenchymal tier only: {adata.n_obs:,} cells")
+    elif 'cell_class' in adata.obs.columns:
         mask = adata.obs['cell_class'] == 'mesenchymal'
         adata = adata[mask].copy()
-        print(f"    Mesenchymal only: {adata.n_obs:,} cells")
+        print(f"    cell_class=='mesenchymal' only: {adata.n_obs:,} cells")
 
     print(f"    Cell types: {dict(adata.obs['cell_type'].value_counts())}")
 
@@ -716,12 +726,35 @@ def validate():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
+    global INT_DIR, RESULTS_DIR, DE_DIR
+
+    args = sys.argv[1:]
+
+    # Parse --input-dir (where to read h5ads from)
+    for i, a in enumerate(args):
+        if a == '--input-dir' and i + 1 < len(args):
+            INT_DIR = Path(args[i + 1]).resolve()
+
+    # Parse --output-dir (where Module 10 results land)
+    for i, a in enumerate(args):
+        if a == '--output-dir' and i + 1 < len(args):
+            RESULTS_DIR = Path(args[i + 1]).resolve()
+            RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Parse --de-dir (where Module 08 DE results live, for cross-reference)
+    for i, a in enumerate(args):
+        if a == '--de-dir' and i + 1 < len(args):
+            DE_DIR = Path(args[i + 1]).resolve()
+
     print("=" * 60)
     print("Module 10: Trajectory & Dynamics Analysis")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Input dir:  {INT_DIR}")
+    print(f"  Output dir: {RESULTS_DIR}")
+    print(f"  DE dir:     {DE_DIR}")
     print("=" * 60)
 
-    if '--validate-only' in sys.argv:
+    if '--validate-only' in args:
         passed, _ = validate()
         sys.exit(0 if passed else 1)
 

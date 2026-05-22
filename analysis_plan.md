@@ -27,7 +27,7 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 09 complete 2026-05-22 (pathway / TF / pain interpretation); ready for Module 10 (trajectory).**
+**Tiered v4 pipeline — Module 10 complete 2026-05-22 (trajectory + pseudotime); ready for Module 11 (cell-cell communication).**
 
 Module 06 rerun on 2026-05-22 (post-rescue, 50-cell non-mes threshold) was followed the same day by Module 07 reruns with four patches to `scripts/07_annotation.py`: (a) CellTypist input is now CP10K + log1p normalized (fixes the 2026-05-15 hard failure on CEP non-mes); (b) `annotate_coarse()` for the non-mes tier falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring does not fire; (c) `process_all_cells_secondary()` Categorical-assignment bug fix (cast both sides to object dtype before transfer); (d) **new Stage 3 sub-state annotation (`annotate_subtype`) using overlap-based scoring** against `SUBSTATE_PANELS` (`proliferating`, `inflammatory`, `stressed`, `matrix_active`, `migratory`, `homeostatic` fallback) plus an endothelial-admixed contamination flag (CD34/EMCN/AQP1). Writes a new `cell_subtype` column on the mesenchymal tier; non-mes cells get `cell_subtype = cell_type`.
 
@@ -349,6 +349,70 @@ All four expected pathway terms detected in ORA results:
 - Log: `logs/09_interpretation_tiered_v4_2026-05-22.log`
 
 **Status: Module 09 complete. Ready to proceed to Module 10 (trajectory + pseudotime).**
+
+---
+
+## Tiered v4 Module 10 Results (2026-05-22)
+
+Trajectory + DPT pseudotime rerun via `scripts/10_trajectory.py` against the tiered v4 integrated atlas + Module 08 DE results. Wall time **23 min** (21:28:10 → 21:51:31 UTC). Validator overall status: **PASSED**.
+
+Script changes for this rerun (committed alongside results):
+- Added `--input-dir` / `--output-dir` / `--de-dir` CLI flags (mirroring Modules 07–09).
+
+### Inputs
+
+Mesenchymal tier only — selected by `cell_class` ∈ {NP/AF/CEP mesenchymal sub-states}. NP and AF downsampled to 50,000 cells each before PAGA (originally 187,257 / 72,605); CEP processed in full (36,879). Neighbor graph built on `X_integrated` (30 dims, scVI mesenchymal embedding from Module 05k). Root cluster chosen by max enrichment of the expected mature/inner population per compartment (NP_mature_chondrocyte → cluster 3, AF_inner → cluster 5, CEP_hyaline → cluster 0). RNA velocity unavailable — no spliced/unspliced layers in public count matrices; pseudotime is DPT-only.
+
+### Headline correlations (vs v5)
+
+| Compartment | v5 ordinal ρ | Tiered v4 ordinal ρ | Tiered v4 H-vs-D MWU p | Tiered v4 trajectory ∩ DE |
+|---|---:|---:|---:|---:|
+| NP  | −0.088 | **−0.004** (p=0.41)    | 3.0e-04 | 328 / 500 (66%) |
+| AF  | +0.195 | **−0.003** (p=0.49)    | 1.1e-20 | 326 / 500 (65%) |
+| CEP | +0.073 | **+0.077** (p=1.9e-49) | 1.6e-43 | 338 / 500 (68%) |
+
+Compartment-level **ordinal correlations weaken substantially** in tiered v4 (NP and AF drop to ~0). However, **healthy-vs-degenerated MWU tests remain highly significant** in all three compartments. Reconciling these: median pseudotime shifts between conditions are small but consistent across very large samples, whereas the per-cell pseudotime is no longer monotonically ordered with the categorical health/mild/severe axis at compartment level.
+
+### Per-cell-type pseudotime correlations (the signal that moved)
+
+The within-compartment signal redistributes into **per-cell-type gradients with opposing directions**:
+- **AF**: AF_inner ρ = **+0.54** (p≈0), AF_outer ρ = **−0.30** (p≈0). Same DPT axis, opposite biology — likely an outer vs inner residual gradient rather than a degeneration axis.
+- **CEP**: CEP_hyaline ρ = **+0.17**, CEP_fibrochondrocyte_fibroid ρ = **+0.10**, CEP_outer ρ = **−0.21**. CEP_outer pulls the compartment-level ρ down; the other two pull it up — net positive but small.
+- **NP**: All three NP cell types have small magnitudes (ρ ∈ {−0.040, +0.063, −0.052}), consistent with no clean compartment-level direction.
+
+### Mechanism behind the v5→tiered v4 shift
+
+In v5 a coarser cell-type partition let one direction dominate the compartment ordinal correlation. In tiered v4 the finer cell-type partition exposes that **opposing per-cell-type gradients sum near zero at compartment level**. This is the same redistribution mechanism already observed in DE (e.g. CXCL2 signal redistributed across finer cell types between versions). **Trajectory direction is a version-sensitive finding** (memory: "AF/CEP trajectory directions flipped between versions") and should be presented with caveats in the manuscript rather than as a strong claim.
+
+### Trajectory-associated genes
+
+500 genes per compartment with significant DPT correlation (FDR < 0.05). Program assignments (`late_up` / `late_down` / `stable`):
+- NP: 282 late_up · 87 late_down · 131 stable. NP_fibrocartilaginous degeneration markers (COL1A1, COL3A1) are `late_up`; ACAN, COL2A1 (anabolic) are `late_down`.
+- AF: 281 late_up · 219 late_down · 0 stable.
+- CEP: 221 late_up · 279 late_down · 0 stable.
+
+### Validator checks
+
+- [PASS] NP pseudotime: 50,000 cells · NP pseudotime correlates with biological variable · NP trajectory genes: 500
+- [PASS] AF pseudotime: 50,000 cells · AF pseudotime correlates with biological variable · AF trajectory genes: 500
+- [PASS] CEP pseudotime: 36,879 cells · CEP pseudotime correlates with biological variable · CEP trajectory genes: 500
+- [PASS] Trajectory report generated
+
+### Review materials
+
+- `results/trajectories/tiered_v4/paga_{NP,AF,CEP}.png` — PAGA connectivity graphs
+- `results/trajectories/tiered_v4/pseudotime_by_condition_{NP,AF,CEP}.png` — distributions stratified by `condition_harmonized`
+- `results/trajectories/tiered_v4/pseudotime_by_celltype_{NP,AF,CEP}.png` — per-cell-type ordering
+- `results/trajectories/tiered_v4/gene_dynamics_{NP,AF,CEP}.png` — top trajectory genes vs pseudotime
+- `results/trajectories/tiered_v4/pseudotime_{NP,AF,CEP}.tsv` — per-cell pseudotime
+- `results/trajectories/tiered_v4/pseudotime_correlations_{NP,AF,CEP}.tsv` — all correlation/MWU tests
+- `results/trajectories/tiered_v4/trajectory_genes_{NP,AF,CEP}.tsv` — 500 genes per compartment with program labels
+- `results/trajectories/tiered_v4/trajectory_de_overlap_{NP,AF,CEP}.tsv` — trajectory ∩ Module 08 DE
+- `results/trajectories/tiered_v4/trajectory_report.html` — auto-generated HTML report
+- `notebooks/10_trajectory.ipynb` §2 — refreshed for 2026-05-22 tiered v4 results
+- Log: `logs/10_trajectory_tiered_v4_2026-05-22.log`
+
+**Status: Module 10 complete. Ready to proceed to Module 11 (cell-cell communication, LIANA).**
 
 ---
 
