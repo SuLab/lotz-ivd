@@ -95,6 +95,28 @@ COARSE_PANELS_NON_MESENCHYMAL = {
     "Erythrocyte":    ["HBB", "HBA1", "HBA2", "GYPA"],
 }
 
+# Sub-state marker panels — used in Stage 3 within each cell_type to label
+# transcriptional sub-states that recur across compartments (proliferating,
+# inflammatory, stressed, matrix-active, migratory). The final cell_subtype
+# label is `<cell_type>_<sub_state>` (e.g. NP_fibrocartilaginous_inflammatory)
+# or `<cell_type>_homeostatic` when no sub-panel scores above threshold.
+SUBSTATE_PANELS = {
+    "proliferating":  ["MKI67", "TOP2A", "STMN1", "PTTG1", "TYMS", "PCLAF",
+                       "H2AFZ", "CENPF", "NUSAP1", "CDKN3"],
+    "inflammatory":   ["NFKBIA", "NFKBIZ", "IER3", "MMP3", "ICAM1", "PTGS2",
+                       "CD55", "IL6", "CXCL8", "SOD2"],
+    "stressed":       ["HSPA1A", "HSPA1B", "HSPB1", "CRYAB", "DNAJB1",
+                       "MT1X", "MT1G", "MT2A"],
+    "matrix_active":  ["COL1A1", "COL1A2", "COL3A1", "COL5A1", "COL5A2",
+                       "COL6A1", "COL6A3", "SPARC", "TNC"],
+    "migratory":      ["S100A4", "S100A6", "TMSB4X", "TMSB10", "LGALS1"],
+}
+
+# Contamination flag: mes-tier clusters expressing strong endothelial markers
+# are tagged `<cell_type>_endothelial_admixed` rather than receiving a normal
+# sub-state label. Catches cells that escaped Module 04's non-mes routing.
+ENDOTHELIAL_ADMIXED_PANEL = ["CD34", "EMCN", "AQP1"]
+
 # Fine marker panels — used in Stage 2 within each coarse group
 FINE_PANELS = {
     # Within Chondrocyte-like (NP context)
@@ -554,6 +576,96 @@ def annotate_fine(adata, object_name, tier_name, coarse_assignments):
         print(f"      {ct}: {n:,} ({pct:.1f}%)")
 
 
+# ═════════════════════════════════════════════════════════════════════════════
+# STAGE 3: SUB-STATE ANNOTATION (mesenchymal tier only)
+# ═════════════════════════════════════════════════════════════════════════════
+
+def annotate_subtype(adata, object_name, tier_name,
+                     min_overlap=3, endo_min_overlap=2, top_n=50):
+    """Stage 3: Assign cell_subtype within each cell_type using SUBSTATE_PANELS.
+
+    Uses overlap-based scoring instead of fraction-weighted specificity:
+    for each cluster, take the top-`top_n` rank_genes_groups markers from
+    `compute_cluster_markers()` (already stored in `adata.uns`), intersect
+    them with each sub-state panel, and pick the panel with the largest
+    overlap above `min_overlap`. This is much more robust than expression-
+    score thresholding for sub-states whose markers (HSPs, metallothioneins,
+    thymosins) are broadly expressed at low level across many clusters.
+
+    Falls back to `<cell_type>_homeostatic` when no panel meets `min_overlap`.
+
+    Contamination flag: clusters with at least `endo_min_overlap` of
+    ENDOTHELIAL_ADMIXED_PANEL genes in their top markers get tagged
+    `<cell_type>_endothelial_admixed`. Lower threshold reflects the small
+    panel size (3 markers) and the higher cost of letting mis-tiered cells
+    through as a normal sub-state.
+
+    Writes the result to adata.obs['cell_subtype'].
+    """
+    print(f"  Stage 3: Sub-state annotation ({tier_name})...")
+
+    if 'rank_genes_groups' not in adata.uns:
+        print("    WARNING: no rank_genes_groups in adata.uns — skipping Stage 3")
+        adata.obs['cell_subtype'] = adata.obs.get('cell_type', "unassigned").values
+        return
+
+    # Pull top-N markers per cluster from the rank_genes_groups output that
+    # compute_cluster_markers stashed in adata.uns. Stage 2's within-coarse-group
+    # DE runs on copies, so this is still the cluster-level table.
+    rgg_names = adata.uns['rank_genes_groups']['names']
+    cluster_top_markers = {}
+    for cluster_id in rgg_names.dtype.names:
+        cluster_top_markers[cluster_id] = set(
+            str(g) for g in list(rgg_names[cluster_id])[:top_n]
+        )
+
+    subtypes = pd.Series("unassigned", index=adata.obs_names, dtype=object)
+    cluster_assignments = {}
+
+    for cluster in sorted(adata.obs['leiden'].unique(), key=lambda x: int(x)):
+        mask = adata.obs['leiden'] == cluster
+        cell_types = adata.obs.loc[mask, 'cell_type'].value_counts()
+        base_ct = cell_types.index[0] if len(cell_types) else "unassigned"
+
+        if base_ct == "unassigned":
+            subtypes.loc[mask] = "unassigned"
+            cluster_assignments[cluster] = "unassigned"
+            continue
+
+        markers = cluster_top_markers.get(str(cluster), set())
+
+        # Contamination flag first
+        endo_overlap = len(set(ENDOTHELIAL_ADMIXED_PANEL) & markers)
+        if endo_overlap >= endo_min_overlap:
+            label = f"{base_ct}_endothelial_admixed"
+            subtypes.loc[mask] = label
+            cluster_assignments[cluster] = label
+            continue
+
+        # Score each sub-state panel by overlap with cluster's top markers
+        overlaps = {state: len(set(panel) & markers)
+                    for state, panel in SUBSTATE_PANELS.items()}
+        best_state, best_overlap = max(overlaps.items(), key=lambda kv: kv[1]) \
+            if overlaps else ("", 0)
+
+        if best_overlap >= min_overlap:
+            label = f"{base_ct}_{best_state}"
+        else:
+            label = f"{base_ct}_homeostatic"
+
+        subtypes.loc[mask] = label
+        cluster_assignments[cluster] = label
+
+    adata.obs['cell_subtype'] = subtypes.values
+
+    st_counts = adata.obs['cell_subtype'].value_counts()
+    print(f"    Sub-state annotation summary ({tier_name}):")
+    for st, n in st_counts.items():
+        pct = n / adata.shape[0] * 100
+        clusters = [c for c, l in cluster_assignments.items() if l == st]
+        print(f"      {st}: {n:,} ({pct:.1f}%) — clusters {clusters}")
+
+
 def _confidence_rank(conf):
     """Numeric rank for confidence levels."""
     return {"high": 3, "medium": 2, "low": 1}.get(conf, 0)
@@ -864,6 +976,7 @@ def process_object(object_name, force=False):
     # Initialize annotation columns
     adata.obs['coarse_cell_type'] = "unassigned"
     adata.obs['cell_type'] = "unassigned"
+    adata.obs['cell_subtype'] = "unassigned"
     adata.obs['cell_type_confidence'] = "low"
     adata.obs['annotation_evidence'] = ""
 
@@ -890,12 +1003,16 @@ def process_object(object_name, force=False):
             # Stage 2: Fine annotation
             annotate_fine(mes_adata, object_name, "mesenchymal", coarse_assignments)
 
+            # Stage 3: Sub-state annotation (mesenchymal-only)
+            annotate_subtype(mes_adata, object_name, "mesenchymal")
+
             # Continuous scores
             compute_continuous_scores(mes_adata)
 
             # Transfer annotations back to full object
             adata.obs.loc[mes_mask, 'coarse_cell_type'] = mes_adata.obs['coarse_cell_type'].values
             adata.obs.loc[mes_mask, 'cell_type'] = mes_adata.obs['cell_type'].values
+            adata.obs.loc[mes_mask, 'cell_subtype'] = mes_adata.obs['cell_subtype'].values
             adata.obs.loc[mes_mask, 'cell_type_confidence'] = mes_adata.obs['cell_type_confidence'].values
             adata.obs.loc[mes_mask, 'annotation_evidence'] = mes_adata.obs['annotation_evidence'].values
 
@@ -938,9 +1055,13 @@ def process_object(object_name, force=False):
             # CellTypist validation
             validate_immune_with_celltypist(non_mes_adata, object_name)
 
-            # Transfer annotations back to full object
+            # Transfer annotations back to full object. Non-mes cells skip
+            # Stage 3 (their existing fine labels like Macrophage_M1/M2 are
+            # already specific enough), so cell_subtype = cell_type here for
+            # consistent grouping downstream.
             adata.obs.loc[non_mes_mask, 'coarse_cell_type'] = non_mes_adata.obs['coarse_cell_type'].values
             adata.obs.loc[non_mes_mask, 'cell_type'] = non_mes_adata.obs['cell_type'].values
+            adata.obs.loc[non_mes_mask, 'cell_subtype'] = non_mes_adata.obs['cell_type'].values
             adata.obs.loc[non_mes_mask, 'cell_type_confidence'] = non_mes_adata.obs['cell_type_confidence'].values
             adata.obs.loc[non_mes_mask, 'annotation_evidence'] = non_mes_adata.obs['annotation_evidence'].values
 
@@ -1002,14 +1123,15 @@ def process_all_cells_secondary(force=False):
     # Initialize annotation columns
     adata_all.obs['coarse_cell_type'] = "unassigned"
     adata_all.obs['cell_type'] = "unassigned"
+    adata_all.obs['cell_subtype'] = "unassigned"
     adata_all.obs['cell_type_confidence'] = "low"
     adata_all.obs['annotation_evidence'] = ""
 
     # Transfer annotations from compartment-specific objects
     print("  Transferring annotations from compartment-specific objects...")
     n_transferred = 0
-    annotation_cols = ['coarse_cell_type', 'cell_type', 'cell_type_confidence',
-                       'annotation_evidence']
+    annotation_cols = ['coarse_cell_type', 'cell_type', 'cell_subtype',
+                       'cell_type_confidence', 'annotation_evidence']
     score_cols = list(CONTINUUM_SCORES.keys())
 
     for obj_name in ["NP", "AF", "CEP"]:
@@ -1247,6 +1369,18 @@ def validate_annotation():
         else:
             messages.append(f"FAIL: {obj_name} missing coarse_cell_type column")
             all_pass = False
+
+        # Check 3b: cell_subtype column (Stage 3)
+        if 'cell_subtype' in adata.obs.columns:
+            n_subtypes = adata.obs['cell_subtype'].nunique()
+            n_admixed = adata.obs['cell_subtype'].astype(str).str.endswith(
+                '_endothelial_admixed').sum()
+            admixed_note = f"; {n_admixed:,} endothelial_admixed cells flagged" if n_admixed else ""
+            messages.append(f"PASS: {obj_name} has cell_subtype column with "
+                            f"{n_subtypes} subtypes{admixed_note}")
+        else:
+            messages.append(f"WARNING: {obj_name} missing cell_subtype column "
+                            f"(Stage 3 may have been skipped)")
 
         # Check 4: annotation_evidence column
         if 'annotation_evidence' in adata.obs.columns:

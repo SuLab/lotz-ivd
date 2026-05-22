@@ -27,11 +27,13 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 07 rerun complete 2026-05-22; pending human checkpoint before Module 08.**
+**Tiered v4 pipeline — Module 07 rerun complete 2026-05-22 (incl. Stage 3 sub-state annotation); pending human checkpoint before Module 08.**
 
-The Module 06 rerun on 2026-05-22 (post-rescue, 50-cell non-mes threshold) was followed the same day by a Module 07 rerun with two additional patches to `scripts/07_annotation.py`: (a) CellTypist input is now CP10K + log1p normalized (fixes the 2026-05-15 hard failure on CEP non-mes); (b) `annotate_coarse()` for the non-mes tier falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring on rank_genes_groups markers does not fire. The propagation step catches naive/resting lymphocyte clusters dominated by ribosomal genes and tier-wide RBC contamination where hemoglobin genes don't appear as cluster-distinguishing markers.
+Module 06 rerun on 2026-05-22 (post-rescue, 50-cell non-mes threshold) was followed the same day by Module 07 reruns with four patches to `scripts/07_annotation.py`: (a) CellTypist input is now CP10K + log1p normalized (fixes the 2026-05-15 hard failure on CEP non-mes); (b) `annotate_coarse()` for the non-mes tier falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring does not fire; (c) `process_all_cells_secondary()` Categorical-assignment bug fix (cast both sides to object dtype before transfer); (d) **new Stage 3 sub-state annotation (`annotate_subtype`) using overlap-based scoring** against `SUBSTATE_PANELS` (`proliferating`, `inflammatory`, `stressed`, `matrix_active`, `migratory`, `homeostatic` fallback) plus an endothelial-admixed contamination flag (CD34/EMCN/AQP1). Writes a new `cell_subtype` column on the mesenchymal tier; non-mes cells get `cell_subtype = cell_type`.
 
-Validator overall status: **PASSED**. **0.0 % unassigned across all four compartments** (was 12.4 / 0.0 / 0.0 / 0.0 % on 2026-05-15, then 6.6 / 6.5 / 24.7 / 0.0 % on the 2026-05-22 v1 pre-propagation rerun). Cell-type counts: NP 10, AF 7, CEP 7, all_cells 18. See **Tiered v4 Module 07 Rerun (2026-05-22)** below.
+Validator overall status: **PASSED**. **0.0 % unassigned across all four compartments**. Cell-type counts: NP 10, AF 7, CEP 7, all_cells 18. Sub-state counts: NP 15, AF 10, CEP 10, all_cells 27. **1,831 cells flagged `_endothelial_admixed`** (NP non-mes cluster 8 — held for review). See **Tiered v4 Module 07 Rerun (2026-05-22)** below.
+
+**Module 08 grouping decision (agreed 2026-05-22):** primary pseudobulk DE runs on `cell_type` (collapsed) for statistical power and v5 cross-version comparability; composition tests run on both `cell_type` and `cell_subtype`; `cell_subtype` is the supplementary descriptive lens for within-cell-type characterization and Module 09 contextualization, not the unit of statistical claims.
 
 Historical snapshots retained: **Tiered v4 Module 06 Rerun (2026-05-22)** for the new cluster counts; **Tiered v4 Module 06 Results (2026-05-09)** for the 2026-05-14 review decisions; **Tiered v4 Module 07 Results (2026-05-15)** for the pre-rescue annotation state.
 
