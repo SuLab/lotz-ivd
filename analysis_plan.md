@@ -27,7 +27,7 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 10 complete 2026-05-22 (trajectory + pseudotime); ready for Module 11 (cell-cell communication).**
+**Tiered v4 pipeline — Module 11 complete 2026-05-22 (cell-cell communication); manuscript draft (`docs/MANUSCRIPT.md`) in progress. Module 12 is replaced by the manuscript for this version.**
 
 Module 06 rerun on 2026-05-22 (post-rescue, 50-cell non-mes threshold) was followed the same day by Module 07 reruns with four patches to `scripts/07_annotation.py`: (a) CellTypist input is now CP10K + log1p normalized (fixes the 2026-05-15 hard failure on CEP non-mes); (b) `annotate_coarse()` for the non-mes tier falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring does not fire; (c) `process_all_cells_secondary()` Categorical-assignment bug fix (cast both sides to object dtype before transfer); (d) **new Stage 3 sub-state annotation (`annotate_subtype`) using overlap-based scoring** against `SUBSTATE_PANELS` (`proliferating`, `inflammatory`, `stressed`, `matrix_active`, `migratory`, `homeostatic` fallback) plus an endothelial-admixed contamination flag (CD34/EMCN/AQP1). Writes a new `cell_subtype` column on the mesenchymal tier; non-mes cells get `cell_subtype = cell_type`.
 
@@ -413,6 +413,69 @@ In v5 a coarser cell-type partition let one direction dominate the compartment o
 - Log: `logs/10_trajectory_tiered_v4_2026-05-22.log`
 
 **Status: Module 10 complete. Ready to proceed to Module 11 (cell-cell communication, LIANA).**
+
+---
+
+## Tiered v4 Module 11 Results (2026-05-22)
+
+LIANA cell-cell communication rerun via `scripts/11_communication.py` against the tiered v4 integrated atlas. Wall time **2 min 22 s** (22:03:46 → 22:06:08 UTC). Validator overall status: **PASSED**.
+
+Script changes for this rerun (committed alongside results):
+- Added `--input-dir` / `--output-dir` CLI flags (mirroring Modules 07–10).
+- No `--de-dir` flag and no INFLATED_CONTRASTS filter — Module 11 does not cross-reference DE outputs; pain flagging uses the internal `PAIN_LIGANDS` / `PAIN_RECEPTORS` panels.
+
+### Inputs
+
+Per-compartment tiered_v4 h5ads (NP, AF, CEP) loaded, concatenated, and split by `condition_harmonized` into healthy vs degenerated pools. Cell types with <50 cells per pool filtered out per condition. Each pool downsampled to **20,000 cells** for LIANA tractability (default cap, same as v5). 100 permutations. LIANA consensus rank-aggregation across CellPhoneDB, NATMI, Connectome, log2FC, sca, geometric mean.
+
+### Headline counts (tiered v4 vs v5)
+
+| Metric | v5 (memory) | Tiered v4 | Δ |
+|---|---:|---:|---:|
+| Healthy interactions | 25,537 | **66,827** | **+162%** |
+| Degenerated interactions | 34,208 | **76,019** | **+122%** |
+| Pain-relevant interactions | 3,075 | **6,883** | **+124%** |
+| Differential union | n/a | 90,650 | — |
+
+Tiered v4 yields ~2.5–3× more interactions per condition. This is expected — tiered v4 resolves more cell types (19 vs 16), and per-cell-type interaction calls scale combinatorially. CCC aggregate counts have been version-sensitive across all prior versions (memory note); cell-type-pair-level signals are more informative than aggregate count differences.
+
+### Top differential interactions
+
+**Gained in degeneration** (positive `rank_diff`, dominant pattern): pan-cell-type → **Neutrophil FN1 → C5AR1** and **RPS19 → C5AR1** recruitment signals. This is the canonical complement-driven neutrophil chemotaxis axis being activated across most resident cell types in the degenerated state.
+
+**Lost in degeneration** (negative `rank_diff`, dominant pattern):
+- **CEP_outer WNT2B → FZD4/LRP5/6** (CEP_outer autocrine and to NP_mature_chondrocyte)
+- **CEP_outer LAMB3 → ITGA6/ITGAV/ITGA2 integrins** (CEP-to-AF basement-membrane signaling)
+- **CEP_outer NDP → FZD4** (Norrie disease protein WNT signaling)
+- **AF_outer / NP_fibrocartilaginous → AF_outer / NP_mature_chondrocyte HLA-DPA1/DMA → CD4** (immune-mediated signaling losing weight in degeneration)
+- **CEP_fibrochondrocyte_fibroid MDK → SDC3** (midkine signaling)
+
+Interpretation: WNT signaling at the CEP / IVD interface and HLA-class-II → CD4 immune presentation are coordinately downregulated; the dominant gained signals are neutrophil-recruitment ligands across resident cells.
+
+### Top pain ligands (degenerated)
+
+VEGFA (1,485 interactions), FGF2 (1,157), NGF (360), SEMA3C (300), GRN (285), TNFSF10 (250), SEMA3A (250), VEGFC (246), PTGS2 (224), VEGFB (216). Neovascularization (VEGFA/B/C, FGF2) and neurotrophin (NGF) ligands dominate the pain-relevant interaction count.
+
+### Validator checks
+
+- [PASS] Healthy interactions: 66,827 · collagen positive control detected
+- [PASS] Degenerated interactions: 76,019 · collagen positive control detected
+- [PASS] Pain-relevant interactions flagged: 6,883
+- [PASS] 5 interaction plots generated · communication report generated
+
+### Review materials
+
+- `results/communication/tiered_v4/interactions_healthy.tsv` (11 MB) — full LIANA output for healthy pool
+- `results/communication/tiered_v4/interactions_degenerated.tsv` (13 MB) — full LIANA output for degenerated pool
+- `results/communication/tiered_v4/differential_interactions.tsv` (31 MB) — 90,650 union interactions with rank_diff
+- `results/communication/tiered_v4/pain_interactions.tsv` (1.4 MB) — pain-flagged subset
+- `results/communication/tiered_v4/interaction_plots/{interaction_heatmap,top_interactions}_{healthy,degenerated}.png` — per-condition plots
+- `results/communication/tiered_v4/interaction_plots/differential_interactions.png` — differential plot
+- `results/communication/tiered_v4/communication_report.html` — auto-generated HTML report
+- `notebooks/11_communication.ipynb` §2 — refreshed for 2026-05-22 tiered v4 results
+- Log: `logs/11_communication_tiered_v4_2026-05-22.log`
+
+**Status: Module 11 complete. Manuscript drafting (`docs/MANUSCRIPT.md`) is the final step for this pipeline version — Module 12 reporting is replaced by the manuscript.**
 
 ---
 

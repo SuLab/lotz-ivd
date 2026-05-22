@@ -32,14 +32,12 @@ warnings.filterwarnings('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # ── Paths ────────────────────────────────────────────────────────────────────
+# Defaults — overridden by --input-dir / --output-dir at main() entry.
 BASE = Path(__file__).resolve().parent.parent
 INT_DIR = BASE / "data" / "integrated"
 META_PATH = BASE / "metadata" / "sample_metadata.tsv"
 RESULTS_DIR = BASE / "results" / "communication"
 PLOT_DIR = RESULTS_DIR / "interaction_plots"
-
-for d in [RESULTS_DIR, PLOT_DIR]:
-    d.mkdir(parents=True, exist_ok=True)
 
 # ── Configuration ────────────────────────────────────────────────────────────
 # Minimum cells per cell type to include in analysis
@@ -525,12 +523,32 @@ def validate():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
+    global INT_DIR, RESULTS_DIR, PLOT_DIR
+
+    args = sys.argv[1:]
+
+    # Parse --input-dir (where to read h5ads from)
+    for i, a in enumerate(args):
+        if a == '--input-dir' and i + 1 < len(args):
+            INT_DIR = Path(args[i + 1]).resolve()
+
+    # Parse --output-dir (where Module 11 results land)
+    for i, a in enumerate(args):
+        if a == '--output-dir' and i + 1 < len(args):
+            RESULTS_DIR = Path(args[i + 1]).resolve()
+            PLOT_DIR = RESULTS_DIR / "interaction_plots"
+
+    for d in [RESULTS_DIR, PLOT_DIR]:
+        d.mkdir(parents=True, exist_ok=True)
+
     print("=" * 60)
     print("Module 11: Cell-Cell Communication")
     print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Input dir:  {INT_DIR}")
+    print(f"  Output dir: {RESULTS_DIR}")
     print("=" * 60)
 
-    if '--validate-only' in sys.argv:
+    if '--validate-only' in args:
         passed, _ = validate()
         sys.exit(0 if passed else 1)
 
