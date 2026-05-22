@@ -27,7 +27,7 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 08 complete 2026-05-22 (DE + composition); ready for Module 09 (interpretation).**
+**Tiered v4 pipeline — Module 09 complete 2026-05-22 (pathway / TF / pain interpretation); ready for Module 10 (trajectory).**
 
 Module 06 rerun on 2026-05-22 (post-rescue, 50-cell non-mes threshold) was followed the same day by Module 07 reruns with four patches to `scripts/07_annotation.py`: (a) CellTypist input is now CP10K + log1p normalized (fixes the 2026-05-15 hard failure on CEP non-mes); (b) `annotate_coarse()` for the non-mes tier falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring does not fire; (c) `process_all_cells_secondary()` Categorical-assignment bug fix (cast both sides to object dtype before transfer); (d) **new Stage 3 sub-state annotation (`annotate_subtype`) using overlap-based scoring** against `SUBSTATE_PANELS` (`proliferating`, `inflammatory`, `stressed`, `matrix_active`, `migratory`, `homeostatic` fallback) plus an endothelial-admixed contamination flag (CD34/EMCN/AQP1). Writes a new `cell_subtype` column on the mesenchymal tier; non-mes cells get `cell_subtype = cell_type`.
 
@@ -289,6 +289,66 @@ Erythrocyte and `_endothelial_admixed` cells were retained in DE/composition per
 - Logs: `logs/08_differential_tiered_v4_2026-05-22.log` (v1, hit the index bug — composition only completed), `..._v2.log` (DE-only resume after the index fix)
 
 **Status: Module 08 complete. Ready to proceed to Module 09 (pathway enrichment, TF inference, pain gene cross-referencing) on the 26 trustworthy DE comparisons (excluding M2 healthy_vs_severe).**
+
+---
+
+## Tiered v4 Module 09 Results (2026-05-22)
+
+Pathway enrichment, TF activity inference, and pain gene cross-referencing via `scripts/09_interpretation.py` against the Module 08 outputs. Wall time **1 h 9 min** (20:13:14 → 21:22:47 UTC). Validator overall status: **PASSED**.
+
+Script changes for this rerun (committed alongside results):
+- Added `--input-dir` / `--output-dir` CLI flags (mirroring Modules 07 and 08).
+- Added `INFLATED_CONTRASTS = {('Macrophage_M2', 'healthy_vs_degenerated_severe')}` set + filter in `load_de_results()` to drop the inflated M2 contrast before any enrichment / TF / pain analysis. Confirmed in the run log: **31,481 gene-tests removed** from the input pool before Part 1.
+
+### Headline counts (tiered v4 vs v5)
+
+| Part | v5 (memory) | Tiered v4 | Δ |
+|---|---:|---:|---:|
+| ORA (Enrichr GO/KEGG/Reactome) — significant pathways at FDR < 0.05 | 2,506 | **3,051** | **+22%** |
+| GSEA (pre-ranked, gseapy + custom IVD gene sets) — significant pathways | 3,301 | **6,890** | **+109%** |
+| TF activity (decoupler + CollecTRI) — significant TFs | 288 | **555** | **+93%** |
+| Pain-associated DE genes — unique significant | 10 | **18** | **+80%** |
+
+Tiered v4 systematically delivers 1.2–2× the signal of v5. The scaling reflects three contributing factors:
+1. A larger and cleaner trustworthy DE pool (1,820 vs 1,198 sig DEGs).
+2. Compartment-prefixed cell types resolve per-compartment biology that the v5 generic labels averaged across (e.g., AF_outer vs AF_inner now distinct, NP_fibrocartilaginous separated from generic Fibroblast_like).
+3. The rescued Immune lymphocyte cluster (17K NP + 5K AF cells) contributes signal that was invisible pre-rescue.
+
+### Validator expected-pathway sanity checks
+
+All four expected pathway terms detected in ORA results:
+- `extracellular matrix` ✓
+- `inflammatory` ✓
+- `collagen` ✓
+- `immune` ✓
+
+### Soft warnings worth noting
+
+- `gseapy` logged `Duplicated values found in preranked stats: 13–20% of genes` for several comparisons. This is the gene-rank-tie warning that pseudobulk DESeq2 output triggers (many genes have padj saturating at 1.0). Not blocking — it just means some GSEA NES estimates are minor approximations.
+- `gseapy [ERROR] No hits returned for all input gene sets!` appeared for small-DE comparisons (1–4 sig genes — AF_inner mild, AF_outer severe, AF_outer mild_vs_severe, Macrophage_M2 healthy_vs_all, Macrophage_M2 healthy_vs_mild, Erythrocyte healthy_vs_all, Erythrocyte healthy_vs_mild). Expected — small gene lists can't hit any library at threshold.
+
+### Key biological themes (consistent across v5 and tiered v4)
+
+- **ECM degradation upregulated in degeneration:** MMP1/2/3/9/13, ADAMTS4/5 across NP fibrocartilaginous + mature_chondrocyte + fibrochondrocyte clusters.
+- **Inflammatory and immune signaling increased:** NF-κB axis (NFKBIA, NFKBIZ, IER3, PTGS2, IL6, CXCL8, SOD2), TNF and IL1B pathways.
+- **Anabolic / repair pathways downregulated:** COL2A1, ACAN, COL9A1/2/3, COL11A1/2, COMP, PRG4.
+- **Pain-related cell-type-specific dysregulation:** NTN1, IL6, PLA2G2A, VEGFA, PENK, NGF, BDNF, CALCA targets cross-referenced; 18 unique genes significant across contrasts.
+
+### Review materials
+
+- `results/interpretation/tiered_v4/pathway_enrichment/all_enrichment_results.tsv` — ORA full table (23,357 terms)
+- `results/interpretation/tiered_v4/pathway_enrichment/enrichment_*_{up,down}.png` — per-cell-type up/down dot plots
+- `results/interpretation/tiered_v4/pathway_enrichment/gsea_results.tsv` — GSEA full table (123,191 terms)
+- `results/interpretation/tiered_v4/pathway_enrichment/gsea_ivd_custom_heatmap.png` — IVD custom gene-set heatmap (NES per contrast)
+- `results/interpretation/tiered_v4/tf_activity/tf_activity_results.tsv` — CollecTRI inferences (11,550 TF-comparison pairs)
+- `results/interpretation/tiered_v4/tf_activity/tf_activity_heatmap.png` — top TFs heatmap
+- `results/interpretation/tiered_v4/pain_genes.tsv` — pain gene cross-reference table
+- `results/interpretation/tiered_v4/pain_genes_heatmap.png` — log2FC heatmap per cell_type × comparison
+- `results/interpretation/tiered_v4/interpretation_report.html` — auto-generated HTML report
+- `notebooks/09_interpretation.ipynb` §2 — refreshed for 2026-05-22 tiered v4 results (5.2 MB, all panels rendered)
+- Log: `logs/09_interpretation_tiered_v4_2026-05-22.log`
+
+**Status: Module 09 complete. Ready to proceed to Module 10 (trajectory + pseudotime).**
 
 ---
 

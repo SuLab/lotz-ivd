@@ -59,6 +59,14 @@ MAX_GENE_SET_SIZE = 500
 # Comparisons to EXCLUDE from primary interpretation (flagged as confounded)
 CONFOUNDED_COMPARISONS = {'healthy_vs_herniated'}
 
+# Specific (cell_type, comparison) pairs flagged as statistically inflated
+# during Module 08 review — dropped from Module 09 so spurious sig genes
+# don't dominate pathway / TF / pain enrichments. See analysis_plan.md
+# "Tiered v4 Module 08 Results (2026-05-22)" for context.
+INFLATED_CONTRASTS = {
+    ('Macrophage_M2', 'healthy_vs_degenerated_severe'),
+}
+
 # ── IVD-Specific Gene Sets ──────────────────────────────────────────────────
 IVD_GENE_SETS = {
     'ECM_homeostasis': [
@@ -147,6 +155,17 @@ def load_de_results():
         sys.exit(1)
     df = pd.read_csv(path, sep='\t')
     print(f"  Loaded {len(df):,} DE results")
+
+    # Drop (cell_type, comparison) pairs flagged as statistically inflated
+    inflated_mask = df.apply(
+        lambda r: (r['cell_type'], r['comparison']) in INFLATED_CONTRASTS,
+        axis=1
+    )
+    n_inflated = int(inflated_mask.sum())
+    if n_inflated:
+        df = df[~inflated_mask].copy()
+        print(f"  Dropped {n_inflated:,} gene-tests from inflated contrasts: "
+              f"{sorted(INFLATED_CONTRASTS)}")
 
     # Filter out confounded comparisons for primary analysis
     primary = df[~df['comparison'].isin(CONFOUNDED_COMPARISONS)]
@@ -924,16 +943,36 @@ def validate():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    print("=" * 60)
-    print("Module 09: Biological Interpretation")
-    print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
+    global DE_DIR, RESULTS_DIR, PATHWAY_DIR, TF_DIR, PAIN_DIR
 
     args = sys.argv[1:]
     pathways_only = '--pathways-only' in args
     pain_only = '--pain-only' in args
     tf_only = '--tf-only' in args
     validate_only = '--validate-only' in args
+
+    # Parse --input-dir (where to read Module 08 outputs from)
+    for i, a in enumerate(args):
+        if a == '--input-dir' and i + 1 < len(args):
+            DE_DIR = Path(args[i + 1]).resolve()
+
+    # Parse --output-dir (where Module 09 results land)
+    for i, a in enumerate(args):
+        if a == '--output-dir' and i + 1 < len(args):
+            RESULTS_DIR = Path(args[i + 1]).resolve()
+            PATHWAY_DIR = RESULTS_DIR / "pathway_enrichment"
+            TF_DIR = RESULTS_DIR / "tf_activity"
+            PAIN_DIR = RESULTS_DIR
+
+    for d in [RESULTS_DIR, PATHWAY_DIR, TF_DIR]:
+        d.mkdir(parents=True, exist_ok=True)
+
+    print("=" * 60)
+    print("Module 09: Biological Interpretation")
+    print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  DE input dir: {DE_DIR}")
+    print(f"  Output dir:   {RESULTS_DIR}")
+    print("=" * 60)
 
     if validate_only:
         passed, checks = validate()
