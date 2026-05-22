@@ -1,0 +1,208 @@
+@page {
+  size: letter;
+  margin: 0.85in 0.85in 1.0in 0.85in;
+  @bottom-center {
+    content: counter(page) " / " counter(pages);
+    font-family: 'Helvetica', sans-serif;
+    font-size: 9pt;
+    color: #555;
+  }
+  @top-right {
+    content: "IVD Single-Cell Atlas";
+    font-family: 'Helvetica', sans-serif;
+    font-size: 8.5pt;
+    color: #888;
+  }
+}
+
+body {
+  font-family: 'Charter', 'Georgia', 'Times New Roman', serif;
+  font-size: 10.5pt;
+  line-height: 1.42;
+  color: #1a1a1a;
+  text-align: justify;
+  hyphens: auto;
+}
+
+h1 {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 18pt;
+  line-height: 1.22;
+  margin: 0 0 0.4em 0;
+  page-break-before: avoid;
+  color: #0a2540;
+}
+
+h2 {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 14pt;
+  margin: 1.4em 0 0.5em 0;
+  page-break-before: auto;
+  page-break-after: avoid;
+  border-bottom: 1pt solid #0a2540;
+  padding-bottom: 0.2em;
+  color: #0a2540;
+}
+
+hr {
+  display: none;
+}
+
+h3 {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 11.5pt;
+  margin: 1.1em 0 0.35em 0;
+  page-break-after: avoid;
+  color: #144a7c;
+}
+
+p {
+  margin: 0.35em 0 0.55em 0;
+  orphans: 3;
+  widows: 3;
+}
+
+.title-block {
+  text-align: left;
+  margin-bottom: 1.5em;
+  border-bottom: 2pt solid #0a2540;
+  padding-bottom: 0.6em;
+}
+
+.title-block .title {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 16pt;
+  font-weight: bold;
+  line-height: 1.28;
+  color: #0a2540;
+}
+
+.title-block .author,
+.title-block .date {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 10pt;
+  color: #555;
+  margin-top: 0.3em;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 0.6em 0 0.9em 0;
+  font-size: 9.5pt;
+  width: 100%;
+  page-break-inside: avoid;
+}
+
+th, td {
+  border-bottom: 0.5pt solid #ccc;
+  padding: 4pt 6pt;
+  vertical-align: top;
+  text-align: left;
+}
+
+th {
+  background: #f3f6fa;
+  border-top: 1pt solid #0a2540;
+  border-bottom: 1pt solid #0a2540;
+  font-weight: bold;
+  font-family: 'Helvetica', sans-serif;
+}
+
+td.numeric, th.numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+code, tt {
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 9.2pt;
+  background: #f3f3f3;
+  padding: 0 0.2em;
+  border-radius: 2pt;
+}
+
+pre {
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 9pt;
+  background: #f3f3f3;
+  border: 0.5pt solid #ddd;
+  padding: 0.5em;
+  page-break-inside: avoid;
+}
+
+figure {
+  margin: 0.9em 0 1.0em 0;
+  text-align: center;
+  page-break-inside: avoid;
+}
+
+figure img {
+  max-width: 100%;
+  max-height: 5.5in;
+  border: 0.5pt solid #ccc;
+}
+
+figure figcaption {
+  font-family: 'Helvetica', sans-serif;
+  font-size: 9pt;
+  color: #333;
+  text-align: justify;
+  margin-top: 0.4em;
+  padding: 0 1em;
+  line-height: 1.32;
+}
+
+img {
+  max-width: 100%;
+  max-height: 5.5in;
+  display: block;
+  margin: 0.6em auto 0 auto;
+  border: 0.5pt solid #ccc;
+  page-break-inside: avoid;
+}
+
+/* Markdown image with caption (pandoc emits <p><img/><em>caption</em></p>) */
+p > img + em,
+p > img:only-child {
+  /* nothing — caption styled separately */
+}
+
+p:has(> img) {
+  text-align: center;
+  page-break-inside: avoid;
+  margin-bottom: 0.3em;
+}
+
+p:has(> img) + p em {
+  display: block;
+  font-family: 'Helvetica', sans-serif;
+  font-size: 9pt;
+  color: #333;
+  text-align: justify;
+  padding: 0 1em;
+  line-height: 1.32;
+}
+
+ol, ul {
+  margin: 0.4em 0 0.6em 0;
+  padding-left: 1.4em;
+}
+
+li {
+  margin: 0.2em 0;
+}
+
+strong { color: #0a2540; }
+
+em { color: #1a1a1a; }
+
+a { color: #144a7c; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+blockquote {
+  border-left: 2pt solid #0a2540;
+  margin: 0.5em 0 0.5em 0.6em;
+  padding-left: 0.7em;
+  color: #333;
+  font-style: italic;
+}
