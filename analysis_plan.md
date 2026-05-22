@@ -27,7 +27,7 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 07 rerun complete 2026-05-22 (incl. Stage 3 sub-state annotation); pending human checkpoint before Module 08.**
+**Tiered v4 pipeline — Module 08 complete 2026-05-22 (DE + composition); ready for Module 09 (interpretation).**
 
 Module 06 rerun on 2026-05-22 (post-rescue, 50-cell non-mes threshold) was followed the same day by Module 07 reruns with four patches to `scripts/07_annotation.py`: (a) CellTypist input is now CP10K + log1p normalized (fixes the 2026-05-15 hard failure on CEP non-mes); (b) `annotate_coarse()` for the non-mes tier falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring does not fire; (c) `process_all_cells_secondary()` Categorical-assignment bug fix (cast both sides to object dtype before transfer); (d) **new Stage 3 sub-state annotation (`annotate_subtype`) using overlap-based scoring** against `SUBSTATE_PANELS` (`proliferating`, `inflammatory`, `stressed`, `matrix_active`, `migratory`, `homeostatic` fallback) plus an endothelial-admixed contamination flag (CD34/EMCN/AQP1). Writes a new `cell_subtype` column on the mesenchymal tier; non-mes cells get `cell_subtype = cell_type`.
 
@@ -219,6 +219,76 @@ Three workflows compared with full integration metrics (iLISI, batch_ASW, condit
 Now converting CCA RDS → h5ad and running Modules 06-12.
 
 > CCA operational incident log: see [`docs/version_history.md`](docs/version_history.md#cca-run-incident-log-v5-2026-03-24).
+
+---
+
+## Tiered v4 Module 08 Results (2026-05-22)
+
+Pseudobulk DE and composition analysis run via `scripts/08_differential.py` against `data/integrated/tiered_v4/` after Module 07 + harmonization. Validator overall status: **PASSED**.
+
+Script changes for this rerun (committed alongside results):
+- Added `--input-dir` / `--output-dir` / `--exclude-contamination` CLI flags (mirroring the Module 07 pattern, so v5 and tiered_v4 outputs don't trample each other).
+- Refactored `run_composition_analysis()` to iterate per-object (NP / AF / CEP / all_cells) rather than combining via a single `combined_obs` — the Module 07 transfer step duplicates per-compartment cells in all_cells, so the original pooled approach would have double-counted.
+- Added a second composition pass on `cell_subtype` (in addition to `cell_type`) per the Module 08 grouping decision.
+- Skipped `all_cells` in the DE pass (same double-counting concern).
+- Added `--exclude-contamination` flag (default False) to honor the "retain with caveats" decision; sets are dropped via `is_contamination` column if enabled.
+- **Bug fix in `run_de_analysis()` index alignment.** The original code did `obs_reset.reset_index()` then `merged.set_index('index')`, but the obs index is named `cell_id` (not unnamed), so the rename column became `cell_id` and the set_index call silently failed — every cell index then ended up as integer RangeIndex, the position lookup in `pseudobulk_aggregate` returned empty arrays, and **every comparison got mis-categorized as "no valid samples with ≥50 cells"**. Fix: capture `obs_reset.columns[0]` (whatever the original index name was) and use that for `set_index`.
+
+### Composition results (both grouping levels)
+
+| Grouping | Total tests | Significant (padj < 0.05) |
+|---|---:|---:|
+| `cell_type` | 112 | **0** |
+| `cell_subtype` | 182 | **0** |
+
+No FDR-significant composition shifts at either granularity. Consistent with v5 / v4 (logged as a "Robust Findings (all 3+ versions)" entry in memory) — degeneration acts at the gene-expression level rather than the compositional level in this dataset.
+
+### DE results — 27 powered comparisons (significant DEGs at |log2FC| > 0.5 & padj < 0.05)
+
+| Cell type | h_vs_all | h_vs_mild | h_vs_severe | mild_vs_severe |
+|---|---:|---:|---:|---:|
+| **NP_fibrocartilaginous** | 84 | 14 | 291 | **325** |
+| **NP_fibrochondrocyte_chondroid** | — | 5 | 27 | **350** |
+| **NP_mature_chondrocyte** | 2 | 3 | 121 | 174 |
+| **AF_outer** | — | 121 | 3 | 1 |
+| **AF_inner** | — | 2 | — | — |
+| **Immune** (naive lymphocyte catch-all) | — | 4 | 38 | 11 |
+| **Macrophage_M2** | 1 | 1 | **5,659 ⚠️** | 171 |
+| **Macrophage_M1** | — | — | — | 21 |
+| **Neutrophil** | 3 | 2 | 23 | 25 |
+| **Erythrocyte** | 0 | 0 | — | — |
+
+Total: 59 candidate comparisons skipped underpowered (mostly small non-mes populations and the entire CEP DE matrix). CEP had **0 powered comparisons** — matches the v5 sample-count limitation.
+
+### Headline findings
+
+- **NP_fibrocartilaginous + NP_fibrochondrocyte_chondroid + NP_mature_chondrocyte mild_vs_severe** = 849 sig DEGs combined; the disc degeneration response is dominated by these three NP cell types responding to severity escalation.
+- **Reproducibility check vs v4:** NP_fibrocartilaginous mild_vs_severe = 325 here vs 305 in v4 — within 7%, validating the dominant NP degeneration signature across pipeline versions.
+- **Immune cluster (Module 04 propagation catch-all) healthy_vs_severe = 38 sig genes** — the rescue produced a real biological signal that would have been invisible in the pre-rescue pipeline.
+- **AF_outer healthy_vs_mild = 121 but healthy_vs_severe = 3** — interesting AF biology: the AF transcriptional response peaks at the mild stage rather than escalating with severity. Worth flagging at the manuscript stage.
+
+### ⚠️ Caveat: Macrophage_M2 healthy_vs_severe is statistically inflated
+
+`Macrophage_M2 healthy_vs_severe = 5,659 significant genes` exceeds the >5,000 inflation threshold the spec explicitly warns about. Only 7 samples in that contrast (1 healthy ref + 6 severe test, or similar split), so donor-level variance dominates condition-level variance and DESeq2 over-calls DEGs. **Do not cite the M2 healthy_vs_severe row as a M2 finding in the manuscript.** The trustworthy M2 contrast is `mild_vs_severe` (9 samples → 171 sig genes), which is in the expected range for a substantive immune response. Module 09 should down-weight or exclude the inflated row when computing pathway / TF enrichments to avoid spurious dominance.
+
+### Contamination cell handling
+
+Erythrocyte and `_endothelial_admixed` cells were retained in DE/composition per the 2026-05-22 checkpoint decision, with their `is_contamination` / `contamination_type` columns preserved in the obs of each h5ad. Erythrocyte healthy_vs_all = 0 and healthy_vs_mild = 0 (expected — anucleate cells have no real gene regulation; non-zero DE here would itself be a red flag). Downstream interpretation should treat any DE involving these cell types as descriptive / contamination-tracking rather than biological.
+
+### Review materials
+
+- `results/differential/tiered_v4/composition_analysis.tsv` — cell_type composition (112 tests, 0 sig)
+- `results/differential/tiered_v4/composition_analysis_subtype.tsv` — cell_subtype composition (182 tests, 0 sig)
+- `results/differential/tiered_v4/de_summary_table.tsv` — 27-row powered-comparison summary
+- `results/differential/tiered_v4/de_results_combined.tsv` — 1.03 M gene-test rows (180 MB)
+- `results/differential/tiered_v4/de_results/` — 27 per-comparison TSV files
+- `results/differential/tiered_v4/skipped_comparisons.tsv` — 59 skipped contrasts with reasons
+- `results/differential/tiered_v4/volcano_plots/` — 27 volcano PNGs
+- `results/differential/tiered_v4/heatmaps/` — top-DE-gene heatmaps per powered comparison
+- `notebooks/08_differential.ipynb` §2 — refreshed for 2026-05-22 tiered_v4 results
+- Logs: `logs/08_differential_tiered_v4_2026-05-22.log` (v1, hit the index bug — composition only completed), `..._v2.log` (DE-only resume after the index fix)
+
+**Status: Module 08 complete. Ready to proceed to Module 09 (pathway enrichment, TF inference, pain gene cross-referencing) on the 26 trustworthy DE comparisons (excluding M2 healthy_vs_severe).**
 
 ---
 

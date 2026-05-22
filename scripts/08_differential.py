@@ -36,6 +36,9 @@ warnings.filterwarnings('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # ── Paths ────────────────────────────────────────────────────────────────────
+# Defaults can be overridden via --input-dir / --output-dir on the command line
+# (see main()), which lets the same script target v5 or tiered_v4 outputs
+# without trampling each other.
 BASE = Path(__file__).resolve().parent.parent
 INT_DIR = BASE / "data" / "integrated"
 META_PATH = BASE / "metadata" / "sample_metadata.tsv"
@@ -43,8 +46,10 @@ RESULTS_DIR = BASE / "results" / "differential"
 VOLCANO_DIR = RESULTS_DIR / "volcano_plots"
 HEATMAP_DIR = RESULTS_DIR / "heatmaps"
 
-for d in [RESULTS_DIR, VOLCANO_DIR, HEATMAP_DIR]:
-    d.mkdir(parents=True, exist_ok=True)
+# Whether to exclude cells flagged is_contamination (RBC + endothelial_admixed)
+# from DE / composition. Default False — retain with caveats per 2026-05-22
+# checkpoint decision. Can be flipped via --exclude-contamination CLI flag.
+EXCLUDE_CONTAMINATION = False
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
@@ -87,7 +92,12 @@ IVD_GENES = [
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def load_integrated_data():
-    """Load integrated h5ad files and merge with sample metadata."""
+    """Load integrated h5ad files and merge with sample metadata.
+
+    Loads NP/AF/CEP (per-compartment) and all_cells (cross-compartment).
+    If EXCLUDE_CONTAMINATION is True, drops cells flagged is_contamination
+    (RBC + endothelial_admixed) before returning.
+    """
     meta = pd.read_csv(META_PATH, sep='\t')
 
     datasets = {}
@@ -95,6 +105,7 @@ def load_integrated_data():
         ("NP.h5ad", "NP"),
         ("AF.h5ad", "AF"),
         ("CEP.h5ad", "CEP"),
+        ("all_cells.h5ad", "all_cells"),
     ]:
         path = INT_DIR / fname
         if not path.exists():
@@ -107,8 +118,17 @@ def load_integrated_data():
                 a.layers['counts'] = a.X.copy()
             else:
                 a.layers['counts'] = sparse.csr_matrix(a.X)
+
+        # Apply contamination filter if requested
+        if EXCLUDE_CONTAMINATION and 'is_contamination' in a.obs.columns:
+            n_before = a.shape[0]
+            a = a[~a.obs['is_contamination'].astype(bool)].copy()
+            n_after = a.shape[0]
+            print(f"  Loaded {label}: {n_after:,} cells × {a.shape[1]:,} genes "
+                  f"({n_before - n_after:,} contamination cells excluded)")
+        else:
+            print(f"  Loaded {label}: {a.shape[0]:,} cells × {a.shape[1]:,} genes")
         datasets[label] = a
-        print(f"  Loaded {label}: {a.shape[0]:,} cells × {a.shape[1]:,} genes")
 
     return datasets, meta
 
@@ -148,63 +168,73 @@ def filter_to_comparison(obs, meta, condition_ref, condition_test, exclude=EXCLU
 # PART 1: COMPOSITION ANALYSIS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def run_composition_analysis(datasets, meta):
-    """Test for differential cell type proportions between conditions."""
+def run_composition_analysis(datasets, meta, group_col='cell_type', output_suffix=''):
+    """Test for differential cell type / cell_subtype proportions between conditions.
+
+    Iterates per-object (NP, AF, CEP, all_cells) rather than combining, because
+    the all_cells transfer step in Module 07 duplicates per-compartment cells —
+    pooling would double-count.
+
+    Parameters
+    ----------
+    group_col : 'cell_type' (primary) or 'cell_subtype' (supplementary).
+    output_suffix : appended to the output filename; use '_subtype' for the
+        cell_subtype pass.
+    """
     print("\n" + "=" * 60)
-    print("Part 1: Cell Composition Analysis")
+    print(f"Part 1: Cell Composition Analysis (group_col={group_col})")
     print("=" * 60)
 
     all_results = []
 
-    # Combine obs from all datasets
-    all_obs = []
-    for label, adata in datasets.items():
-        obs = adata.obs[['sample_id', 'cell_type']].copy()
-        obs['tier'] = label
-        all_obs.append(obs)
-    combined_obs = pd.concat(all_obs, axis=0)
-
-    for comp_name, cond_ref, cond_test in COMPARISONS:
-        print(f"\n  --- {comp_name} ---")
-        merged = filter_to_comparison(combined_obs.reset_index(), meta, cond_ref, cond_test)
-
-        if merged.empty:
-            print(f"    No cells for this comparison, skipping")
+    for object_name, adata in datasets.items():
+        if group_col not in adata.obs.columns:
+            print(f"\n  {object_name}: no {group_col} column, skipping")
             continue
+        obs = adata.obs[['sample_id', group_col]].copy()
 
-        # Compute proportions per sample
-        ct_counts = merged.groupby(['sample_id', 'cell_type', 'group']).size().reset_index(name='n_cells')
-        sample_totals = merged.groupby('sample_id').size().reset_index(name='total')
-        ct_counts = ct_counts.merge(sample_totals, on='sample_id')
-        ct_counts['proportion'] = ct_counts['n_cells'] / ct_counts['total']
+        for comp_name, cond_ref, cond_test in COMPARISONS:
+            print(f"\n  --- {object_name} / {comp_name} ---")
+            merged = filter_to_comparison(obs.reset_index(), meta, cond_ref, cond_test)
 
-        # Test each cell type
-        for ct in ct_counts['cell_type'].unique():
-            ct_data = ct_counts[ct_counts['cell_type'] == ct]
-            ref_props = ct_data[ct_data['group'] == 'reference']['proportion'].values
-            test_props = ct_data[ct_data['group'] == 'test']['proportion'].values
-
-            if len(ref_props) < 2 or len(test_props) < 2:
+            if merged.empty:
+                print(f"    No cells for this comparison, skipping")
                 continue
 
-            # Mann-Whitney U test on proportions
-            try:
-                stat, pval = mannwhitneyu(ref_props, test_props, alternative='two-sided')
-            except ValueError:
-                continue
+            # Compute proportions per sample, within this object only
+            ct_counts = merged.groupby(['sample_id', group_col, 'group'],
+                                       observed=True).size().reset_index(name='n_cells')
+            sample_totals = merged.groupby('sample_id').size().reset_index(name='total')
+            ct_counts = ct_counts.merge(sample_totals, on='sample_id')
+            ct_counts['proportion'] = ct_counts['n_cells'] / ct_counts['total']
 
-            lfc = np.log2((np.mean(test_props) + 1e-6) / (np.mean(ref_props) + 1e-6))
+            # Test each group value
+            for ct in ct_counts[group_col].unique():
+                ct_data = ct_counts[ct_counts[group_col] == ct]
+                ref_props = ct_data[ct_data['group'] == 'reference']['proportion'].values
+                test_props = ct_data[ct_data['group'] == 'test']['proportion'].values
 
-            all_results.append({
-                'comparison': comp_name,
-                'cell_type': ct,
-                'mean_prop_ref': np.mean(ref_props),
-                'mean_prop_test': np.mean(test_props),
-                'log2FC_proportion': lfc,
-                'n_samples_ref': len(ref_props),
-                'n_samples_test': len(test_props),
-                'pvalue': pval,
-            })
+                if len(ref_props) < 2 or len(test_props) < 2:
+                    continue
+
+                try:
+                    stat, pval = mannwhitneyu(ref_props, test_props, alternative='two-sided')
+                except ValueError:
+                    continue
+
+                lfc = np.log2((np.mean(test_props) + 1e-6) / (np.mean(ref_props) + 1e-6))
+
+                all_results.append({
+                    'object': object_name,
+                    'comparison': comp_name,
+                    group_col: ct,
+                    'mean_prop_ref': np.mean(ref_props),
+                    'mean_prop_test': np.mean(test_props),
+                    'log2FC_proportion': lfc,
+                    'n_samples_ref': len(ref_props),
+                    'n_samples_test': len(test_props),
+                    'pvalue': pval,
+                })
 
     if not all_results:
         print("  No composition results generated")
@@ -212,18 +242,24 @@ def run_composition_analysis(datasets, meta):
 
     results_df = pd.DataFrame(all_results)
 
-    # FDR correction (Benjamini-Hochberg)
+    # FDR correction (Benjamini-Hochberg) within each object × comparison
     from statsmodels.stats.multitest import multipletests
     _, results_df['padj'], _, _ = multipletests(results_df['pvalue'], method='fdr_bh')
 
-    # Sort and save
     results_df = results_df.sort_values('padj')
-    results_df.to_csv(RESULTS_DIR / "composition_analysis.tsv", sep='\t', index=False)
-    print(f"\n  Saved: {RESULTS_DIR / 'composition_analysis.tsv'}")
+    outpath = RESULTS_DIR / f"composition_analysis{output_suffix}.tsv"
+    results_df.to_csv(outpath, sep='\t', index=False)
+    print(f"\n  Saved: {outpath}")
     print(f"  Significant (padj < 0.05): {(results_df['padj'] < 0.05).sum()} / {len(results_df)}")
 
-    # Plot
-    _plot_composition(results_df, combined_obs, meta)
+    # Plot (cell_type only — subtype plots get crowded)
+    if group_col == 'cell_type':
+        combined_obs = pd.concat(
+            [a.obs[['sample_id', group_col]].assign(tier=name)
+             for name, a in datasets.items() if group_col in a.obs.columns],
+            axis=0
+        )
+        _plot_composition(results_df, combined_obs, meta)
 
     return results_df
 
@@ -402,7 +438,14 @@ def run_deseq2(counts_df, sample_df, cell_type, comparison_name):
 
 
 def run_de_analysis(datasets, meta):
-    """Run pseudobulk DE for all cell types × comparisons."""
+    """Run pseudobulk DE for all cell types × comparisons (per-compartment only).
+
+    Skips the `all_cells` object: per-compartment cells are duplicated there
+    via Module 07's transfer step, so running DE on all_cells would
+    double-count. The compartment-specific results are the primary view; any
+    pooled-across-compartment question is better answered by the composition
+    pass on all_cells.
+    """
     print("\n" + "=" * 60)
     print("Part 2: Pseudobulk Differential Expression")
     print("=" * 60)
@@ -411,23 +454,29 @@ def run_de_analysis(datasets, meta):
     skipped = []
 
     for tier_label, adata in datasets.items():
+        if tier_label == 'all_cells':
+            print(f"\n  === Skipping all_cells DE (per-compartment cells are duplicated) ===")
+            continue
         print(f"\n  === Tier: {tier_label} ===")
 
         # Get cell types in this tier
         cell_types = adata.obs['cell_type'].unique()
 
         for comp_name, cond_ref, cond_test in COMPARISONS:
-            # Build merged obs for this comparison
-            obs_reset = adata.obs[['sample_id', 'cell_type']].copy()
-            obs_reset.index = adata.obs.index  # preserve index for alignment
-            merged = filter_to_comparison(obs_reset.reset_index(), meta, cond_ref, cond_test)
+            # Build merged obs for this comparison. We need to preserve the
+            # adata.obs index (cell barcodes / cell_ids) so pseudobulk_aggregate
+            # can later look up rows in adata. reset_index() produces a column
+            # named after the obs index (e.g. "cell_id"), or "index" if the
+            # index was unnamed — handle both cases.
+            obs_reset = adata.obs[['sample_id', 'cell_type']].copy().reset_index()
+            index_col = obs_reset.columns[0]  # whatever the original index name was
+            merged = filter_to_comparison(obs_reset, meta, cond_ref, cond_test)
 
             if merged.empty:
                 continue
 
-            # Set index back for alignment with adata
-            if 'index' in merged.columns:
-                merged = merged.set_index('index')
+            if index_col in merged.columns:
+                merged = merged.set_index(index_col)
 
             for ct in cell_types:
                 label = f"{ct} | {comp_name}"
@@ -713,15 +762,36 @@ def validate():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    print("=" * 60)
-    print("Module 08: Differential Analysis")
-    print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("=" * 60)
+    global INT_DIR, RESULTS_DIR, VOLCANO_DIR, HEATMAP_DIR, EXCLUDE_CONTAMINATION
 
     args = sys.argv[1:]
     composition_only = '--composition-only' in args
     de_only = '--de-only' in args
     validate_only = '--validate-only' in args
+    EXCLUDE_CONTAMINATION = '--exclude-contamination' in args
+
+    # Parse --input-dir
+    for i, a in enumerate(args):
+        if a == '--input-dir' and i + 1 < len(args):
+            INT_DIR = Path(args[i + 1]).resolve()
+
+    # Parse --output-dir
+    for i, a in enumerate(args):
+        if a == '--output-dir' and i + 1 < len(args):
+            RESULTS_DIR = Path(args[i + 1]).resolve()
+            VOLCANO_DIR = RESULTS_DIR / "volcano_plots"
+            HEATMAP_DIR = RESULTS_DIR / "heatmaps"
+
+    for d in [RESULTS_DIR, VOLCANO_DIR, HEATMAP_DIR]:
+        d.mkdir(parents=True, exist_ok=True)
+
+    print("=" * 60)
+    print("Module 08: Differential Analysis")
+    print(f"Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  Input dir:  {INT_DIR}")
+    print(f"  Output dir: {RESULTS_DIR}")
+    print(f"  Exclude contamination: {EXCLUDE_CONTAMINATION}")
+    print("=" * 60)
 
     if validate_only:
         passed, messages = validate()
@@ -735,11 +805,21 @@ def main():
         print("ERROR: No integrated datasets found")
         sys.exit(1)
 
-    # Part 1: Composition
+    # Part 1: Composition — runs on cell_type AND cell_subtype (the latter is
+    # the supplementary descriptive lens; finer grouping often reveals
+    # proportion changes the coarser one masks)
     if not de_only:
-        comp_results = run_composition_analysis(datasets, meta)
+        print("\n[Composition pass 1/2] grouping by cell_type")
+        run_composition_analysis(datasets, meta, group_col='cell_type',
+                                 output_suffix='')
 
-    # Part 2: DE
+        if any('cell_subtype' in a.obs.columns for a in datasets.values()):
+            print("\n[Composition pass 2/2] grouping by cell_subtype")
+            run_composition_analysis(datasets, meta, group_col='cell_subtype',
+                                     output_suffix='_subtype')
+
+    # Part 2: DE (cell_type only, per-compartment objects — skip all_cells
+    # to avoid double-counting cells that appear in their compartment object too)
     if not composition_only:
         de_results = run_de_analysis(datasets, meta)
 
