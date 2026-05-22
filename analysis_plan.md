@@ -27,11 +27,13 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 06 rerun complete 2026-05-22; pending human checkpoint before Module 07 rerun.**
+**Tiered v4 pipeline — Module 07 rerun complete 2026-05-22; pending human checkpoint before Module 08.**
 
-After the 2026-05-18 root-cause analysis flagged the NP "unassigned" cells as mis-tiered non-mesenchymal cells (neutrophils, macrophages, T/B/plasma cells, endothelial, RBCs), the Module 04 + Module 07 panel extensions were applied (commit `15944f1`) and the tiered_v4 integration → assembly → clustering chain was re-run end-to-end for all four compartments. Additionally, the per-study non-mes threshold in 05k was raised from 5 → 50 cells (uncommitted; staged for this update) so every surviving study clears CCA's `dims=1:50` anchor requirement instead of falling back to a study-segregated simple-merge.
+The Module 06 rerun on 2026-05-22 (post-rescue, 50-cell non-mes threshold) was followed the same day by a Module 07 rerun with two additional patches to `scripts/07_annotation.py`: (a) CellTypist input is now CP10K + log1p normalized (fixes the 2026-05-15 hard failure on CEP non-mes); (b) `annotate_coarse()` for the non-mes tier falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring on rank_genes_groups markers does not fire. The propagation step catches naive/resting lymphocyte clusters dominated by ribosomal genes and tier-wide RBC contamination where hemoglobin genes don't appear as cluster-distinguishing markers.
 
-See **Tiered v4 Module 06 Rerun (2026-05-22)** below for the new cluster counts; **Tiered v4 Module 06 Results (2026-05-09)** is retained as historical context for the 2026-05-14 review decisions, and **Tiered v4 Module 07 Results (2026-05-15)** is retained for the pre-rescue annotation snapshot.
+Validator overall status: **PASSED**. **0.0 % unassigned across all four compartments** (was 12.4 / 0.0 / 0.0 / 0.0 % on 2026-05-15, then 6.6 / 6.5 / 24.7 / 0.0 % on the 2026-05-22 v1 pre-propagation rerun). Cell-type counts: NP 10, AF 7, CEP 7, all_cells 18. See **Tiered v4 Module 07 Rerun (2026-05-22)** below.
+
+Historical snapshots retained: **Tiered v4 Module 06 Rerun (2026-05-22)** for the new cluster counts; **Tiered v4 Module 06 Results (2026-05-09)** for the 2026-05-14 review decisions; **Tiered v4 Module 07 Results (2026-05-15)** for the pre-rescue annotation state.
 
 **Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration. v5 results retained for comparison.
 
@@ -97,7 +99,71 @@ Mesenchymal-tier clustering became coarser in NP (27 → 9) and CEP (15 → 9): 
 - `notebooks/06_clustering.ipynb` §5 — refreshed to 2026-05-22 cluster counts, tables, UMAPs, optimization plots
 - Logs: `logs/05k_nonmes_rerun_2026-05-21.log`, `logs/05k_all_cells_tiered_v4_2026-05-2{0,1}*.log`, `logs/05m_assemble_tiered_v4_2026-05-21.log`, `logs/06_clustering_tiered_v4_2026-05-21.log`
 
-**Status: pending human checkpoint review of the new cluster counts before re-running Module 07. Open questions are listed in `notebooks/06_clustering.ipynb` §5f (six items spanning whether the coarser mes-tier solutions and the substantially larger non-mes tiers are at the right granularity for downstream annotation).**
+**Status: Module 06 cluster counts accepted (2026-05-22) — questions 1–3 in `notebooks/06_clustering.ipynb` §5f resolved in favor of the statistical selection (keep 9 mes clusters for NP, default to the chosen resolution everywhere, don't compare per-compartment vs unified cluster sums at this stage). Phase-5 gates pending evaluation after Module 08 lands.**
+
+---
+
+## Tiered v4 Module 07 Rerun (2026-05-22)
+
+Module 07 was re-run on the 2026-05-22 Module 06 outputs (NP 18 · AF 19 · CEP 19 · all_cells 24 clusters) with three patches to `scripts/07_annotation.py`:
+
+1. **CellTypist `.X` normalization.** `validate_immune_with_celltypist()` now builds a CP10K + log1p copy of the non-mes subset (without mutating the caller's `.X`, since 05m writes raw counts and downstream DE needs them raw) before handing it to `celltypist.annotate()`. The 2026-05-15 hard failure on CEP non-mes (`Invalid expression matrix in .X`) is resolved; CellTypist runs cleanly on all three non-mes tiers.
+
+2. **Module 04 → Module 07 label propagation (non-mes tier only).** `annotate_coarse()` falls back to Module 04's per-cell `coarse_label` majority (≥60% threshold) when stage-1 panel scoring on rank_genes_groups markers fails to fire. This catches two recurrent failure modes the pre-propagation v1 rerun exposed:
+   - **Naive/resting lymphocyte clusters dominated by ribosomal genes** (NP non-mes cluster 1, 17,282 cells, 86% Module 04 `Immune`; AF non-mes cluster 0, 5,122 cells, 98% Module 04 `Immune`). `rank_genes_groups` returns RPS/RPL/EEF1A1/EEF1B2 as cluster-distinguishing markers — none of which are cell-type-specific — so the existing T_cell / B_cell / NK_cell panels never fire. Propagated to `Immune`.
+   - **Tier-wide RBC contamination** (CEP non-mes clusters 0–4, 12,566 cells, 72–94% Module 04 `Erythrocyte`; AF non-mes cluster 5, 370 cells, 96% Module 04 `Erythrocyte`). When most of the tier is RBCs, hemoglobin genes don't appear as cluster-vs-rest markers because they're shared. Propagated to `Erythrocyte`.
+
+3. **Categorical-assignment bug fix in `process_all_cells_secondary()`.** The all_cells secondary pass crashed at the `celltypist_prediction` transfer step (`TypeError: Cannot set a Categorical with another, without identical categories`) when re-running on h5ads that already contained a categorical `celltypist_prediction` column from a prior run. Fix: cast both LHS and RHS to object dtype before the assignment. The v3 resume completed in ~3.5 min.
+
+### Results
+
+| Object | Cells | Cell types | Unassigned % | CellTypist concordance |
+|---|---|---|---|---|
+| NP        | 262,924 | 10 | **0.0%** | 4/9 |
+| AF        |  84,617 |  7 | **0.0%** | 2/7 |
+| CEP       |  50,854 |  7 | **0.0%** | 3/10 |
+| all_cells | 410,705 | 18 | 0.0% | n/a (transfer mode) |
+
+Unassigned trajectory across runs:
+
+| Run | NP | AF | CEP | all_cells | Notes |
+|---|---|---|---|---|---|
+| 2026-05-15 (pre-rescue) | 12.4% | 0.0% | 0.0% | 0.2% | NP `unassigned` was mis-tiered non-mes cells; AF/CEP non-mes too small for unassigned anything |
+| 2026-05-22 v1 (post-rescue, pre-propagation) | 6.6% | 6.5% | 24.7% | 0.0% | Rescue moved cells into non-mes tier; stage-1 panel scoring couldn't name them all |
+| **2026-05-22 v2 (post-propagation, current)** | **0.0%** | **0.0%** | **0.0%** | **0.0%** | Module 04 majority-vote fallback closes the gap |
+
+CellTypist concordance unchanged between v1 and v2 — the patch only changes how unassigned-by-panel clusters get labeled, not what CellTypist itself predicts. Concordance lows (NP 4/9, AF 2/7, CEP 3/10) are driven by two systematic mismaps in `Immune_All_Low.pkl`: neutrophils called as classical monocytes (the model has no neutrophil class) and pericytes / matrix-remodeling macrophages called as fibroblasts. De novo marker calls are the trustworthy labels in these cases.
+
+### Per-compartment cell type composition
+
+NP (10 types): `NP_mature_chondrocyte`, `NP_fibrocartilaginous`, `Macrophage_M2`, `Macrophage_M1`, `Neutrophil`, `Immune`, `Endothelial`, `Pericyte_SMC`, `Erythrocyte`, plus one within-coarse fine type.
+
+AF (7 types): `AF_outer`, `AF_inner`, `AF_mechanical_stress` (within Fibroblast_like), `Macrophage_M2`, `Pericyte_SMC`, `Erythrocyte`, `Immune`.
+
+CEP (7 types): `EP_hyaline`, `EP_ossification`, `Macrophage_M2`, `Pericyte_SMC`, `Endothelial`, `Erythrocyte`, plus one additional immune subtype.
+
+all_cells (18 types): union across compartments, transferred from per-compartment objects.
+
+### Human checkpoint items (2026-05-22 — scientific decisions, not pipeline issues)
+
+1. **RBC contamination filter.** CEP carries 12,566 `Erythrocyte` cells (24.7% of CEP), NP carries ~16K, AF ~0.5K. CEP samples sit next to vascularized bone, so heavy RBC contamination is expected. Pseudobulk DE on RBCs is meaningless and they can distort proportion analyses. Decision: filter before Module 08, retain as a contamination-tracking marker, or keep with caveats?
+
+2. **`Immune` catch-all (Module 04 propagation).** Clusters labeled `Immune` rather than a specific subtype (Macrophage / Neutrophil / T_cell / etc.) are those where the fine-panel scoring did not fire — typically ribosomal-dominant naive/resting lymphocytes (NP cluster 1, 17,282 cells; AF cluster 0, 5,122 cells). Decision: leave as `Immune`, or expand fine panels (e.g., resting-T-cell rule with CD3D + low-activation markers, or a "Lymphocyte_naive" panel keyed on RPS/RPL + CD45) for one more iteration of Module 07?
+
+3. **Coarse-type naming convention (deferred from 2026-05-15).** Compartment-specific labels (`NP_fibrocartilaginous`, `AF_inner`, `EP_hyaline`) coexist with generic labels (`Fibroblast_like`, `Chondrocyte_like`) in the `all_cells` object. Harmonize before Module 08 pseudobulk?
+
+### Review materials
+
+- `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` — annotated objects (`cell_type`, `coarse_cell_type`, `cell_type_confidence`, `annotation_evidence` in `.obs`)
+- `results/integration/tiered_v4/cell_type_definitions.tsv` — cell-type marker definitions
+- `results/integration/tiered_v4/umap_{NP,AF,CEP,all_cells}_annotated.png`
+- `results/integration/tiered_v4/cluster_markers/` — 13 per-tier and within-coarse marker tables
+- `results/integration/tiered_v4/annotation_dotplots/` — canonical-marker dot-plot PDFs
+- `results/integration/tiered_v4/annotation_report.html` — auto-generated annotation report
+- `notebooks/07_annotation.ipynb` §6 — refreshed to 2026-05-22 v2 state, including the three checkpoint items
+- Logs: `logs/07_annotation_tiered_v4_2026-05-22.log` (v1, pre-propagation), `..._v2.log` (v2 main run that crashed on all_cells), `..._v3.log` (all_cells resume after categorical fix)
+
+**Status: pending human checkpoint review of the three scientific items above before resuming at Module 08.**
 
 ---
 

@@ -58,6 +58,7 @@ CANONICAL_MARKERS = {
     "EP_hyaline":           ["COL2A1", "COL10A1", "SOX9"],
     "EP_ossification":      ["RUNX2", "SP7", "BGLAP"],
     # Non-mesenchymal
+    "Immune":               ["PTPRC", "CD3D", "CD3E", "CD79A", "CD68"],
     "Macrophage":           ["CD68", "CD14", "CSF1R", "CD163", "CD86"],
     "Neutrophil":           ["S100A8", "S100A9", "FCGR3B", "CSF3R", "FPR1"],
     "T_cell":               ["CD3D", "CD3E", "CD4", "CD8A"],
@@ -319,6 +320,30 @@ def annotate_coarse(adata, object_name, tier_name):
     # Generate dotplots for the coarse panel
     generate_annotation_dotplots(adata, object_name, f"{tier_name}_coarse", panel)
 
+    # Pre-compute Module 04 majority coarse_label per cluster (non-mes only).
+    # Used as a fallback when per-cluster panel scoring on rank_genes_groups
+    # markers fails to fire — e.g., naive lymphocyte clusters dominated by
+    # ribosomal genes, or tier-wide RBC contamination where hemoglobin genes
+    # don't appear as cluster-distinguishing markers.
+    M04_TO_M07 = {
+        "Immune":       "Immune",
+        "Erythrocyte":  "Erythrocyte",
+        "Endothelial":  "Endothelial",
+        "Pericyte_SMC": "Pericyte_SMC",
+    }
+    M04_MAJORITY_MIN = 0.60
+    m04_majority = {}
+    if tier_name == "non_mesenchymal" and "coarse_label" in adata.obs.columns:
+        for cluster in adata.obs["leiden"].unique():
+            mask = adata.obs["leiden"] == cluster
+            counts = adata.obs.loc[mask, "coarse_label"].value_counts()
+            if len(counts) == 0:
+                continue
+            top_label = counts.index[0]
+            top_pct = counts.iloc[0] / mask.sum()
+            if top_pct >= M04_MAJORITY_MIN and top_label in M04_TO_M07:
+                m04_majority[cluster] = (M04_TO_M07[top_label], top_pct)
+
     # Score each cluster
     coarse_types = pd.Series("unassigned", index=adata.obs_names, dtype=object)
     coarse_conf = pd.Series("low", index=adata.obs_names, dtype=object)
@@ -348,6 +373,15 @@ def annotate_coarse(adata, object_name, tier_name):
                 )
 
         label, confidence, evidence = _assign_best_label(scores)
+
+        # Fallback: when the panel-score path produced "unassigned" on a
+        # non-mes cluster, propagate Module 04's majority label.
+        if label == "unassigned" and cluster in m04_majority:
+            m04_label, m04_pct = m04_majority[cluster]
+            label = m04_label
+            confidence = "medium"
+            evidence = f"Module04_majority={m04_label}({m04_pct * 100:.0f}%)"
+
         cluster_assignments[cluster] = label
         coarse_types.loc[mask] = label
         coarse_conf.loc[mask] = confidence
@@ -569,13 +603,21 @@ def validate_immune_with_celltypist(adata, object_name):
         print(f"    WARNING: Could not load CellTypist model: {e}")
         return None
 
+    # CellTypist requires .X to be CP10K + log1p. Module 05m writes raw counts,
+    # so build a normalized copy here without mutating the caller's adata.
+    ct_input = adata.copy()
+    sc.pp.normalize_total(ct_input, target_sum=1e4)
+    sc.pp.log1p(ct_input)
+
     try:
-        predictions = celltypist.annotate(adata, model=model, majority_voting=True)
+        predictions = celltypist.annotate(ct_input, model=model, majority_voting=True)
         result_adata = predictions.to_adata()
         adata.obs['celltypist_prediction'] = result_adata.obs['majority_voting'].values
     except Exception as e:
         print(f"    WARNING: CellTypist annotation failed: {e}")
         return None
+    finally:
+        del ct_input
 
     # Build concordance table: cluster x CellTypist majority prediction
     concordance = []
@@ -992,12 +1034,17 @@ def process_all_cells_secondary(force=False):
                     adata_all.obs.loc[common_cells, col] = \
                         obj_adata.obs.loc[common_cells, col].values
 
-            # Transfer celltypist predictions
+            # Transfer celltypist predictions. Force object dtype on both
+            # sides — h5ad round-trips store these as Categorical, and assigning
+            # categoricals with different category sets raises TypeError.
             if 'celltypist_prediction' in obj_adata.obs.columns:
                 if 'celltypist_prediction' not in adata_all.obs.columns:
                     adata_all.obs['celltypist_prediction'] = ""
+                else:
+                    adata_all.obs['celltypist_prediction'] = \
+                        adata_all.obs['celltypist_prediction'].astype(object)
                 adata_all.obs.loc[common_cells, 'celltypist_prediction'] = \
-                    obj_adata.obs.loc[common_cells, 'celltypist_prediction'].values
+                    obj_adata.obs.loc[common_cells, 'celltypist_prediction'].astype(object).values
 
             n_transferred += len(common_cells)
             print(f"    {obj_name}: transferred {len(common_cells):,} cell annotations")
