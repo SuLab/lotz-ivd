@@ -27,13 +27,79 @@
 
 ## Active Step
 
-**Tiered v4 pipeline — Module 07 complete 2026-05-15; pending human checkpoint.**
+**Tiered v4 pipeline — Module 06 rerun complete 2026-05-22; pending human checkpoint before Module 07 rerun.**
 
-The atlas is being re-run on the tiered v4 integration (Seurat v4 SCT + CCA, mes / non-mes split) for all four compartments. The v5 outputs remain on disk untouched at `data/integrated/{NP,AF,CEP,all_cells}.h5ad`; the new tiered v4 outputs live at `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` and Modules 06–07 wrote cluster + annotation columns back to those files.
+After the 2026-05-18 root-cause analysis flagged the NP "unassigned" cells as mis-tiered non-mesenchymal cells (neutrophils, macrophages, T/B/plasma cells, endothelial, RBCs), the Module 04 + Module 07 panel extensions were applied (commit `15944f1`) and the tiered_v4 integration → assembly → clustering chain was re-run end-to-end for all four compartments. Additionally, the per-study non-mes threshold in 05k was raised from 5 → 50 cells (uncommitted; staged for this update) so every surviving study clears CCA's `dims=1:50` anchor requirement instead of falling back to a study-segregated simple-merge.
 
-See **Tiered v4 Module 06 Results** for cluster counts (refreshed 2026-05-09) and the 2026-05-14 review decisions, and **Tiered v4 Module 07 Results** for the 2026-05-15 annotation outputs and the three soft-warning items awaiting checkpoint review.
+See **Tiered v4 Module 06 Rerun (2026-05-22)** below for the new cluster counts; **Tiered v4 Module 06 Results (2026-05-09)** is retained as historical context for the 2026-05-14 review decisions, and **Tiered v4 Module 07 Results (2026-05-15)** is retained for the pre-rescue annotation snapshot.
 
 **Pipeline v5 COMPLETE (2026-03-25).** All 12 modules finished with CCA integration. v5 results retained for comparison.
+
+---
+
+## Tiered v4 Module 06 Rerun (2026-05-22) — Post NP-Rescue + 50-Cell Non-Mes Threshold
+
+End-to-end rerun of Module 04 → 05k → 05m → 06 after implementing the 2026-05-18 root-cause fixes. Two consolidated upstream changes:
+
+1. **NP unassigned rescue (commit `15944f1`, executed 2026-05-18 → 2026-05-21).** Module 04 cell-class panels extended for neutrophils, plasma cells, erythrocytes; Module 07 `COARSE_PANELS_NON_MESENCHYMAL` extended in parallel. Adaptive HVG selection in 05k honors `--hvg-cap` / `--max-cfo-product` (commit `a26525c`) to keep CCA tractable on the larger tier objects.
+2. **Non-mes per-study threshold raised 5 → 50 cells (uncommitted, this update; `scripts/05k_tiered_v4_compartments.R`).** Below the new floor, studies are dropped from the non-mes tier rather than forced through a simple-merge fallback that produced study-segregated UMAP lobes (no real batch correction). AF lost `GSE199866_AF` (7 cells) to the drop. Every surviving non-mes object now clears CCA's `dims=1:50` requirement, so non-mes integration runs through the same Seurat v4 SCT + CCA path as mesenchymal.
+
+### Tiered v4 atlas re-assembly
+
+`scripts/05m_assemble_tiered_v4.py` regenerated per-compartment AnnData under `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` on 2026-05-21:
+
+| Compartment | n_cells | n_genes | Mes cells | Non-mes cells | "unknown" residual | Output size |
+|---|---|---|---|---|---|---|
+| NP        | 262,924 | 47,663 | 134,189 | 75,667  | 53,068 | 6.45 GB after Module 06 |
+| AF        |  84,617 | 37,846 |  60,593 | 12,012  | 12,012 | 2.59 GB |
+| CEP       |  50,854 | 32,956 |  27,748 | 13,975  |  9,131 | 1.27 GB |
+| all_cells | 410,705 | 49,623 | 236,999 | 101,747 | 71,959 | 10.82 GB |
+
+Non-mes cell counts vs the 2026-05-09 assembly: NP 3,393 → 75,667; AF 56 → 12,012; CEP 71 → 13,975; all_cells 3,464 → 101,747. The rescue moved the bulk of previously-mis-tiered immune / endothelial / blood cells into the non-mes tier where the coarse panels can actually name them.
+
+### Module 06 results (Leiden resolution sweep, 2026-05-22)
+
+`scripts/06_clustering.py` re-run with the same equal-weighted silhouette+modularity selection (PR #4, commit `d44a0c4`). Full resolution sweep (0.1 → 2.0, step 0.1) per tier; argmax of `(sil_norm + mod_norm) / 2`, ties broken on silhouette.
+
+| Compartment | Tier | Cells | Resolution | n_clusters | Combined | Notes |
+|---|---|---|---|---|---|---|
+| NP        | mes     | 187,257 | 0.4 |  9 | 0.668 | sil = 0.040 (genuinely positive); modularity + silhouette agree at the peak |
+| NP        | non-mes |  75,667 | 0.3 |  9 | 0.628 | broad combined plateau (0.625–0.628 across res 0.3–0.4); tier is now substantive |
+| AF        | mes     |  72,605 | 0.3 | 12 | 0.615 | sil ~0.013; modularity-driven peak |
+| AF        | non-mes |  12,012 | 0.4 |  7 | 0.876 | clear curvature; sil = 0.085 — highest of any AF tier in the rerun |
+| CEP       | mes     |  36,879 | 0.4 |  9 | 0.531 | flat combined across res 0.3–0.5; sil = 0.045 |
+| CEP       | non-mes |  13,975 | 0.7 | 10 | 0.582 | sil = 0.040 at selection; sil-peak alternative is res = 0.1 (3 clusters) |
+| all_cells | mes     | 308,958 | 0.7 | 19 | 0.538 | plateau across res 0.4–0.9 (0.523–0.538); modest shift from 17 (2026-05-09) |
+| all_cells | non-mes | 101,747 | 0.2 |  5 | 0.834 | highest combined score of any tier; sil = 0.095 — solid selection |
+
+Combined cluster count per compartment (after merging tiers with M / NM prefix):
+
+| Compartment | v5 (CCA flat) | Tiered v4 (2026-05-09) | Tiered v4 (2026-05-22, this rerun) |
+|---|---|---|---|
+| NP        | 12 | 32 | **18** (9 mes + 9 non-mes) |
+| AF        | 12 | 17 | **19** (12 mes + 7 non-mes) |
+| CEP       |  9 | 20 | **19** (9 mes + 10 non-mes) |
+| all_cells | 15 | 21 | **24** (19 mes + 5 non-mes) |
+
+Mesenchymal-tier clustering became coarser in NP (27 → 9) and CEP (15 → 9): removing the mis-tiered non-mes contamination flattens modularity earlier, exposing the true mes-only signal. AF mes stayed similar (13 → 12); all_cells mes shifted modestly (17 → 19). Non-mes tiers, which previously had only 14 cells/cluster on average in AF/CEP, now have meaningful substructure for the first time.
+
+### Validation (all PASS)
+
+- No cluster collapses to a single blob across the four compartments.
+- Study identity does not predict cluster identity: max study × leiden ARI = **0.102 (CEP)**; NP 0.074, AF 0.047, all_cells 0.056 — all well below 1.0.
+- Soft warning: validator reports "missing comparison resolution columns" for all four compartments (the side-by-side res=0.5/1.0 columns are not retained). Non-blocking.
+
+### Review materials (2026-05-22)
+
+- `results/integration/tiered_v4/clustering_resolution_optimization/{NP,AF,CEP,all_cells}_{mesenchymal,non_mesenchymal}_optimization.png` — silhouette / modularity / cluster-count plots (overwritten)
+- `results/integration/tiered_v4/clustering_resolution_optimization/*_resolutions.tsv` — full resolution sweeps (overwritten)
+- `data/integrated/tiered_v4/{NP,AF,CEP,all_cells}.h5ad` — clustering written back
+- `notebooks/06_clustering.ipynb` §5 — refreshed to 2026-05-22 cluster counts, tables, UMAPs, optimization plots
+- Logs: `logs/05k_nonmes_rerun_2026-05-21.log`, `logs/05k_all_cells_tiered_v4_2026-05-2{0,1}*.log`, `logs/05m_assemble_tiered_v4_2026-05-21.log`, `logs/06_clustering_tiered_v4_2026-05-21.log`
+
+**Status: pending human checkpoint review of the new cluster counts before re-running Module 07. Open questions are listed in `notebooks/06_clustering.ipynb` §5f (six items spanning whether the coarser mes-tier solutions and the substantially larger non-mes tiers are at the right granularity for downstream annotation).**
+
+---
 
 ### Module 05 Workflow Selection (2026-03-25)
 
