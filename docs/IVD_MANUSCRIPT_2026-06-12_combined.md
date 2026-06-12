@@ -146,6 +146,12 @@ A targeted scan of the NP cell types against a notochordal-cell marker panel (KR
 
 > *[Figure 2.]* Compartment-specific UMAPs. NP (left, 262,924 cells), AF (centre, 84,617 cells), CEP (right, 50,854 cells) atlases coloured by `cell_type`. Within each compartment, mesenchymal populations are arranged as adjacent graded clusters rather than separated discrete clusters, consistent with the continuum hypothesis. Non-mesenchymal populations occupy distinct regions of feature space.
 
+The Stage 3 sub-state annotation (Methods §Annotation) splits each mesenchymal `cell_type` into 1–6 sub-states (`proliferating`, `inflammatory`, `stressed`, `matrix_active`, `migratory`, `homeostatic`, plus the `endothelial_admixed` contamination flag) — 8 NP, 5 AF, and 6 CEP sub-states across the mesenchymal tier — capturing functional heterogeneity within each cell-type cluster. These sub-state-resolved UMAPs are shown in Figure 2b. Statistical analyses (pseudobulk DE, pathway, TF, CCC) are reported at the coarser `cell_type` granularity to preserve per-group sample size.
+
+![Figure 2b](manuscript_figures/fig02b_umap_substates.png)
+
+> *[Figure 2b.]* Mesenchymal-tier sub-state UMAPs. NP (left, 187,257 mesenchymal cells, 8 sub-states), AF (centre, 72,605 mesenchymal cells, 5 sub-states), CEP (right, 36,879 mesenchymal cells, 6 sub-states), each coloured by `cell_subtype` (Stage 3 annotation). Same UMAP coordinates as Figure 2 — only the mesenchymal cells are shown and the colouring is by sub-state rather than cell type. The sub-state structure preserves the within-`cell_type` heterogeneity visible in Figure 2 (e.g. the NP_fibrocartilaginous pole resolves into `stressed`, `matrix_active`, `migratory`, `inflammatory`, `proliferating`, and `endothelial_admixed` sub-states). Counts per sub-state are listed in the "Sub-states resolved" column of Table 1.
+
 ### §2 — NP fibrocartilaginous cells dominate the degenerative transcriptional signature
 
 Of the 26 statistically powered cell-type × comparison contrasts (one inflated contrast excluded; see Caveats §1), **1,823 significant DEGs** at FDR < 0.05 were identified. The cell-type distribution is highly asymmetric, with the three NP cell types collectively accounting for **1,310 of 1,823 trustworthy DEGs (72%)**:
