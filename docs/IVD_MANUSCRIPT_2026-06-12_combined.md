@@ -70,6 +70,20 @@ The tiered approach was selected over a flat single-method integration after an 
 
 A sensitivity analysis was also performed using flat Seurat CCA integration applied uniformly across all cells; the tiered approach yielded finer cell-type resolution and a larger trustworthy DE pool (1,823 vs. 1,198 significant DEGs across versions), with biological themes preserved across the two integration strategies. We report the tiered analysis as primary.
 
+### Integration-method comparison
+
+To test whether the tiered design's continuum-preservation rationale holds against global single-method integration, we additionally benchmarked Harmony (harmonypy, grouped by study) on each compartment under identical preprocessing (CP10K + log1p, 3,000 highly variable genes, 50-dimensional PCA). Every method was scored on a common battery spanning batch mixing (iLISI, batch_ASW), biological conservation (cLISI, bio_ASW, and cluster-versus-label agreement NMI and ARI), and retention of marker-gene variance for the chondrogenic (ACAN, COL2A1, SOX9) and fibrogenic (COL1A1) programs that define the disc mesenchymal continuum. For every metric shown a higher value is preferable; the marker-variance ratios are expressed relative to the unintegrated PCA, so that a value near 1 indicates that biological marker variation survived integration.
+
+For the NP compartment — where the fibrocartilaginous-to-mature-chondrocyte continuum is most pronounced — the global (whole-compartment) methods compare as follows, all computed on the full NP cell set:
+
+| Method | iLISI | batch_ASW | cLISI | bio_ASW | NMI | ARI | ACAN | COL2A1 | SOX9 | COL1A1 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Flat CCA | 0.258 | 0.850 | 0.869 | 0.416 | 0.134 | 0.062 | 0.699 | 0.678 | 0.762 | 0.839 |
+| Flat scANVI | 0.209 | 0.796 | 0.888 | 0.500 | 0.122 | 0.044 | 0.610 | 0.651 | 0.730 | 0.558 |
+| Harmony | 0.126 | 0.857 | 0.908 | 0.473 | 0.253 | 0.086 | 0.470 | 0.551 | 0.615 | 0.685 |
+
+Harmony produced the sharpest discrete cluster–label agreement among the global integrations (highest NMI, ARI and cLISI) with batch correction comparable to flat CCA (batch_ASW 0.857), but it retained the least variance in the chondrogenic markers ACAN, COL2A1 and SOX9. The same pattern held in every other compartment (AF, CEP, all_cells): batch_ASW remained within ≈ 0.03 of flat CCA while ACAN/COL2A1/SOX9 variance retention was consistently lower (e.g. AF COL2A1 0.28 vs. 0.62; all-cells ACAN 0.50 vs. 0.81). This is the expected signature of a global correction that sharpens cluster boundaries by compressing the continuous chondrogenic gradient — the same effect that motivated routing mesenchymal cells through a conservative, continuum-preserving tier rather than a single global integration. scANVI and STACAS were also evaluated during workflow selection, but under a different (unnormalized LISI) metric convention and partial cell subsampling, and are therefore not placed on the scale above.
+
 ### Clustering
 
 Leiden clustering was applied per tier per compartment, scanning resolutions chosen by an equal-weighted silhouette + modularity score. Tier-aware adaptive thresholds (three resolutions for > 300K cells, six for > 200K, ten for > 50K) and skipping modularity computation for > 100K cells kept run times tractable. Resulting cluster counts are: NP 17 mesenchymal + 4 non-mesenchymal, AF 9 + 3, CEP 4 + 4, all_cells 24 + 9.
