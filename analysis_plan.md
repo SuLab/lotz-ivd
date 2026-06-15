@@ -58,7 +58,18 @@ Historical snapshots retained: **Tiered v4 Module 06 Rerun (2026-05-22)** for th
 
 ---
 
-## PENDING (AWS run) — Unified NP integration-method comparison (`05o`) — added 2026-06-15
+## DONE (2026-06-15) — Unified NP integration-method comparison (`05o`)
+
+**Resolved 2026-06-15** (branch `docs/combine-martin-ml-analyses`). The scaffold below (added earlier the same day) was executed and extended. Final outcome:
+
+- **Scope extended to 7 methods** — STACAS added alongside flat CCA v5/v4, tiered CCA v5/v4 (mesenchymal), scANVI, Harmony — per in-session direction to re-run **both** scANVI and STACAS on full NP.
+- **scANVI** regenerated flat on the full NP set (the historical `data/integrated/scanvi/NP.h5ad` was gone); **STACAS** regenerated on the full NP set (vs. the old 16k subsample) via `05c --no-downsample` + `05e` export.
+- **Single convention** guaranteed: `05o` scores scANVI/STACAS through `compute_metrics` from `05n`, verified byte-identical to `05h` (same constants, `scale=True`/`rescale=True`, Leiden res=0.5 var-ratio). The 4 CCA rows + Harmony row are reused from `comparison_table.tsv` / `harmony/NP/metrics.tsv` unchanged.
+- **Issue #2 (mislabel):** confirmed — the "Flat scANVI" row was the flat CCA v4 numbers. Relabelled **Flat CCA (v4)**; the stale "not placed on the scale" exclusion sentence deleted.
+- **Issue #3 (iLISI vs batch_ASW):** both reported; divergence explained in prose (most pronounced for scANVI/STACAS, which also prompted a semi-supervised-circularity caveat).
+- **Outputs:** `results/integration/np_experiment/unified_comparison.{tsv,md}`; new **Figure 14** (`docs/manuscript_figures/fig14_np_integration_umap_grid.png`); manuscript table + prose updated; changelog entry added. PDF left stale (no PDF engine on host — regenerate separately).
+
+> Original scaffold note (retained as the planning record):
 
 **Goal:** rebuild the manuscript's "Integration-method comparison" table (NP) so all six methods are scored on ONE metric convention. Requested by Lotz lab: include **flat CCA v5, tiered CCA v5, flat CCA v4, tiered CCA v4, scANVI, Harmony** (tiered = mesenchymal tier only).
 
