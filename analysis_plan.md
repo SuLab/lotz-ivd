@@ -58,6 +58,31 @@ Historical snapshots retained: **Tiered v4 Module 06 Rerun (2026-05-22)** for th
 
 ---
 
+## PENDING (AWS run) — Unified NP integration-method comparison (`05o`) — added 2026-06-15
+
+**Goal:** rebuild the manuscript's "Integration-method comparison" table (NP) so all six methods are scored on ONE metric convention. Requested by Lotz lab: include **flat CCA v5, tiered CCA v5, flat CCA v4, tiered CCA v4, scANVI, Harmony** (tiered = mesenchymal tier only).
+
+**Why this is needed (three issues found 2026-06-15, on branch `docs/combine-martin-ml-analyses`):**
+1. **Mixed metric conventions.** flat/tiered CCA (v4,v5) were scored by `05h` and Harmony by `05n` using the scib normalized battery (`ilisi_knn(scale=True)`, `silhouette_batch(rescale=True)`, 50k/30k subsample, k=90). But scANVI/STACAS were originally scored by `05d` with a *homemade* inverse-Simpson LISI + raw sklearn batch silhouette on a 5k/k=30 subsample — NOT comparable. Evidence: `analysis_plan.md` workflow table records NP CCA iLISI **3.68** / scANVI **1.23** (raw 1–N), vs. the manuscript's rescaled 0.258 / 0.209.
+2. **scANVI table-vs-prose contradiction in the manuscript.** The NP table includes a `Flat scANVI` row with the full normalized battery (incl. cLISI/bio_ASW/NMI/ARI/var_ratios, which only `05h` computes), yet the prose + commit `ed95768` say scANVI was "scored under a different unnormalized-LISI convention… not placed on the scale." The row appears to have been rescored normalized; the exclusion sentence is stale. Confirm against the regenerated table, then **delete that sentence**.
+3. **iLISI vs batch_ASW divergence for Harmony** (iLISI 0.126 worst, batch_ASW 0.857 best). Legitimate — iLISI is global neighborhood batch-diversity; batch_ASW is within-coarse-label batch separability. The manuscript currently cites only the favorable batch_ASW. **Report both and explain the divergence honestly.**
+
+**Action:** run `python3 scripts/05o_unified_np_comparison.py` on AWS. It imports `05h`'s exact metric functions (single source of truth — no drift) and loads each method into the same `(embedding, metadata, counts, gene_names)` form:
+- `flat_cca_v5`  ← `data/integrated/cca/bridge_export/NP`
+- `tiered_cca_v5` ← `data/integrated/np_experiment/tiered_v5/mesenchymal`
+- `flat_cca_v4`  ← `data/integrated/np_experiment/flat_v4/all`
+- `tiered_cca_v4` ← `data/integrated/np_experiment/tiered_v4/mesenchymal`
+- `scanvi`       ← `data/integrated/scanvi/NP.h5ad` (obsm `X_scanvi_*`)
+- `harmony`      ← `results/integration/harmony/NP/embedding_harmony.npy` (+ obs/counts from `data/integrated/tiered_v4/NP.h5ad`)
+
+Outputs `results/integration/np_unified_comparison/comparison_table.{tsv,md}`.
+
+**Pre-flight risk:** commit `d99b45e` ("Prepare v5 pipeline… clear v4 results") cleared `results/` in git. If the np_experiment bridge exports or the v4 scANVI embedding were also cleared on disk, the relevant rows will report `status=missing` (the script skips loudly, never silently). Regenerate as needed: bridge exports via `Rscript scripts/05g_np_experiment.R --mode all`; scANVI via `scripts/05b_integration_scanvi.py`.
+
+**Manuscript follow-ups (after the table returns, do NOT edit prose before then):** replace the 3-row NP table in `docs/IVD_MANUSCRIPT_2026-06-12_combined.md` with the 6-row unified table; fix issues #2 and #3 in the surrounding prose; add a footnote on the flat-vs-tiered fairness caveat (tiered rows score only the mesenchymal tier → bio/cluster/var-ratio metrics are on a different cell population than the flat rows).
+
+---
+
 ## Tiered v4 Module 06 Rerun (2026-05-22) — Post NP-Rescue + 50-Cell Non-Mes Threshold
 
 End-to-end rerun of Module 04 → 05k → 05m → 06 after implementing the 2026-05-18 root-cause fixes. Two consolidated upstream changes:
