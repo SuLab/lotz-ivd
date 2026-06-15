@@ -89,3 +89,17 @@ An empirical test of the sex-adjustment robustness of the manuscript-level NP DE
 ## One judgement call worth Martin's attention
 
 In the merged Caveat 6, I added an explicit sentence stating that §3's AF_outer findings carry **an additional residual sex confound** because all-male sample inventory made sex adjustment impossible. That's a meaningful weakening of one of the manuscript's striking results. If Martin prefers to leave §3 as-is and flag the issue only at the caveat level without explicitly attaching a confound to §3, the change is a single-sentence rollback.
+
+---
+
+# Update 2026-06-15 — Integration-method comparison: corrected + completed (§Methods)
+
+Independent follow-up edit to Methods §Integration-method comparison. Produced by `scripts/05o_unified_np_comparison.py` (new) with full-NP scANVI and STACAS re-runs; outputs in `results/integration/{scanvi_np_flat,stacas_np_flat}/` and `results/integration/np_experiment/unified_comparison.tsv`.
+
+**Correction (important).** The previous three-row table labelled its second row "Flat scANVI" with values iLISI 0.209 / batch_ASW 0.796 / … . Those numbers are in fact the **flat CCA v4** row from `comparison_table.tsv` — a mislabelled CCA run, not a scANVI result. There was no real scANVI row in the manuscript. The label is corrected to **Flat CCA (v4)**.
+
+**Completion.** scANVI and STACAS had only ever been scored under a different (unnormalized-LISI) convention, and STACAS on a 16k-cell subsample, so they were previously excluded "from the scale." Both were regenerated on the full NP set and scored on the **identical** battery as the CCA/Harmony rows (`compute_metrics` from `05n`, byte-for-byte the battery behind `comparison_table.tsv`). The table is now seven rows — flat CCA v5/v4, tiered CCA v5/v4 (mesenchymal), scANVI, STACAS, Harmony — all directly comparable, with a `Scope` column and a cell-count footnote (flat CCA 262,967; Harmony/scANVI/STACAS 262,924; tiered 259,558).
+
+**Reading.** All methods reach comparable global batch_ASW (0.80–0.90). scANVI/STACAS give the sharpest discrete structure (cLISI 0.99, top NMI/ARI) but are semi-supervised — guided by the same coarse labels those metrics score against — so that lead is partly self-fulfilling and is flagged as such. On the label-free discriminator (marker-variance retention), flat CCA preserves the most chondrogenic/fibrogenic variance and scANVI the least, reinforcing the tiered-CCA design rationale.
+
+**New figure.** Figure 14 (`manuscript_figures/fig14_np_integration_umap_grid.png`) — NP UMAPs of six method embeddings (flat CCA v5, tiered CCA v5/v4, scANVI, STACAS, Harmony; flat CCA v4 omitted, embedding not retained), coloured by study and by coarse cell class.

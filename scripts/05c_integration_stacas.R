@@ -92,6 +92,10 @@ parser$add_argument("--validate-only", action = "store_true", default = FALSE,
                     help = "Run validation checks only")
 parser$add_argument("--force", action = "store_true", default = FALSE,
                     help = "Re-run even if outputs exist")
+parser$add_argument("--cells-per-study", type = "integer", default = 2000L,
+                    help = "Per-study cap when downsampling large objects (default 2000)")
+parser$add_argument("--no-downsample", action = "store_true", default = FALSE,
+                    help = "Disable per-study downsampling (run on full cell count)")
 args <- parser$parse_args()
 
 
@@ -258,15 +262,20 @@ load_and_build_object <- function(object_name) {
 # STACAS INTEGRATION (FLAT)
 # ═══════════════════════════════════════════════════════════════════════════
 
-run_stacas_flat <- function(seurat_list, object_name) {
+run_stacas_flat <- function(seurat_list, object_name,
+                            cells_per_study = 2000L, no_downsample = FALSE) {
   n_total <- sum(sapply(seurat_list, ncol))
   message("\n  Running STACAS flat integration for ", object_name,
           " (", n_total, " cells, ", length(seurat_list), " studies)...")
 
-  # For large objects, downsample per study (same approach as CCA v5)
+  # For large objects, downsample per study (same approach as CCA v5).
+  # --no-downsample runs on the full cell count; --cells-per-study tunes the cap.
   DOWNSAMPLE_THRESHOLD <- 100000
-  CELLS_PER_STUDY <- 2000
-  if (n_total > DOWNSAMPLE_THRESHOLD) {
+  CELLS_PER_STUDY <- cells_per_study
+  if (no_downsample) {
+    message("    --no-downsample: running on full ", n_total, " cells")
+  }
+  if (!no_downsample && n_total > DOWNSAMPLE_THRESHOLD) {
     message("    Downsampling from ", n_total, " to ~",
             CELLS_PER_STUDY * length(seurat_list), " cells...")
     set.seed(42)
@@ -344,7 +353,8 @@ plot_umaps <- function(obj, object_name) {
 # PROCESS ONE OBJECT
 # ═══════════════════════════════════════════════════════════════════════════
 
-process_object <- function(object_name, force = FALSE) {
+process_object <- function(object_name, force = FALSE,
+                           cells_per_study = 2000L, no_downsample = FALSE) {
   output_path <- file.path(INT_DIR, paste0(object_name, ".rds"))
 
   if (file.exists(output_path) && !force) {
@@ -361,7 +371,9 @@ process_object <- function(object_name, force = FALSE) {
   if (is.null(seurat_list)) return(NULL)
 
   # Run integration
-  result <- run_stacas_flat(seurat_list, object_name)
+  result <- run_stacas_flat(seurat_list, object_name,
+                            cells_per_study = cells_per_study,
+                            no_downsample = no_downsample)
 
   if (is.null(result)) return(NULL)
 
@@ -498,7 +510,9 @@ main <- function() {
   # Process each object
   all_metrics <- list()
   for (obj_name in objects_to_process) {
-    output <- process_object(obj_name, force = args$force)
+    output <- process_object(obj_name, force = args$force,
+                             cells_per_study = args$cells_per_study,
+                             no_downsample = args$no_downsample)
     if (!is.null(output)) {
       metrics <- compute_metrics(obj_name)
       if (!is.null(metrics)) {

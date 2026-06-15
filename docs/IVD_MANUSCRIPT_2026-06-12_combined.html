@@ -4,8 +4,6 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <meta name="author" content="IVD Atlas Project" />
-  <meta name="dcterms.date" content="2026-06-12" />
   <title>A Continuum-Aware Single-Cell Atlas of the Human Intervertebral Disc</title>
   <style>
     code{white-space: pre-wrap;}
@@ -30,8 +28,6 @@
 <header id="title-block-header">
 <h1 class="title">A Continuum-Aware Single-Cell Atlas of the Human
 Intervertebral Disc</h1>
-<p class="author">IVD Atlas Project</p>
-<p class="date">2026-06-12</p>
 </header>
 <!--
 Combined manuscript: docs/IVD_MANUSCRIPT_2026-05-22_clean.md (with Martin Lotz's 27 review edits)
@@ -363,6 +359,216 @@ yielded finer cell-type resolution and a larger trustworthy DE pool
 (1,823 vs. 1,198 significant DEGs across versions), with biological
 themes preserved across the two integration strategies. We report the
 tiered analysis as primary.</p>
+<h3 id="integration-method-comparison">Integration-method
+comparison</h3>
+<p>To test whether the tiered design’s continuum-preservation rationale
+holds against global single-method integration, we benchmarked four
+whole-compartment integrations of the NP set — Seurat CCA, Harmony
+(harmonypy, grouped by study), scANVI, and STACAS — against the tiered
+(mesenchymal-tier) CCA used in production, all under matched
+preprocessing (CP10K + log1p, 3,000 highly variable genes,
+50-dimensional PCA; scANVI uses its own 20-dimensional latent). Every
+method was scored on a single common battery so that the values are
+directly comparable: batch mixing (iLISI, batch_ASW), biological
+conservation (cLISI, bio_ASW, and cluster-versus-label agreement NMI and
+ARI), and retention of marker-gene variance for the chondrogenic (ACAN,
+COL2A1, SOX9) and fibrogenic (COL1A1) programs that define the disc
+mesenchymal continuum. For every metric shown a higher value is
+preferable; the marker-variance ratios are expressed relative to the
+unintegrated PCA, so that a value near 1 indicates that biological
+marker variation survived integration.</p>
+<p>For the NP compartment — where the
+fibrocartilaginous-to-mature-chondrocyte continuum is most pronounced —
+the methods compare as follows (Figure 14 shows the corresponding UMAP
+embeddings):</p>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Method</th>
+<th>Scope</th>
+<th>iLISI</th>
+<th>batch_ASW</th>
+<th>cLISI</th>
+<th>bio_ASW</th>
+<th>NMI</th>
+<th>ARI</th>
+<th>ACAN</th>
+<th>COL2A1</th>
+<th>SOX9</th>
+<th>COL1A1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Flat CCA (v5)</td>
+<td>all</td>
+<td>0.258</td>
+<td>0.850</td>
+<td>0.869</td>
+<td>0.416</td>
+<td>0.134</td>
+<td>0.062</td>
+<td>0.699</td>
+<td>0.678</td>
+<td>0.762</td>
+<td>0.839</td>
+</tr>
+<tr class="even">
+<td>Flat CCA (v4)</td>
+<td>all</td>
+<td>0.209</td>
+<td>0.796</td>
+<td>0.888</td>
+<td>0.500</td>
+<td>0.122</td>
+<td>0.044</td>
+<td>0.610</td>
+<td>0.651</td>
+<td>0.730</td>
+<td>0.558</td>
+</tr>
+<tr class="odd">
+<td>Tiered CCA (v5)</td>
+<td>mesenchymal</td>
+<td>0.209</td>
+<td>0.869</td>
+<td>0.799</td>
+<td>0.455</td>
+<td>0.113</td>
+<td>0.056</td>
+<td>0.663</td>
+<td>0.674</td>
+<td>0.727</td>
+<td>0.798</td>
+</tr>
+<tr class="even">
+<td>Tiered CCA (v4)</td>
+<td>mesenchymal</td>
+<td>0.216</td>
+<td>0.861</td>
+<td>0.729</td>
+<td>0.510</td>
+<td>0.102</td>
+<td>0.028</td>
+<td>0.623</td>
+<td>0.630</td>
+<td>0.749</td>
+<td>0.551</td>
+</tr>
+<tr class="odd">
+<td>scANVI</td>
+<td>all</td>
+<td>0.005</td>
+<td>0.896</td>
+<td>0.990</td>
+<td>0.519</td>
+<td>0.374</td>
+<td>0.128</td>
+<td>0.256</td>
+<td>0.377</td>
+<td>0.538</td>
+<td>0.513</td>
+</tr>
+<tr class="even">
+<td>STACAS</td>
+<td>all</td>
+<td>0.023</td>
+<td>0.855</td>
+<td>0.987</td>
+<td>0.504</td>
+<td>0.391</td>
+<td>0.177</td>
+<td>0.310</td>
+<td>0.405</td>
+<td>0.567</td>
+<td>0.606</td>
+</tr>
+<tr class="odd">
+<td>Harmony</td>
+<td>all</td>
+<td>0.126</td>
+<td>0.857</td>
+<td>0.908</td>
+<td>0.473</td>
+<td>0.253</td>
+<td>0.086</td>
+<td>0.470</td>
+<td>0.551</td>
+<td>0.615</td>
+<td>0.685</td>
+</tr>
+</tbody>
+</table>
+<p>All methods achieve comparable global batch correction (batch_ASW
+0.80–0.90). They diverge on the biological axes. The two semi-supervised
+latent-space methods, scANVI and STACAS, produce the sharpest discrete
+structure — the highest cLISI (0.99) and the highest
+cluster-versus-label agreement (NMI 0.37–0.39, ARI 0.13–0.18), with
+Harmony next and the CCA runs lowest. This advantage should be read with
+caution: scANVI and STACAS are guided by the same coarse anchor labels
+against which cLISI, NMI and ARI are scored, so their lead on those
+three label-recovery metrics is partly self-fulfilling rather than a
+like-for-like comparison with the unsupervised CCA and Harmony
+embeddings. (A related artifact: scANVI and STACAS report near-zero
+local iLISI (0.005–0.023) yet high global batch_ASW — batches overlap
+globally but each tightly compacted cell-type neighborhood remains
+study-skewed, so the two batch metrics disagree.)</p>
+<p>The label-free discriminator is marker-variance retention, which uses
+no anchor labels and therefore compares all methods on equal footing.
+Here the ordering inverts: flat CCA retains the most chondrogenic (ACAN
+0.70, COL2A1 0.68, SOX9 0.76) and fibrogenic (COL1A1 0.84) variance,
+Harmony less, STACAS less still, and scANVI least of all (ACAN 0.26,
+COL2A1 0.38, COL1A1 0.51). In other words, the methods that sharpen
+discrete cell-type boundaries do so by compressing the continuous
+chondrogenic-to-fibrogenic gradient, most severely the semi-supervised
+latent-space methods. The same Harmony signature held in every other
+compartment (AF, CEP, all_cells): batch_ASW within ≈ 0.03 of flat CCA
+while ACAN/COL2A1/SOX9 variance retention was consistently lower
+(e.g. AF COL2A1 0.28 vs. 0.62; all-cells ACAN 0.50 vs. 0.81). This is
+the expected signature of a correction that sharpens cluster boundaries
+at the expense of the continuum — the same effect that motivated routing
+mesenchymal cells through a conservative, continuum-preserving tier
+rather than a single global integration.</p>
+<p>Metrics for flat CCA are computed on the full NP set (262,967 cells);
+Harmony, scANVI and STACAS on the 262,924-cell post-QC NP object; and
+the tiered CCA rows on the mesenchymal tier only (259,558 cells). STACAS
+here is run on the full NP set, in contrast to the subsampled run used
+during initial workflow selection; scANVI and STACAS are
+semi-supervised, taking the Module 04 coarse labels as integration
+anchors.</p>
+<figure>
+<img src="manuscript_figures/fig14_np_integration_umap_grid.png"
+alt="Figure 14" />
+<figcaption aria-hidden="true">Figure 14</figcaption>
+</figure>
+<blockquote>
+<p><em>[Figure 14.]</em> NP integration methods compared in UMAP space.
+Each column is the UMAP of one integration’s NP embedding (flat CCA v5,
+tiered CCA v5 and v4 on the mesenchymal tier, scANVI, STACAS, Harmony);
+flat CCA v4 is omitted as its embedding was not retained, though its
+metrics row is shown in the table above. Top row coloured by study
+(batch mixing); bottom row by Module 04 coarse cell class (biological
+structure). The semi-supervised latent-space methods (scANVI, STACAS)
+resolve the non-mesenchymal lineages into the most sharply separated
+islands, while the CCA embeddings keep the mesenchymal
+Chondrocyte_like/Fibroblast_like cells as a single graded mass — the
+visual counterpart of their higher chondrogenic marker-variance
+retention in the table.</p>
+</blockquote>
 <h3 id="clustering">Clustering</h3>
 <p>Leiden clustering was applied per tier per compartment, scanning
 resolutions chosen by an equal-weighted silhouette + modularity score.
