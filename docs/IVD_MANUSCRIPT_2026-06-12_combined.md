@@ -96,6 +96,38 @@ Metrics for flat CCA are computed on the full NP set (262,967 cells); Harmony, s
 
 > *[Figure 14.]* NP integration methods compared in UMAP space. Each column is the UMAP of one integration's NP embedding (flat CCA v5, tiered CCA v5 and v4 on the mesenchymal tier, scANVI, STACAS, Harmony); flat CCA v4 is omitted as its embedding was not retained, though its metrics row is shown in the table above. Top row coloured by study (batch mixing); bottom row by Module 04 coarse cell class (biological structure). The semi-supervised latent-space methods (scANVI, STACAS) resolve the non-mesenchymal lineages into the most sharply separated islands, while the CCA embeddings keep the mesenchymal Chondrocyte_like/Fibroblast_like cells as a single graded mass — the visual counterpart of their higher chondrogenic marker-variance retention in the table.
 
+#### Continuum-preservation controls (CCA arms)
+
+The marker-variance ratios in the table above are computed on Leiden clusters (resolution 0.5) of each embedding, so they are sensitive to how finely a method fragments the continuum rather than measuring the gradient directly: at matched resolution the more conservative v4 pipeline resolves the mesenchymal tier into 18 clusters versus 13 for v5, which mechanically lowers v4's within-cluster variance ratio even where the underlying gradient is equally smooth. To decouple gradient preservation from clustering granularity, the 2026-04-17 NP integration experiment added cluster-free controls across the four CCA arms (flat and tiered, v4 and v5).
+
+The primary cluster-free control is Moran's I of marker expression on the *k*=50 neighbour graph — spatial autocorrelation of each gene across the embedding, with no clustering step. Computing it pooled across all cells and again within each study separately (the latter immune to between-study placement, so a clean within-donor gradient measure) gives:
+
+| Marker | Moran's I | Flat v5 | Tiered v5 | Flat v4 | Tiered v4 |
+|---|---|---|---|---|---|
+| COL2A1 | within-study (↑) | 0.419 | 0.419 | 0.553 | 0.551 |
+| | pooled | 0.598 | 0.552 | 0.606 | 0.604 |
+| ACAN | within-study (↑) | 0.425 | 0.432 | 0.560 | 0.558 |
+| | pooled | 0.545 | 0.639 | 0.575 | 0.579 |
+| SOX9 | within-study (↑) | 0.294 | 0.296 | 0.344 | 0.339 |
+| | pooled | 0.435 | 0.367 | 0.425 | 0.418 |
+| COL1A1 | within-study (↑) | 0.491 | 0.491 | 0.651 | 0.653 |
+| | pooled | 0.484 | 0.437 | 0.684 | 0.683 |
+
+Within-study Moran's I is higher for both v4 arms across all four markers (e.g. COL1A1 ≈ 0.65 for v4 vs ≈ 0.49 for v5; COL2A1 ≈ 0.55 vs ≈ 0.42), indicating v4 preserves a smoother marker gradient *within* each donor. The pooled-minus-within-study gap is large and positive for the v5 arms on the chondrogenic markers (COL2A1, ACAN, SOX9: +0.12 to +0.21) but near zero for v4 (≤ +0.05), meaning v5's apparent pooled gradient is inflated by between-study separation whereas v4's reflects genuine within-donor structure. This cluster-free control therefore points the opposite way from the clustering-dependent variance ratio, and is the basis for treating the conservative v4 integration as the better continuum-preserving choice for the mesenchymal tier.
+
+A second axis is preservation of biological *condition* contrasts (healthy / mild / severe / herniated) — the property that most directly governs downstream differential expression — scored by `condition_ASW` (silhouette separation of condition labels; higher, i.e. closer to 0, indicates condition structure retained) and `condition_LISI` (local condition mixing; lower indicates retention):
+
+| Integration | Scope | condition_ASW (↑) | condition_LISI (↓) |
+|---|---|---|---|
+| Flat CCA (v5) | all | −0.165 | 2.517 |
+| Flat CCA (v4) | all | −0.011 | 2.237 |
+| Tiered CCA (v5) | mesenchymal | −0.175 | 2.172 |
+| Tiered CCA (v4) | mesenchymal | −0.020 | 2.234 |
+
+On `condition_ASW` the arms separate by pipeline version rather than by tiering: both v4 arms retain condition structure an order of magnitude better (−0.011 to −0.020) than either v5 arm (−0.165 to −0.175), with the production flat-v5 embedding the single worst arm — consistent with the concern that v5 flat CCA absorbs condition differences as batch within the large NP_mature_chondrocyte cluster. `condition_LISI` is a noisier discriminator, flagging flat v5 as the most condition-mixed arm (2.517) but not otherwise cleanly ranking v4 above v5 (the other three fall within 2.17–2.24). Together with the within-study Moran's I, this condition-signal axis — not the clustering-dependent variance ratio — drove selection of the conservative SCTransform + MNN-anchor tiered-v4 integration for production.
+
+*Values for these controls come from the §5 NP integration experiment (`scripts/05h_np_experiment_metrics.py` for the condition metrics, `scripts/05j_continuum_control_metrics.py` for Moran's I), a separate metric battery from the seven-method table above and reported here rather than merged into it to avoid mixing conventions. Flat arms scored on the full NP set (262,967 cells); tiered arms on the mesenchymal tier (259,558 cells). Two further cluster-free controls from the same experiment — a k=50 neighbourhood-variance ratio and the full resolution sweep of variance ratio against cluster count — are shown in integration notebook §5c.*
+
 ### Clustering
 
 Leiden clustering was applied per tier per compartment, scanning resolutions chosen by an equal-weighted silhouette + modularity score. Tier-aware adaptive thresholds (three resolutions for > 300K cells, six for > 200K, ten for > 50K) and skipping modularity computation for > 100K cells kept run times tractable. Resulting cluster counts are: NP 17 mesenchymal + 4 non-mesenchymal, AF 9 + 3, CEP 4 + 4, all_cells 24 + 9.
