@@ -330,10 +330,16 @@ def _row(method, scope, r):
 
 
 def _write_markdown(df):
-    # Manuscript-facing table: friendly marker headers, 3 decimals
-    disp = ["iLISI", "batch_ASW", "cLISI", "bio_ASW", "NMI", "ARI",
+    # Manuscript-facing table: friendly marker headers, 3 decimals.
+    # condition_ASW / condition_LISI surface the condition-signal axis that drove
+    # the tiered-v4 selection in the §5 NP experiment (notebook 05, §5d). Direction
+    # note: condition_ASW higher (closer to 0) = better; condition_LISI lower = better
+    # — the only displayed column where lower is preferable.
+    disp = ["iLISI", "batch_ASW", "cLISI", "bio_ASW", "condition_ASW", "condition_LISI",
+            "NMI", "ARI",
             "var_ratio_ACAN", "var_ratio_COL2A1", "var_ratio_SOX9", "var_ratio_COL1A1"]
-    hdr = ["Method", "Scope", "iLISI", "batch_ASW", "cLISI", "bio_ASW", "NMI", "ARI",
+    hdr = ["Method", "Scope", "iLISI", "batch_ASW", "cLISI", "bio_ASW",
+           "condition_ASW", "condition_LISI", "NMI", "ARI",
            "ACAN", "COL2A1", "SOX9", "COL1A1"]
     lines = ["| " + " | ".join(hdr) + " |",
              "|" + "|".join(["---"] * len(hdr)) + "|"]
