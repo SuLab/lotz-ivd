@@ -44,7 +44,10 @@ def fig02b():
     panels = [("NP", f"{BASE}/NP.h5ad"),
               ("AF", f"{BASE}/AF.h5ad"),
               ("CEP", f"{BASE}/CEP.h5ad")]
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    # Stack the three compartments vertically (3 rows x 1 col) so each UMAP
+    # spans the full figure/page width — much larger per-panel than the old
+    # 1x3 wide row, which rendered tiny when embedded at page width.
+    fig, axes = plt.subplots(3, 1, figsize=(8, 22))
     for ax, (name, path) in zip(axes, panels):
         a = lite_mes_load(path)
         n = a.shape[0]
@@ -55,15 +58,15 @@ def fig02b():
         print(f"[fig02b:{name}] mesenchymal cells={n:,}  unique cell_subtypes (excl unassigned)={n_sub}  unassigned={n_unassigned:,}")
         sc.pl.umap(
             a, color="cell_subtype",
-            size=3, alpha=0.55,
+            size=4, alpha=0.55,
             legend_loc="on data",
-            legend_fontsize=6, legend_fontoutline=2,
+            legend_fontsize=9, legend_fontoutline=2,
             title=f"{name} mesenchymal ({n:,} cells, {n_sub} sub-states)",
             ax=ax, show=False, frameon=False,
         )
     plt.tight_layout()
     out = f"{OUT}/fig02b_umap_substates.png"
-    fig.savefig(out, dpi=180, bbox_inches="tight")
+    fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"[fig02b] wrote {out}")
 

@@ -41,7 +41,7 @@ def fig01_all_cells():
     fig, ax = plt.subplots(figsize=(12, 7.5))
     sc.pl.umap(
         a, color="cell_type",
-        size=2, alpha=0.55,
+        size=0.8, alpha=0.55,
         legend_loc="right margin",
         legend_fontsize=8, legend_fontoutline=0,
         title=f"Integrated atlas: {n:,} cells coloured by cell_type",
@@ -49,7 +49,7 @@ def fig01_all_cells():
     )
     plt.tight_layout()
     out = f"{OUT}/fig01_umap_all_cells.png"
-    fig.savefig(out, dpi=180, bbox_inches="tight")
+    fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"[fig01] wrote {out}")
 
