@@ -69,6 +69,8 @@ Historical snapshots retained: **Tiered v4 Module 06 Rerun (2026-05-22)** for th
 - **Issue #3 (iLISI vs batch_ASW):** both reported; divergence explained in prose (most pronounced for scANVI/STACAS, which also prompted a semi-supervised-circularity caveat).
 - **Outputs:** `results/integration/np_experiment/unified_comparison.{tsv,md}`; new **Figure 14** (`docs/manuscript_figures/fig14_np_integration_umap_grid.png`); manuscript table + prose updated; changelog entry added. PDF left stale (no PDF engine on host — regenerate separately).
 
+**Follow-up (noted 2026-06-22):** Figure 14 omits the **Flat CCA (v4)** UMAP panel — its metrics row is reused from `comparison_table.tsv`, but the embedding coordinate file (`data/integrated/np_experiment/flat_v4/all/`) was cleared on disk by commit `d99b45e` and, unlike scANVI/STACAS, was not regenerated for `05o` (non-production arm; re-running a full-NP Seurat v4 SCT+CCA flat integration purely to draw one panel wasn't warranted). The caption already states this. *If a reviewer flags the table-row-without-panel asymmetry:* regenerate the flat_v4 embedding via `Rscript scripts/05g_np_experiment.R --mode all` (or the flat_v4 arm specifically) on AWS, add its path to the `EMBEDDINGS` dict in `05o`, and re-run `python3 scripts/05o_unified_np_comparison.py --stage figure`. Low priority — cosmetic completeness only; the metrics comparison is unaffected.
+
 > Original scaffold note (retained as the planning record):
 
 **Goal:** rebuild the manuscript's "Integration-method comparison" table (NP) so all six methods are scored on ONE metric convention. Requested by Lotz lab: include **flat CCA v5, tiered CCA v5, flat CCA v4, tiered CCA v4, scANVI, Harmony** (tiered = mesenchymal tier only).
