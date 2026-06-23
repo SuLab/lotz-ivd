@@ -59,6 +59,7 @@ STACAS_EXPORT = BASE / "data" / "integrated" / "stacas" / "embeddings_export" / 
 # CCA / tiered embeddings for the UMAP grid
 EMB_FILES = {
     "Flat CCA (v5)":      BASE / "data" / "integrated" / "cca" / "bridge_export" / "NP" / "embedding_integrated.cca.csv.gz",
+    "Flat CCA (v4)":      BASE / "data" / "integrated" / "np_experiment" / "flat_v4" / "all" / "embedding_pca.csv.gz",
     "Tiered CCA (v5)":    BASE / "data" / "integrated" / "np_experiment" / "tiered_v5" / "mesenchymal" / "embedding_integrated.cca.csv.gz",
     "Tiered CCA (v4)":    BASE / "data" / "integrated" / "np_experiment" / "tiered_v4" / "mesenchymal" / "embedding_pca.csv.gz",
     "Harmony":            BASE / "results" / "integration" / "harmony" / "NP" / "embedding_harmony.npy",
@@ -375,8 +376,8 @@ def stage_figure(args):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    # methods to plot (omit flat_v4 — embedding gone)
-    methods = ["Flat CCA (v5)", "Tiered CCA (v5)", "Tiered CCA (v4)",
+    # methods to plot (flat_v4 embedding regenerated 2026-06-22 via 05g --mode flat_v4)
+    methods = ["Flat CCA (v5)", "Flat CCA (v4)", "Tiered CCA (v5)", "Tiered CCA (v4)",
                "scANVI", "STACAS", "Harmony"]
     emb_files = dict(EMB_FILES)
     emb_files["scANVI"] = SCANVI_OUT / "embedding_scanvi.npy"
