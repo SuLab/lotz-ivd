@@ -94,11 +94,24 @@ Metrics for flat CCA are computed on the full NP set (262,967 cells); Harmony, s
 
 ![Figure 14](manuscript_figures/fig14_np_integration_umap_grid.png)
 
-> *[Figure 14.]* NP integration methods compared in UMAP space. Each column is the UMAP of one integration's NP embedding (flat CCA v5, tiered CCA v5 and v4 on the mesenchymal tier, scANVI, STACAS, Harmony); flat CCA v4 is omitted as its embedding was not retained, though its metrics row is shown in the table above. Top row coloured by study (batch mixing); bottom row by Module 04 coarse cell class (biological structure). The semi-supervised latent-space methods (scANVI, STACAS) resolve the non-mesenchymal lineages into the most sharply separated islands, while the CCA embeddings keep the mesenchymal Chondrocyte_like/Fibroblast_like cells as a single graded mass — the visual counterpart of their higher chondrogenic marker-variance retention in the table.
+> *[Figure 14.]* NP integration methods compared in UMAP space. Each column is the UMAP of one integration's NP embedding (flat CCA v5 and v4 on the full NP set, tiered CCA v5 and v4 on the mesenchymal tier, scANVI, STACAS, Harmony). Top row coloured by study (batch mixing); bottom row by Module 04 coarse cell class (biological structure). The semi-supervised latent-space methods (scANVI, STACAS) resolve the non-mesenchymal lineages into the most sharply separated islands, while the CCA embeddings keep the mesenchymal Chondrocyte_like/Fibroblast_like cells as a single graded mass — the visual counterpart of their higher chondrogenic marker-variance retention in the table.
 
 #### Continuum-preservation controls (CCA arms)
 
 The marker-variance ratios in the table above are computed on Leiden clusters (resolution 0.5) of each embedding, so they are sensitive to how finely a method fragments the continuum rather than measuring the gradient directly: at matched resolution the more conservative v4 pipeline resolves the mesenchymal tier into 18 clusters versus 13 for v5, which mechanically lowers v4's within-cluster variance ratio even where the underlying gradient is equally smooth. To decouple gradient preservation from clustering granularity, the 2026-04-17 NP integration experiment added cluster-free controls across the four CCA arms (flat and tiered, v4 and v5).
+
+The resolution sweep makes this clustering-dependence explicit. Re-deriving the marker-variance ratio (averaged over ACAN, COL2A1, SOX9 and COL1A1) at Leiden resolutions from 0.1 to 2.0 shows it falling monotonically with cluster count for every arm — from ≈0.80–0.93 at the coarsest partition (3–6 clusters) to ≈0.57–0.66 at the finest (37–45 clusters):
+
+| Integration | res 0.1 | res 0.25 | res 0.5 | res 1.0 | res 2.0 |
+|---|---|---|---|---|---|
+| Flat CCA (v5) | 0.875 (4) | 0.782 (6) | 0.745 (13) | 0.676 (22) | 0.663 (37) |
+| Flat CCA (v4) | 0.814 (5) | 0.634 (12) | 0.637 (18) | 0.608 (28) | 0.573 (45) |
+| Tiered CCA (v5) | 0.934 (3) | 0.730 (7) | 0.715 (13) | 0.690 (24) | 0.659 (39) |
+| Tiered CCA (v4) | 0.796 (6) | 0.665 (9) | 0.638 (18) | 0.602 (30) | 0.589 (43) |
+
+*Each cell is the mean variance ratio over the four markers; the parenthetical is the number of Leiden clusters at that resolution. Flat arms scored on the full NP set (262,967 cells); tiered arms on the mesenchymal tier (259,558 cells).*
+
+At every resolution the v4 arms resolve more clusters than their v5 counterparts (e.g. 18 vs. 13 at resolution 0.5) and correspondingly score a lower variance ratio, so the v5-over-v4 ordering reported at the single resolution 0.5 in the seven-method table above persists across the whole sweep rather than being a cherry-picked-resolution artifact. But because the metric tracks fragmentation granularity — not the gradient itself — and cannot be disentangled from cluster count, we read continuum preservation off the cluster-free controls below rather than off the variance ratio.
 
 The primary cluster-free control is Moran's I of marker expression on the *k*=50 neighbour graph — spatial autocorrelation of each gene across the embedding, with no clustering step. Computing it pooled across all cells and again within each study separately (the latter immune to between-study placement, so a clean within-donor gradient measure) gives:
 
@@ -126,7 +139,7 @@ A second axis is preservation of biological *condition* contrasts (healthy / mil
 
 On `condition_ASW` the arms separate by pipeline version rather than by tiering: both v4 arms retain condition structure an order of magnitude better (−0.011 to −0.020) than either v5 arm (−0.165 to −0.175), with the production flat-v5 embedding the single worst arm — consistent with the concern that v5 flat CCA absorbs condition differences as batch within the large NP_mature_chondrocyte cluster. `condition_LISI` is a noisier discriminator, flagging flat v5 as the most condition-mixed arm (2.517) but not otherwise cleanly ranking v4 above v5 (the other three fall within 2.17–2.24). Together with the within-study Moran's I, this condition-signal axis — not the clustering-dependent variance ratio — drove selection of the conservative SCTransform + MNN-anchor tiered-v4 integration for production.
 
-*Values for these controls come from the §5 NP integration experiment (`scripts/05h_np_experiment_metrics.py` for the condition metrics, `scripts/05j_continuum_control_metrics.py` for Moran's I), a separate metric battery from the seven-method table above and reported here rather than merged into it to avoid mixing conventions. Flat arms scored on the full NP set (262,967 cells); tiered arms on the mesenchymal tier (259,558 cells). Two further cluster-free controls from the same experiment — a k=50 neighbourhood-variance ratio and the full resolution sweep of variance ratio against cluster count — are shown in integration notebook §5c.*
+*Values for these controls come from the §5 NP integration experiment (`scripts/05h_np_experiment_metrics.py` for the condition metrics, `scripts/05j_continuum_control_metrics.py` for Moran's I), a separate metric battery from the seven-method table above and reported here rather than merged into it to avoid mixing conventions. Flat arms scored on the full NP set (262,967 cells); tiered arms on the mesenchymal tier (259,558 cells). A further cluster-free control from the same experiment — a k=50 neighbourhood-variance ratio — is shown in integration notebook §5c; the full resolution sweep of variance ratio against cluster count (`scripts/05j_continuum_control_metrics.py`, `continuum_sweep.tsv`) is tabulated above.*
 
 ### Clustering
 
