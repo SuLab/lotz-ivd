@@ -58,6 +58,44 @@ Historical snapshots retained: **Tiered v4 Module 06 Rerun (2026-05-22)** for th
 
 ---
 
+## DONE (2026-06-15) — Unified NP integration-method comparison (`05o`)
+
+**Resolved 2026-06-15** (branch `docs/combine-martin-ml-analyses`). The scaffold below (added earlier the same day) was executed and extended. Final outcome:
+
+- **Scope extended to 7 methods** — STACAS added alongside flat CCA v5/v4, tiered CCA v5/v4 (mesenchymal), scANVI, Harmony — per in-session direction to re-run **both** scANVI and STACAS on full NP.
+- **scANVI** regenerated flat on the full NP set (the historical `data/integrated/scanvi/NP.h5ad` was gone); **STACAS** regenerated on the full NP set (vs. the old 16k subsample) via `05c --no-downsample` + `05e` export.
+- **Single convention** guaranteed: `05o` scores scANVI/STACAS through `compute_metrics` from `05n`, verified byte-identical to `05h` (same constants, `scale=True`/`rescale=True`, Leiden res=0.5 var-ratio). The 4 CCA rows + Harmony row are reused from `comparison_table.tsv` / `harmony/NP/metrics.tsv` unchanged.
+- **Issue #2 (mislabel):** confirmed — the "Flat scANVI" row was the flat CCA v4 numbers. Relabelled **Flat CCA (v4)**; the stale "not placed on the scale" exclusion sentence deleted.
+- **Issue #3 (iLISI vs batch_ASW):** both reported; divergence explained in prose (most pronounced for scANVI/STACAS, which also prompted a semi-supervised-circularity caveat).
+- **Outputs:** `results/integration/np_experiment/unified_comparison.{tsv,md}`; new **Figure 14** (`docs/manuscript_figures/fig14_np_integration_umap_grid.png`); manuscript table + prose updated; changelog entry added. PDF left stale (no PDF engine on host — regenerate separately).
+
+**Follow-up (noted 2026-06-22) — RESOLVED 2026-06-23:** Figure 14 previously omitted the **Flat CCA (v4)** UMAP panel (the embedding coordinate file `data/integrated/np_experiment/flat_v4/all/` had been cleared on disk by commit `d99b45e`). Now regenerated: `Rscript scripts/05g_np_experiment.R --mode flat_v4` re-ran the full-NP Seurat SCT+CCA flat integration on all 262,967 cells (Jun 22 18:04 → completed 2026-06-23 00:53; log `logs/05g_flat_v4_20260622_180429.log`), restoring `embedding_pca.csv.gz`/`embedding_umap.csv.gz`. The `Flat CCA (v4)` path was added to the `EMB_FILES` dict in `05o` and restored to the figure `methods` list, and `python3 scripts/05o_unified_np_comparison.py --stage figure` re-ran (Jun 23 12:13 → 12:40) to produce the now-**7-panel** grid. Figure 14 matches its caption (flat CCA v5+v4, tiered CCA v5+v4, scANVI, STACAS, Harmony). The metrics comparison was unaffected throughout.
+
+> Original scaffold note (retained as the planning record):
+
+**Goal:** rebuild the manuscript's "Integration-method comparison" table (NP) so all six methods are scored on ONE metric convention. Requested by Lotz lab: include **flat CCA v5, tiered CCA v5, flat CCA v4, tiered CCA v4, scANVI, Harmony** (tiered = mesenchymal tier only).
+
+**Why this is needed (three issues found 2026-06-15, on branch `docs/combine-martin-ml-analyses`):**
+1. **Mixed metric conventions.** flat/tiered CCA (v4,v5) were scored by `05h` and Harmony by `05n` using the scib normalized battery (`ilisi_knn(scale=True)`, `silhouette_batch(rescale=True)`, 50k/30k subsample, k=90). But scANVI/STACAS were originally scored by `05d` with a *homemade* inverse-Simpson LISI + raw sklearn batch silhouette on a 5k/k=30 subsample — NOT comparable. Evidence: `analysis_plan.md` workflow table records NP CCA iLISI **3.68** / scANVI **1.23** (raw 1–N), vs. the manuscript's rescaled 0.258 / 0.209.
+2. **scANVI table-vs-prose contradiction in the manuscript.** The NP table includes a `Flat scANVI` row with the full normalized battery (incl. cLISI/bio_ASW/NMI/ARI/var_ratios, which only `05h` computes), yet the prose + commit `ed95768` say scANVI was "scored under a different unnormalized-LISI convention… not placed on the scale." The row appears to have been rescored normalized; the exclusion sentence is stale. Confirm against the regenerated table, then **delete that sentence**.
+3. **iLISI vs batch_ASW divergence for Harmony** (iLISI 0.126 worst, batch_ASW 0.857 best). Legitimate — iLISI is global neighborhood batch-diversity; batch_ASW is within-coarse-label batch separability. The manuscript currently cites only the favorable batch_ASW. **Report both and explain the divergence honestly.**
+
+**Action:** run `python3 scripts/05o_unified_np_comparison.py` on AWS. It imports `05h`'s exact metric functions (single source of truth — no drift) and loads each method into the same `(embedding, metadata, counts, gene_names)` form:
+- `flat_cca_v5`  ← `data/integrated/cca/bridge_export/NP`
+- `tiered_cca_v5` ← `data/integrated/np_experiment/tiered_v5/mesenchymal`
+- `flat_cca_v4`  ← `data/integrated/np_experiment/flat_v4/all`
+- `tiered_cca_v4` ← `data/integrated/np_experiment/tiered_v4/mesenchymal`
+- `scanvi`       ← `data/integrated/scanvi/NP.h5ad` (obsm `X_scanvi_*`)
+- `harmony`      ← `results/integration/harmony/NP/embedding_harmony.npy` (+ obs/counts from `data/integrated/tiered_v4/NP.h5ad`)
+
+Outputs `results/integration/np_unified_comparison/comparison_table.{tsv,md}`.
+
+**Pre-flight risk:** commit `d99b45e` ("Prepare v5 pipeline… clear v4 results") cleared `results/` in git. If the np_experiment bridge exports or the v4 scANVI embedding were also cleared on disk, the relevant rows will report `status=missing` (the script skips loudly, never silently). Regenerate as needed: bridge exports via `Rscript scripts/05g_np_experiment.R --mode all`; scANVI via `scripts/05b_integration_scanvi.py`.
+
+**Manuscript follow-ups (after the table returns, do NOT edit prose before then):** replace the 3-row NP table in `docs/IVD_MANUSCRIPT_2026-06-23_combined.md` with the 6-row unified table; fix issues #2 and #3 in the surrounding prose; add a footnote on the flat-vs-tiered fairness caveat (tiered rows score only the mesenchymal tier → bio/cluster/var-ratio metrics are on a different cell population than the flat rows).
+
+---
+
 ## Tiered v4 Module 06 Rerun (2026-05-22) — Post NP-Rescue + 50-Cell Non-Mes Threshold
 
 End-to-end rerun of Module 04 → 05k → 05m → 06 after implementing the 2026-05-18 root-cause fixes. Two consolidated upstream changes:
