@@ -8,7 +8,7 @@ plus four ML-driven additions from analyses ML#20 (notochordal scan), ML#24/#25/
 # A Continuum-Aware Single-Cell Atlas of the Human Intervertebral Disc
 ## …and identification of genes and regulatory mechanisms in disc degeneration
 
-*IVD Atlas Project — 2026-06-12*
+*IVD Atlas Project — 2026-06-23*
 
 ## Abstract
 

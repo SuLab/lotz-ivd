@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 
 DOCS = Path(__file__).resolve().parent.parent / "docs"
-STEM = "IVD_MANUSCRIPT_2026-06-12_combined"
+STEM = "IVD_MANUSCRIPT_2026-06-23_combined"
 MD = DOCS / f"{STEM}.md"
 HTML = DOCS / f"{STEM}.html"
 PDF = DOCS / f"{STEM}.pdf"

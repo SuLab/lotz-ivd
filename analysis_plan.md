@@ -92,7 +92,7 @@ Outputs `results/integration/np_unified_comparison/comparison_table.{tsv,md}`.
 
 **Pre-flight risk:** commit `d99b45e` ("Prepare v5 pipeline… clear v4 results") cleared `results/` in git. If the np_experiment bridge exports or the v4 scANVI embedding were also cleared on disk, the relevant rows will report `status=missing` (the script skips loudly, never silently). Regenerate as needed: bridge exports via `Rscript scripts/05g_np_experiment.R --mode all`; scANVI via `scripts/05b_integration_scanvi.py`.
 
-**Manuscript follow-ups (after the table returns, do NOT edit prose before then):** replace the 3-row NP table in `docs/IVD_MANUSCRIPT_2026-06-12_combined.md` with the 6-row unified table; fix issues #2 and #3 in the surrounding prose; add a footnote on the flat-vs-tiered fairness caveat (tiered rows score only the mesenchymal tier → bio/cluster/var-ratio metrics are on a different cell population than the flat rows).
+**Manuscript follow-ups (after the table returns, do NOT edit prose before then):** replace the 3-row NP table in `docs/IVD_MANUSCRIPT_2026-06-23_combined.md` with the 6-row unified table; fix issues #2 and #3 in the surrounding prose; add a footnote on the flat-vs-tiered fairness caveat (tiered rows score only the mesenchymal tier → bio/cluster/var-ratio metrics are on a different cell population than the flat rows).
 
 ---
 

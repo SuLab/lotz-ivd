@@ -2,7 +2,7 @@
 
 **Base:** `docs/IVD_MANUSCRIPT_2026-05-22_clean.md` (Martin Lotz's 27 review edits, committed by Hannah Swahn in `d589034`, 2026-06-12).
 
-**Result:** `docs/IVD_MANUSCRIPT_2026-06-12_combined.md` — same content, plus four additive insertions answering ML reviewer comments #20, #24/#25/#14, and #27. No content from the clean version was removed.
+**Result:** `docs/IVD_MANUSCRIPT_2026-06-23_combined.md` — same content, plus four additive insertions answering ML reviewer comments #20, #24/#25/#14, and #27. No content from the clean version was removed.
 
 The four insertions came from three standalone analysis scripts added in commit `0694162`:
 
